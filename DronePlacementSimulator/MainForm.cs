@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace DronePlacementSimulator
 {
@@ -16,89 +14,190 @@ namespace DronePlacementSimulator
         private static float MAX_LATITUDE = 37.697052f;
         private static float MIN_LONGITUDE = 126.789388f;
         private static float MAX_LONGITUDE = 127.180396f;
+        
         private static int CELL_SIZE = 100;
         private static int COVER_RANGE = 50;
 
         private Graphics g;
 
         List<Station> stationList;
-        List<Event> eventList;
+        List<OHCAEvent> eventList;
+
+        private Bitmap _canvas;
+        private Point _anchor; //The start point for click-drag operations
+        private bool flag = false;
+        private Brush _ghostBrush;
 
         public MainForm()
         {
             InitializeComponent();
-            g = this.CreateGraphics();
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             stationList = new List<Station>();
-            stationList.Add(new Station(37.460097f, 126.951877f));
-            stationList.Add(new Station(37.485227f, 127.080794f));
-            stationList.Add(new Station(37.64698f, 127.024444f));
-            
-            eventList = new List<Event>();
-            eventList.Add(new Event(37.599612f, 127.056478f));
-            eventList.Add(new Event(37.628185f, 127.035149f));
-            eventList.Add(new Event(37.656151f, 127.045268f));
-            eventList.Add(new Event(37.444751f, 127.065255f));
-            eventList.Add(new Event(37.490355f, 126.986228f));
+            eventList = new List<OHCAEvent>();
+
+            // Set ths simulator's window size
+            this.Height = Screen.PrimaryScreen.Bounds.Height;
+            this.Width = (int)(this.Height * (MAX_LONGITUDE - MIN_LONGITUDE) / (MAX_LATITUDE - MIN_LATITUDE));
+
+            //g = this.CreateGraphics();
+            //g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // Read OHCA events data
+            ReadRawData();
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            resizeCanvas();
+        }
+
+        private void resizeCanvas()
+        {
+            Bitmap tmp = new Bitmap(this.Width, this.Height, PixelFormat.Format32bppRgb);
+            using (Graphics g = Graphics.FromImage(tmp))
+            {
+                g.Clear(Color.White);
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                if (_canvas != null)
+                {
+                    
+                    g.DrawImage(_canvas, 0, 0);
+                    _canvas.Dispose();
+                }
+            }
+            _canvas = tmp;
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
         {
-            drawGrid();
-            drawStations();
-            drawOHCHEvents();
+            using (Graphics g = Graphics.FromImage(_canvas))
+            {
+                drawGrid(g);
+                drawOHCHEvents(g);
+                drawStations(g);
+                flag = true;
+                e.Graphics.DrawImage(_canvas, 0, 0);
+            }
         }
-
-        private void drawGrid()
+       
+        private void drawGrid(Graphics g)
         {
             int numOfxCells = this.Width / CELL_SIZE;
             int numOfyCells = this.Height / CELL_SIZE;
 
-            Pen p = new Pen(Color.Gray, 1);
-            for (int x = 0; x < numOfxCells; ++x)
+            Pen p = new Pen(Color.LightGray, 1);
+            for (int x = 0; x <= numOfxCells; ++x)
             {
                 g.DrawLine(p, x * CELL_SIZE, 0, x * CELL_SIZE, numOfxCells * CELL_SIZE);
             }
 
-            for (int y = 0; y < numOfyCells; ++y)
+            for (int y = 0; y <= numOfyCells; ++y)
             {
-                g.DrawLine(p, 0, y * CELL_SIZE, numOfxCells * CELL_SIZE, y * CELL_SIZE);
+                g.DrawLine(p, 0, y * CELL_SIZE, this.Width, y * CELL_SIZE);
             }
         }
 
-        private void drawStations()
+        private void drawStations(Graphics g)
         {
             foreach (Station s in stationList)
             {
-                int x = transformLatitudeToInt(s.latitude);
-                int y = transformLongitudeToInt(s.longitude);
-                g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), x - COVER_RANGE, y - COVER_RANGE, COVER_RANGE + COVER_RANGE, COVER_RANGE + COVER_RANGE);
-                g.DrawEllipse(new Pen(Color.Red, 1), x - COVER_RANGE, y - COVER_RANGE, COVER_RANGE + COVER_RANGE, COVER_RANGE + COVER_RANGE);
-                g.FillRectangle((Brush)Brushes.Red, x, y, 3, 3);
+                g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.x - COVER_RANGE, s.y - COVER_RANGE, COVER_RANGE + COVER_RANGE, COVER_RANGE + COVER_RANGE);
+                g.DrawEllipse(new Pen(Color.Red, 1), s.x - COVER_RANGE, s.y - COVER_RANGE, COVER_RANGE + COVER_RANGE, COVER_RANGE + COVER_RANGE);
+                g.FillRectangle((Brush)Brushes.Red, s.x, s.y, 3, 3);
             }
         }
 
-        private void drawOHCHEvents()
+        private void drawOHCHEvents(Graphics g)
         {
-            foreach (Event e in eventList)
+            foreach (OHCAEvent e in eventList)
             {
-                int x = transformLatitudeToInt(e.latitude);
-                int y = transformLongitudeToInt(e.longitude);
-                g.FillRectangle((Brush)Brushes.Blue, x, y, 3, 3);
+                g.FillRectangle((Brush)Brushes.Blue, e.x, e.y, 3, 3);
             }
         }
 
         private int transformLatitudeToInt(float latitude)
         {
             float latitudeRatio = (latitude - MIN_LATITUDE) / (MAX_LATITUDE - MIN_LATITUDE);
-            return (int)(this.Width * latitudeRatio);
+            return this.Height - (int)(this.Height * latitudeRatio);
         }
 
         private int transformLongitudeToInt(float longitude)
         {
             float longitudeRatio = (longitude - MIN_LONGITUDE) / (MAX_LONGITUDE - MIN_LONGITUDE);
-            return (int)(this.Height * longitudeRatio);
+            return this.Width - (int)(this.Width * longitudeRatio);
+        }
+
+        public void ReadRawData()
+        {
+            Excel.Application excelApp = null;
+            Excel.Workbook wb = null;
+            Excel.Worksheet ws = null;
+
+            try
+            {
+                excelApp = new Excel.Application();
+                wb = excelApp.Workbooks.Open(Environment.CurrentDirectory.ToString() + "\\data.xls");
+                ws = wb.Worksheets.get_Item(1) as Excel.Worksheet;
+                Excel.Range rng = ws.UsedRange;
+                // Excel.Range rng = ws.Range[ws.Cells[2, 1], ws.Cells[5, 3]];
+
+                object[,] data = rng.Value;
+                for (int r = 2; r <= data.GetLength(0); r++)
+                {
+                    try
+                    {
+                        OHCAEvent e = new OHCAEvent();
+                        e.latitude = float.Parse(data[r, 15].ToString());
+                        e.longitude = float.Parse(data[r, 16].ToString());
+                        e.x = transformLongitudeToInt(e.longitude);
+                        e.y = transformLatitudeToInt(e.latitude);
+                        eventList.Add(e);
+                        
+                        Station s = new Station();
+                        s.latitude = float.Parse(data[r, 17].ToString());
+                        s.longitude = float.Parse(data[r, 18].ToString());
+                        s.x = transformLongitudeToInt(s.longitude);
+                        s.y = transformLatitudeToInt(s.latitude);
+                        if (!stationList.Contains(s))
+                        {
+                            stationList.Add(s);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+
+                    }
+                }
+                wb.Close(true);
+                excelApp.Quit();
+            }
+            finally
+            {
+                ReleaseExcelObject(ws);
+                ReleaseExcelObject(wb);
+                ReleaseExcelObject(excelApp);
+            }
+        }
+
+        private static void ReleaseExcelObject(object obj)
+        {
+            try
+            {
+                if (obj != null)
+                {
+                    Marshal.ReleaseComObject(obj);
+                    obj = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                obj = null;
+                throw ex;
+            }
+            finally
+            {
+                GC.Collect();
+            }
         }
     }
 }
