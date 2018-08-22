@@ -7,7 +7,7 @@ namespace DronePlacementSimulator
         private static int ID = 100;
 
         public int          stationID;
-        public float        latitude, longitude;
+        public double       latitude, longitude;
         public int          x, y;
         public List<Drone>  droneList;
 
@@ -25,7 +25,6 @@ namespace DronePlacementSimulator
             }
 
             Station objAsStation = obj as Station;
-
             if (objAsStation == null)
             {
                 return false;

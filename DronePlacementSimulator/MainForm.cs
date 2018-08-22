@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
         private static float MAX_LONGITUDE = 127.180396f;
         
         private static int CELL_SIZE = 100;
-        private static int COVER_RANGE = 50;
+        private static int COVER_RANGE = 200;
 
         private Graphics g;
 
@@ -44,6 +44,21 @@ namespace DronePlacementSimulator
 
             // Read OHCA events data
             ReadRawData();
+
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 20, 100);
+            foreach(double[] d in stations.Means)
+            {
+                Station s = new Station();
+                s.latitude = d[0];
+                s.longitude = d[1];
+                s.x = transformLongitudeToInt(s.longitude);
+                s.y = transformLatitudeToInt(s.latitude);
+                if (!stationList.Contains(s))
+                {
+                    stationList.Add(s);
+                }
+            }
+            Console.WriteLine("End!");
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -115,15 +130,15 @@ namespace DronePlacementSimulator
             }
         }
 
-        private int transformLatitudeToInt(float latitude)
+        private int transformLatitudeToInt(double latitude)
         {
-            float latitudeRatio = (latitude - MIN_LATITUDE) / (MAX_LATITUDE - MIN_LATITUDE);
+            double latitudeRatio = (latitude - MIN_LATITUDE) / (MAX_LATITUDE - MIN_LATITUDE);
             return this.Height - (int)(this.Height * latitudeRatio);
         }
 
-        private int transformLongitudeToInt(float longitude)
+        private int transformLongitudeToInt(double longitude)
         {
-            float longitudeRatio = (longitude - MIN_LONGITUDE) / (MAX_LONGITUDE - MIN_LONGITUDE);
+            double longitudeRatio = (longitude - MIN_LONGITUDE) / (MAX_LONGITUDE - MIN_LONGITUDE);
             return this.Width - (int)(this.Width * longitudeRatio);
         }
 
@@ -153,7 +168,7 @@ namespace DronePlacementSimulator
                         e.y = transformLatitudeToInt(e.latitude);
                         eventList.Add(e);
                         
-                        Station s = new Station();
+                        /*Station s = new Station();
                         s.latitude = float.Parse(data[r, 17].ToString());
                         s.longitude = float.Parse(data[r, 18].ToString());
                         s.x = transformLongitudeToInt(s.longitude);
@@ -161,7 +176,7 @@ namespace DronePlacementSimulator
                         if (!stationList.Contains(s))
                         {
                             stationList.Add(s);
-                        }
+                        }*/
                     }
                     catch(Exception ex)
                     {
