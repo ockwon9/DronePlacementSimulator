@@ -38,10 +38,7 @@ namespace DronePlacementSimulator
             // Set ths simulator's window size
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * (MAX_LONGITUDE - MIN_LONGITUDE) / (MAX_LATITUDE - MIN_LATITUDE));
-
-            //g = this.CreateGraphics();
-            //g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
+            
             // Read OHCA events data
             ReadRawData();
 
