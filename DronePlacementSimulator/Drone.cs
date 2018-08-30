@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace DronePlacementSimulator
         public float        lastDestX;
         public float        lastDestY;
 
-        public Drone(int droneID, int stationID)
+        public Drone(int stationID)
         {
             this.droneID = ID++;
             this.stationID = stationID;

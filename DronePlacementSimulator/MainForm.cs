@@ -1,4 +1,5 @@
-﻿using System;
+﻿    
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -14,9 +15,11 @@ namespace DronePlacementSimulator
         private static float MAX_LATITUDE = 37.697052f;
         private static float MIN_LONGITUDE = 126.789388f;
         private static float MAX_LONGITUDE = 127.180396f;
+        private static int NUM_LATITUDE = 100;
+        private static int NUM_LONGITUDE = 100;
         
-        private static int CELL_SIZE = 100;
-        private static int COVER_RANGE = 200;
+        private static int CELL_SIZE = 10;
+        private static int COVER_RANGE = 40;
 
         private Graphics g;
 
@@ -42,6 +45,9 @@ namespace DronePlacementSimulator
             // Read OHCA events data
             ReadRawData();
 
+            // Create grid with distribution
+            Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
+
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 20, 100);
             foreach(double[] d in stations.Means)
             {
@@ -50,12 +56,54 @@ namespace DronePlacementSimulator
                 s.longitude = d[1];
                 s.x = transformLongitudeToInt(s.longitude);
                 s.y = transformLatitudeToInt(s.latitude);
+                for (int i = 0; i < 10; i++)
+                {
+                    Drone drone = new Drone(s.stationID);
+                    s.droneList.Add(drone);
+                }
                 if (!stationList.Contains(s))
                 {
                     stationList.Add(s);
                 }
             }
             Console.WriteLine("End!");
+            
+            Del defaultPolicy = NearestStation;
+            Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
+
+            Console.WriteLine(kMeansTest.expectedSurvivalRate);
+        }
+
+        public double Distance(double x1, double y1, double x2, double y2)
+        {
+            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        }
+
+        private int NearestStation(ref List<Station> stationList, OHCAEvent ohca)
+        {
+            int n = stationList.Count;
+
+            double min = Double.PositiveInfinity;
+            int nearest = -1;
+            for (int i = 0; i < n; i++)
+            {
+                Station s = stationList[i];
+                double distance = Distance(s.latitude, s.longitude, ohca.latitude, ohca.longitude);
+                if (distance < min)
+                {
+                    min = distance;
+                    nearest = i;
+                }
+            }
+
+            Console.WriteLine("sx : " + stationList[nearest].latitude);
+            Console.WriteLine("sy : " + stationList[nearest].longitude);
+            Console.WriteLine("ox : " + ohca.latitude);
+            Console.WriteLine("oy : " + ohca.longitude);
+            Console.WriteLine(ohca.occurrenceTime);
+            Console.WriteLine(nearest);
+
+            return nearest;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -161,11 +209,12 @@ namespace DronePlacementSimulator
                         OHCAEvent e = new OHCAEvent();
                         e.latitude = float.Parse(data[r, 15].ToString());
                         e.longitude = float.Parse(data[r, 16].ToString());
+                        e.occurrenceTime = DateTime.Parse(data[r, 19].ToString());
                         e.x = transformLongitudeToInt(e.longitude);
                         e.y = transformLatitudeToInt(e.latitude);
                         eventList.Add(e);
                         
-                        /*Station s = new Station();
+                        Station s = new Station();
                         s.latitude = float.Parse(data[r, 17].ToString());
                         s.longitude = float.Parse(data[r, 18].ToString());
                         s.x = transformLongitudeToInt(s.longitude);
@@ -173,7 +222,7 @@ namespace DronePlacementSimulator
                         if (!stationList.Contains(s))
                         {
                             stationList.Add(s);
-                        }*/
+                        }
                     }
                     catch(Exception ex)
                     {
