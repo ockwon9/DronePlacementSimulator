@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace DronePlacementSimulator
 {
     delegate int Del(ref List<Station> stationList, OHCAEvent ohca);
-
+    
     class Test
     {
         public double expectedSurvivalRate;
@@ -16,10 +16,10 @@ namespace DronePlacementSimulator
         public Test(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
         {
             this.policy = policy;
-            this.expectedSurvivalRate = computeSurvivalRate(ref stationList, ref eventList, policy);
+            this.expectedSurvivalRate = ComputeSurvivalRate(ref stationList, ref eventList, policy);
         }
 
-        public double computeSurvivalRate(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
+        public double ComputeSurvivalRate(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
         {
             int n = stationList.Count;
             int[] initialCount = new int[n];

@@ -46,7 +46,8 @@ namespace DronePlacementSimulator
             ReadRawData();
 
             // Create grid with distribution
-            Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
+            Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, NUM_LATITUDE, NUM_LONGITUDE, ref eventList);
+            // Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
 
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 20, 100);
             foreach(double[] d in stations.Means)
@@ -133,7 +134,7 @@ namespace DronePlacementSimulator
             using (Graphics g = Graphics.FromImage(_canvas))
             {
                 drawGrid(g);
-                drawOHCHEvents(g);
+                drawOHCAEvents(g);
                 drawStations(g);
                 flag = true;
                 e.Graphics.DrawImage(_canvas, 0, 0);
@@ -167,7 +168,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        private void drawOHCHEvents(Graphics g)
+        private void drawOHCAEvents(Graphics g)
         {
             foreach (OHCAEvent e in eventList)
             {
