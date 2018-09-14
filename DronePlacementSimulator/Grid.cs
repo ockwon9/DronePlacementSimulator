@@ -5,11 +5,11 @@ namespace DronePlacementSimulator
 {
     class Grid
     {
-        double minLat, minLon;
-        double unitLat, unitLon;
-        int numLat, numLon;
-        double[,] pdf;
-        IdwInterpolator idw;
+        public double minLat, minLon;
+        public double unitLat, unitLon;
+        public int numLat, numLon;
+        public double[,] pdf;
+        public IdwInterpolator idw;
         
         public Grid (double minLat, double minLon, double maxLat, double maxLon, int numLat, int numLon, ref List<OHCAEvent> eventList)
         {
@@ -60,6 +60,53 @@ namespace DronePlacementSimulator
             }
 
             return;
+        }
+
+        public double MaxDemand()
+        {
+            double mD = 0;
+            for (int i = 0; i < numLat; i++)
+            {
+                for (int j = 0; j < numLon; j++)
+                {
+                    if (pdf[i, j] > mD)
+                    {
+                        mD = pdf[i, j];
+                    }
+                }
+            }
+
+            return mD;
+        }
+
+        public double Lat(int i)
+        {
+            return this.minLat + i * this.unitLat;
+        }
+
+        public double Lon(int j)
+        {
+            return this.minLon + j * this.unitLon;
+        }
+
+        public double LatMin(int i)
+        {
+            return this.minLat + (i - 0.5) * this.unitLat;
+        }
+
+        public double LatMax(int i)
+        {
+            return this.minLat + (i + 0.5) * this.unitLat;
+        }
+
+        public double LonMin(int j)
+        {
+            return this.minLon + (i - 0.5) * this.unitLat;
+        }
+
+        public double LonMax(int j)
+        {
+            return this.minLon + (i + 0.5) * this.unitLat;
         }
     }
 }
