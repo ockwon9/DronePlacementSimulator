@@ -62,7 +62,7 @@ namespace DronePlacementSimulator
             return;
         }
 
-        public double MaxDemand()
+        public double getMaxDemand()
         {
             double mD = 0;
             for (int i = 0; i < numLat; i++)
@@ -79,32 +79,32 @@ namespace DronePlacementSimulator
             return mD;
         }
 
-        public double Lat(int i)
+        public double getLat(int i)
         {
             return this.minLat + i * this.unitLat;
         }
 
-        public double Lon(int j)
+        public double getLon(int i)
         {
-            return this.minLon + j * this.unitLon;
+            return this.minLon + i * this.unitLon;
         }
 
-        public double LatMin(int i)
+        public double getLatMin(int i)
         {
             return this.minLat + (i - 0.5) * this.unitLat;
         }
 
-        public double LatMax(int i)
+        public double getLatMax(int i)
         {
             return this.minLat + (i + 0.5) * this.unitLat;
         }
 
-        public double LonMin(int j)
+        public double getLonMin(int i)
         {
             return this.minLon + (i - 0.5) * this.unitLat;
         }
 
-        public double LonMax(int j)
+        public double getLonMax(int i)
         {
             return this.minLon + (i + 0.5) * this.unitLat;
         }

@@ -1,30 +1,32 @@
-﻿    
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private static float MIN_LATITUDE = 37.433373f;
-        private static float MAX_LATITUDE = 37.697052f;
-        private static float MIN_LONGITUDE = 126.789388f;
-        private static float MAX_LONGITUDE = 127.180396f;
-        private static int NUM_LATITUDE = 100;
-        private static int NUM_LONGITUDE = 100;
         
-        private static int CELL_SIZE = 10;
-        private static int COVER_RANGE = 40;
+        private static float MIN_LONGITUDE = 126.7645806f;
+        private static float MAX_LONGITUDE = 127.1831312f;
+        private static float MIN_LATITUDE = 37.42834757f;
+        private static float MAX_LATITUDE = 37.70130154f;
+        private static int NUM_LONGITUDE = 100;
+        private static int NUM_LATITUDE = 100;
+
+        private static int NUM_CELL = 10;
+        private static int COVER_RANGE = 120;
 
         private Graphics g;
 
         List<Station> stationList;
         List<OHCAEvent> eventList;
+        List<Polygon> polygonList;
 
         private Bitmap _canvas;
         private Point _anchor; //The start point for click-drag operations
@@ -37,19 +39,22 @@ namespace DronePlacementSimulator
 
             stationList = new List<Station>();
             eventList = new List<OHCAEvent>();
+            polygonList = new List<Polygon>();
 
             // Set ths simulator's window size
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * (MAX_LONGITUDE - MIN_LONGITUDE) / (MAX_LATITUDE - MIN_LATITUDE));
             
             // Read OHCA events data
-            ReadRawData();
+            ReadEventData();
+            ReadMapData();
 
             // Create grid with distribution
             Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, NUM_LATITUDE, NUM_LONGITUDE, ref eventList);
             // Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
 
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 20, 100);
+            /*
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 50, 100);
             foreach(double[] d in stations.Means)
             {
                 Station s = new Station();
@@ -71,8 +76,8 @@ namespace DronePlacementSimulator
             
             Del defaultPolicy = NearestStation;
             Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
-
             Console.WriteLine(kMeansTest.expectedSurvivalRate);
+            */
         }
 
         public double Distance(double x1, double y1, double x2, double y2)
@@ -134,8 +139,10 @@ namespace DronePlacementSimulator
             using (Graphics g = Graphics.FromImage(_canvas))
             {
                 drawGrid(g);
+                drawMap(g);
                 drawOHCAEvents(g);
                 drawStations(g);
+
                 flag = true;
                 e.Graphics.DrawImage(_canvas, 0, 0);
             }
@@ -143,18 +150,40 @@ namespace DronePlacementSimulator
        
         private void drawGrid(Graphics g)
         {
-            int numOfxCells = this.Width / CELL_SIZE;
-            int numOfyCells = this.Height / CELL_SIZE;
+            int cellWidth = this.Width / NUM_CELL;
+
+            int numXCells = this.Width / cellWidth;
+            int numYCells = this.Height / cellWidth;
 
             Pen p = new Pen(Color.LightGray, 1);
-            for (int x = 0; x <= numOfxCells; ++x)
+            for (int x = 0; x <= numXCells; ++x)
             {
-                g.DrawLine(p, x * CELL_SIZE, 0, x * CELL_SIZE, numOfxCells * CELL_SIZE);
+                g.DrawLine(p, x * cellWidth, 0, x * cellWidth, numXCells * cellWidth);
             }
 
-            for (int y = 0; y <= numOfyCells; ++y)
+            for (int y = 0; y <= numYCells; ++y)
             {
-                g.DrawLine(p, 0, y * CELL_SIZE, this.Width, y * CELL_SIZE);
+                g.DrawLine(p, 0, y * cellWidth, this.Width, y * cellWidth);
+            }
+        }
+
+        private void drawMap(Graphics g)
+        {
+            Pen p = new Pen(Color.Green, 1);
+            foreach(Polygon polygon in polygonList)
+            {
+                Console.WriteLine("Draw polygon: polygon.Name");
+                for (int i = 0; i < polygon.Points.Count; i++)
+                {
+                    if(i < polygon.Points.Count-1)
+                    {
+                        g.DrawLine(p, (float)polygon.Points[i].X, (float)polygon.Points[i].Y, (float)polygon.Points[i + 1].X, (float)polygon.Points[i + 1].Y);
+                    }
+                    else
+                    {
+                        g.DrawLine(p, (float)polygon.Points[i].X, (float)polygon.Points[i].Y, (float)polygon.Points[0].X, (float)polygon.Points[0].Y);
+                    }
+                }
             }
         }
 
@@ -188,7 +217,7 @@ namespace DronePlacementSimulator
             return this.Width - (int)(this.Width * longitudeRatio);
         }
 
-        public void ReadRawData()
+        public void ReadEventData()
         {
             Excel.Application excelApp = null;
             Excel.Workbook wb = null;
@@ -215,7 +244,7 @@ namespace DronePlacementSimulator
                         e.y = transformLatitudeToInt(e.latitude);
                         eventList.Add(e);
                         
-                        Station s = new Station();
+                        /*Station s = new Station();
                         s.latitude = float.Parse(data[r, 17].ToString());
                         s.longitude = float.Parse(data[r, 18].ToString());
                         s.x = transformLongitudeToInt(s.longitude);
@@ -224,12 +253,75 @@ namespace DronePlacementSimulator
                         {
                             stationList.Add(s);
                         }
+                        */
                     }
                     catch(Exception ex)
                     {
 
                     }
                 }
+                wb.Close(true);
+                excelApp.Quit();
+            }
+            finally
+            {
+                ReleaseExcelObject(ws);
+                ReleaseExcelObject(wb);
+                ReleaseExcelObject(excelApp);
+            }
+        }
+
+
+        public void ReadMapData()
+        {
+            Excel.Application excelApp = null;
+            Excel.Workbook wb = null;
+            Excel.Worksheet ws = null;
+
+            try
+            {
+                excelApp = new Excel.Application();
+                wb = excelApp.Workbooks.Open(Environment.CurrentDirectory.ToString() + "\\seoul.xls");
+                ws = wb.Worksheets.get_Item(1) as Excel.Worksheet;
+                Excel.Range rng = ws.UsedRange;
+
+                object[,] data = rng.Value;
+
+                int r = 1;
+                for (int i = 0; i < 25; i++) 
+                {
+                    Polygon p = new Polygon();
+                    p.Name = data[r, 2].ToString().Replace("-", "");
+                    System.Windows.Media.PointCollection pc = new System.Windows.Media.PointCollection();
+                    r++;
+
+                    for (int j = r; j <= data.GetLength(0); j++)
+                    {
+                        try
+                        {
+                            if ((data[j, 1].ToString().Equals("name") && pc.Count != 0) || j == data.GetLength(0))
+                            {
+                                p.Points = pc;
+                                polygonList.Add(p);
+                                r = j;
+                                break;
+                            }
+                            else
+                            {
+                                float lon = float.Parse(data[j, 1].ToString());
+                                float lat = float.Parse(data[j, 2].ToString());
+                                int pLon = transformLongitudeToInt(lon);
+                                int pLat = transformLatitudeToInt(lat);
+                                pc.Add(new System.Windows.Point(pLon, pLat));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+                    }
+                }
+
                 wb.Close(true);
                 excelApp.Quit();
             }
