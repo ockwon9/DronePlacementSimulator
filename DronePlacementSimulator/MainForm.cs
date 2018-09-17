@@ -16,13 +16,11 @@ namespace DronePlacementSimulator
         private static float MAX_LONGITUDE = 127.1831312f;
         private static float MIN_LATITUDE = 37.42834757f;
         private static float MAX_LATITUDE = 37.70130154f;
+
         private static int NUM_LONGITUDE = 100;
         private static int NUM_LATITUDE = 100;
 
-        private static int NUM_CELL = 10;
-        private static int COVER_RANGE = 120;
-
-        private Graphics g;
+        private static int COVER_RANGE = 180;
 
         List<Station> stationList;
         List<OHCAEvent> eventList;
@@ -53,7 +51,6 @@ namespace DronePlacementSimulator
             Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, NUM_LATITUDE, NUM_LONGITUDE, ref eventList);
             // Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
 
-            /*
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 50, 100);
             foreach(double[] d in stations.Means)
             {
@@ -72,8 +69,8 @@ namespace DronePlacementSimulator
                     stationList.Add(s);
                 }
             }
-            Console.WriteLine("End!");
             
+            /*
             Del defaultPolicy = NearestStation;
             Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(kMeansTest.expectedSurvivalRate);
@@ -150,7 +147,7 @@ namespace DronePlacementSimulator
        
         private void drawGrid(Graphics g)
         {
-            int cellWidth = this.Width / NUM_CELL;
+            int cellWidth = this.Width / NUM_LONGITUDE;
 
             int numXCells = this.Width / cellWidth;
             int numYCells = this.Height / cellWidth;
@@ -172,7 +169,6 @@ namespace DronePlacementSimulator
             Pen p = new Pen(Color.Green, 1);
             foreach(Polygon polygon in polygonList)
             {
-                Console.WriteLine("Draw polygon: polygon.Name");
                 for (int i = 0; i < polygon.Points.Count; i++)
                 {
                     if(i < polygon.Points.Count-1)
@@ -243,7 +239,8 @@ namespace DronePlacementSimulator
                         e.x = transformLongitudeToInt(e.longitude);
                         e.y = transformLatitudeToInt(e.latitude);
                         eventList.Add(e);
-                        
+
+                        // Location of stations that dispatched the ambulance to OHCA patients
                         /*Station s = new Station();
                         s.latitude = float.Parse(data[r, 17].ToString());
                         s.longitude = float.Parse(data[r, 18].ToString());
@@ -255,7 +252,7 @@ namespace DronePlacementSimulator
                         }
                         */
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
 
                     }
