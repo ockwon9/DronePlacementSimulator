@@ -1,4 +1,4 @@
-﻿/*using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,10 +35,10 @@ namespace DronePlacementSimulator
         public List<Demand> demandList;
         public List<int>[] N;
 
-        public Pulver (int n, int m, double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = n;
-            this.m = m;
+            this.n = grid.numCells;
+            this.m = stationList.Count();
             this.w = w;
             this.h = h;
             this.t = t;
@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             {
                 b[i] = new double[m];
             }
-            QuantifyService(n, m, ref stationList, ref grid, int t);
+            QuantifyService(n, m, ref stationList, ref grid, t);
 
             this.demandList = new List<Demand>();
             Demandify(grid);
@@ -63,59 +63,22 @@ namespace DronePlacementSimulator
 
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, int t)
         {
-            int x = grid.numLat;
-            int y = grid.numLon;
-            int v;
-            double x1, x2, y1, y2;
-            double x0, y0;
-            int nCount = 0;
+            Overlap overlap = new Overlap();
 
-            for (int i = 0; i < x; i++)
+            int i = 0;
+            foreach (double[] temp in grid.cells)
             {
-                for (int j = 0; j < y; j++, nCount++)
+                double x = temp[0] + grid.unit;
+                double y = temp[1] + grid.unit;
+
+                int j = 0;
+                foreach (Station s in stationList)
                 {
-                    x1 = grid.LatMin(i);
-                    y1 = grid.LonMin(j);
-                    x2 = grid.LatMax(i);
-                    y2 = grid.LonMax(j);
-
-                    for (int k = 0; k < m; k++)
-                    {
-                        Station s = stationList[k];
-                        x0 = s.latitude;
-                        y0 = s.longitude;
-                        v = 0;
-
-                        if (Distance(x0, y0, x1, y1) < t)
-                        {
-                            v += 1;
-                        }
-
-                        if (Distance(x0, y0, x1, y2) < t)
-                        {
-                            v += 2;
-                        }
-
-                        if (Distance(x0, y0, x2, y1) < t)
-                        {
-                            v += 4;
-                        }
-
-                        if (Distance(x0, y0, x2, y2) < t)
-                        {
-                            v += 8;
-                        }
-
-                        switch (v)
-                        {
-                            case 0:
-                                b[nCount][k] = 0;
-                                return;
-                            case 1:
-                                b[nCount][k] = 
-                        }
-                    }
+                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.latitude, s.longitude, t);
+                    j++;
                 }
+
+                i++;
             }
         }
 
@@ -123,13 +86,12 @@ namespace DronePlacementSimulator
         {
             this.demandList.Clear();
 
-            double maxDemand = grid.MaxDemand();
-            for (int i = 0; i < grid.numLat; i++)
+            double maxDemand = grid.getMaxDemand();
+            int i = 0;
+            foreach (double[] temp in grid.cells)
             {
-                for (int j = 0; j < grid.numLon; j++)
-                {
-                    this.demandList.Add(new Demand(grid.Lat(i), grid.Lon(j), grid.pdf[i, j] / maxDemand));
-                }
+                this.demandList.Add(new Demand(temp[0], temp[1], grid.pdf[i] / maxDemand));
+                i++;
             }
         }
 
@@ -279,4 +241,3 @@ namespace DronePlacementSimulator
         }
     }
 }
-*/

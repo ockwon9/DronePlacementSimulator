@@ -1,28 +1,52 @@
 ﻿using System.Collections.Generic;
 using CSharpIDW;
+using System;
 
 namespace DronePlacementSimulator
 {
     class Grid
     {
-        public double minLat, minLon;
-        public double unitLat, unitLon;
-        public int numLat, numLon;
-        public double[,] pdf;
+        public int numCells;
+        public List<double[]> cells;
+        public double unit;
+        public double[] pdf;
         public IdwInterpolator idw;
         
-        public Grid (double minLat, double minLon, double maxLat, double maxLon, int numLat, int numLon, ref List<OHCAEvent> eventList)
+        public Grid (double minLat, double minLon, double maxLat, double maxLon, int unit, ref List<OHCAEvent> eventList, ref System.Windows.Media.PointCollection pc)
         {
-            this.numLat = numLat;
-            this.numLon = numLon;
-            this.unitLat = (maxLat - minLat) / numLat;
-            this.unitLon = (maxLon - minLon) / numLon;
-            this.minLat = minLat + this.unitLat / 2;
-            this.minLon = minLon + this.unitLon / 2;
-            this.pdf = new double[numLat, numLon];
+            this.numCells = 0;
+            this.cells = new List<double[]>();
+            this.unit = unit;
             this.idw = new IdwInterpolator(2);
+            int numLat = (int) Math.Ceiling((maxLat - minLat) / unit);
+            int numLon = (int)Math.Ceiling((maxLon - minLon) / unit);
+
+            for (int i = 0; i < numLat; i++)
+            {
+                for (int j = 0; j < numLon; j++)
+                {
+                    double lat = minLat + i * unit;
+                    double lon = minLon + j * unit;
+
+                    if (intersects(lat, lon, pc))
+                    {
+                        numCells++;
+                        double[] coord = new double[2];
+                        coord[0] = lat;
+                        coord[1] = lon;
+                        cells.Add(coord);
+                    }
+                }
+            }
+
+            this.pdf = new double[numCells];
 
             IdwInterpolate(ref eventList);
+        }
+
+        public Boolean intersects(double lat, double lon, System.Windows.Media.PointCollection pc)
+        {
+            return true;
         }
 
         public void IdwInterpolate(ref List<OHCAEvent> eventList)
@@ -47,16 +71,11 @@ namespace DronePlacementSimulator
                 idw.AddPoint((double) entry.Value, entry.Key);
             }
 
-            double[] tempCoord = new double[2];
-            tempCoord[0] = this.minLat;
-            for (int i = 0; i < this.numLat; i++, tempCoord[0] += this.unitLat)
+            int i = 0;
+            foreach (double[] temp in cells)
             {
-                tempCoord[1] = this.minLon;
-
-                for (int j = 0; j < this.numLon; j++, tempCoord[1] += this.unitLon)
-                {
-                    this.pdf[i, j] = idw.Interpolate(tempCoord).Value;
-                }
+                this.pdf[i] = idw.Interpolate(temp).Value;
+                i++;
             }
 
             return;
@@ -65,48 +84,15 @@ namespace DronePlacementSimulator
         public double getMaxDemand()
         {
             double mD = 0;
-            for (int i = 0; i < numLat; i++)
+            for (int i = 0; i < numCells; i++)
             {
-                for (int j = 0; j < numLon; j++)
+                if (pdf[i] > mD)
                 {
-                    if (pdf[i, j] > mD)
-                    {
-                        mD = pdf[i, j];
-                    }
+                    mD = pdf[i];
                 }
             }
 
             return mD;
-        }
-
-        public double getLat(int i)
-        {
-            return this.minLat + i * this.unitLat;
-        }
-
-        public double getLon(int i)
-        {
-            return this.minLon + i * this.unitLon;
-        }
-
-        public double getLatMin(int i)
-        {
-            return this.minLat + (i - 0.5) * this.unitLat;
-        }
-
-        public double getLatMax(int i)
-        {
-            return this.minLat + (i + 0.5) * this.unitLat;
-        }
-
-        public double getLonMin(int i)
-        {
-            return this.minLon + (i - 0.5) * this.unitLat;
-        }
-
-        public double getLonMax(int i)
-        {
-            return this.minLon + (i + 0.5) * this.unitLat;
         }
     }
 }
