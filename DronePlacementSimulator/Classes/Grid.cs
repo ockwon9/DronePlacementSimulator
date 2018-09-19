@@ -12,7 +12,7 @@ namespace DronePlacementSimulator
         public double[] pdf;
         public IdwInterpolator idw;
         
-        public Grid (double minLat, double minLon, double maxLat, double maxLon, int unit, ref List<OHCAEvent> eventList, ref System.Windows.Media.PointCollection pc)
+        public Grid (double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref System.Windows.Media.PointCollection pc)
         {
             this.numCells = 0;
             this.cells = new List<double[]>();

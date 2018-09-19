@@ -12,9 +12,9 @@ namespace DronePlacementSimulator
         int[] numDronesAtStation;
         Counter counter;
 
-        public Rubis(double minLat, double minLon, double maxLat, double maxLon, int numLat, int numLon, ref List<OHCAEvent> eventList, ref List<Station> stationList)
+        public Rubis(double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref List<Station> stationList, ref System.Windows.Media.PointCollection pc)
         {
-            this.grid = new Grid(minLat, minLon, maxLat, maxLon, numLat, numLon, ref eventList);
+            this.grid = new Grid(minLat, minLon, maxLat, maxLon, unit, ref eventList, ref pc);
             int n = stationList.Count;
             this.numDronesAtStation = new int[n];
             for (int i = 0; i < n; i++)
