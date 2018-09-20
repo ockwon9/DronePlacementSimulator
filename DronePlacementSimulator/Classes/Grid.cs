@@ -1,6 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Windows.Shapes;
 using CSharpIDW;
-using System;
 
 namespace DronePlacementSimulator
 {
@@ -12,28 +17,28 @@ namespace DronePlacementSimulator
         public double[] pdf;
         public IdwInterpolator idw;
         
-        public Grid (double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref System.Windows.Media.PointCollection pc)
+        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<OHCAEvent> eventList, ref List<Polygon> polygonList)
         {
             this.numCells = 0;
             this.cells = new List<double[]>();
             this.unit = unit;
             this.idw = new IdwInterpolator(2);
-            int numLat = (int) Math.Ceiling((maxLat - minLat) / unit);
-            int numLon = (int)Math.Ceiling((maxLon - minLon) / unit);
+            int numLon = (int) Math.Ceiling((maxLon - minLon) / unit);
+            int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
 
             for (int i = 0; i < numLat; i++)
             {
                 for (int j = 0; j < numLon; j++)
                 {
-                    double lat = minLat + i * unit;
                     double lon = minLon + j * unit;
+                    double lat = minLat + i * unit;
 
-                    if (intersects(lat, lon, pc))
+                    if (intersects(lon, lat, ref polygonList))
                     {
                         numCells++;
                         double[] coord = new double[2];
-                        coord[0] = lat;
-                        coord[1] = lon;
+                        coord[0] = lon;
+                        coord[1] = lat;
                         cells.Add(coord);
                     }
                 }
@@ -44,9 +49,91 @@ namespace DronePlacementSimulator
             IdwInterpolate(ref eventList);
         }
 
-        public Boolean intersects(double lat, double lon, System.Windows.Media.PointCollection pc)
+        public bool intersects(double lon, double lat, ref List<Polygon> polygonList)
         {
-            return true;
+            bool intersectsTop = false, intersectsBottom = false, intersectsLeft = false, intersectsRight = false;
+
+            foreach (Polygon p in polygonList)
+            {
+                System.Windows.Media.PointCollection pc = p.Points;
+                int n = pc.Count;
+                System.Windows.Point p1 = pc[n - 1];
+                System.Windows.Point p2 = pc[0];
+                double x1 = p1.X, y1 = p1.Y;
+                double x2 = p2.X, y2 = p2.Y;
+                double temp;
+
+                if (y1 != y2)
+                {
+                    if (!intersectsTop)
+                    {
+                        temp = ((y2 - lat) * x1 + (lat - y1) * x2) / (y2 - y1);
+                        intersectsTop |= (lon <= temp) && (temp <= lon + unit);
+                    }
+
+                    if (!intersectsBottom)
+                    {
+                        temp = ((y2 - lat - unit) * x1 + (lat + unit - y1) * x2) / (y2 - y1);
+                        intersectsBottom |= (lon <= temp) && (temp <= lon + unit);
+                    }
+                }
+
+                if (x1 != x2)
+                {
+                    if (!intersectsLeft)
+                    {
+                        temp = ((x2 - lon) * y1 + (lon - x1) * y2) / (x2 - x1);
+                        intersectsLeft |= (lat <= temp) && (temp <= lat + unit);
+                    }
+
+                    if (!intersectsRight)
+                    {
+                        temp = ((x2 - lon - unit) * y1 + (lon + unit - x1) * y2) / (x2 - x1);
+                        intersectsRight |= (lat <= temp) && (temp <= lat + unit);
+                    }
+                }
+
+                for (int i = 1; i < n; i++)
+                {
+                    p2 = pc[i];
+                    x1 = x2;
+                    y1 = y2;
+                    x2 = p2.X;
+                    y2 = p2.Y;
+
+                    if (y1 != y2)
+                    {
+                        if (!intersectsTop)
+                        {
+                            temp = ((y2 - lat) * x1 + (lat - y1) * x2) / (y2 - y1);
+                            intersectsTop |= (lon <= temp) && (temp <= lon + unit);
+                        }
+
+                        if (!intersectsBottom)
+                        {
+                            temp = ((y2 - lat - unit) * x1 + (lat + unit - y1) * x2) / (y2 - y1);
+                            intersectsBottom |= (lon <= temp) && (temp <= lon + unit);
+                        }
+                    }
+
+                    if (x1 != x2)
+                    {
+                        if (!intersectsLeft)
+                        {
+                            temp = ((x2 - lon) * y1 + (lon - x1) * y2) / (x2 - x1);
+                            intersectsLeft |= (lat <= temp) && (temp <= lat + unit);
+                        }
+
+                        if (!intersectsRight)
+                        {
+                            temp = ((x2 - lon - unit) * y1 + (lon + unit - x1) * y2) / (x2 - x1);
+                            intersectsRight |= (lat <= temp) && (temp <= lat + unit);
+                        }
+                    }
+                }
+            }
+
+            return intersectsTop || intersectsBottom || intersectsLeft || intersectsRight;
         }
 
         public void IdwInterpolate(ref List<OHCAEvent> eventList)
@@ -55,7 +142,7 @@ namespace DronePlacementSimulator
 
             foreach (var ohca in eventList)
             {
-                double[] ohcaGps = new double[2] { ohca.latitude, ohca.longitude };
+                double[] ohcaGps = new double[2] { ohca.longitude, ohca.latitude };
                 if (eventDict.ContainsKey(ohcaGps))
                 {
                     eventDict[ohcaGps]++;

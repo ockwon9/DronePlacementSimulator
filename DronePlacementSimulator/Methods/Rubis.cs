@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Windows.Shapes;
+using CSharpIDW;
 
 namespace DronePlacementSimulator
 {
@@ -12,9 +15,9 @@ namespace DronePlacementSimulator
         int[] numDronesAtStation;
         Counter counter;
 
-        public Rubis(double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref List<Station> stationList, ref System.Windows.Media.PointCollection pc)
+        public Rubis(double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref List<Station> stationList, ref List<Polygon> polygonList)
         {
-            this.grid = new Grid(minLat, minLon, maxLat, maxLon, unit, ref eventList, ref pc);
+            this.grid = new Grid(minLat, minLon, maxLat, maxLon, unit, ref eventList, ref polygonList);
             int n = stationList.Count;
             this.numDronesAtStation = new int[n];
             for (int i = 0; i < n; i++)

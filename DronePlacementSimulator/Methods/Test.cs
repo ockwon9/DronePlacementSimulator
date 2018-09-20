@@ -7,16 +7,22 @@ using System.Threading.Tasks;
 namespace DronePlacementSimulator
 {
     delegate int Del(ref List<Station> stationList, OHCAEvent ohca);
-    
+
     class Test
     {
-        public double expectedSurvivalRate;
-        public Del policy;
+        private static int GOLDEN_TIME = 5;
+        private double expectedSurvivalRate;
+        private Del policy;
         
         public Test(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
         {
             this.policy = policy;
             this.expectedSurvivalRate = ComputeSurvivalRate(ref stationList, ref eventList, policy);
+        }
+
+        public double getExpectedSurvivalRate()
+        {
+            return expectedSurvivalRate;
         }
 
         public double ComputeSurvivalRate(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
@@ -46,7 +52,9 @@ namespace DronePlacementSimulator
 
         public double SurvivalRate(Station s, OHCAEvent e)
         {
-            return 0.7f - 0.01f * Distance(s.latitude, s.longitude, e.latitude, e.longitude);
+            /* SurvivalRate is 0 when the time to arrival is greater than GOLDEN_TIME */
+            double d = Distance(s.longitude, s.latitude, e.longitude, e.latitude);
+            return 0.7f - 0.1f * (d > GOLDEN_TIME ? 7 : d);
         }
 
         public double Distance(double x1, double y1, double x2, double y2)

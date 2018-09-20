@@ -17,8 +17,7 @@ namespace DronePlacementSimulator
         private static float MIN_LATITUDE = 37.42834757f;
         private static float MAX_LATITUDE = 37.70130154f;
 
-        private static int NUM_LONGITUDE = 100;
-        private static int NUM_LATITUDE = 100;
+        private static double UNIT = 0.04f;
 
         private static int COVER_RANGE = 180;
 
@@ -48,10 +47,19 @@ namespace DronePlacementSimulator
             ReadMapData();
 
             // Create grid with distribution
-            Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, NUM_LATITUDE, NUM_LONGITUDE, ref eventList);
+            Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, UNIT, ref eventList, ref polygonList);
+
+            foreach (double[] coord in grid.cells)
+            {
+                stationList.Add(new Station(coord[0], coord[1]));
+            }
+
+            Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref grid);
             // Rubis rubis = new Rubis(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, 100, 100, ref eventList, ref stationList);
 
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 50, 100);
+            // KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 50, 100);
+
+            /*
             foreach(double[] d in stations.Means)
             {
                 Station s = new Station();
@@ -69,6 +77,11 @@ namespace DronePlacementSimulator
                     stationList.Add(s);
                 }
             }
+            */
+
+            Del defaultPolicy = NearestStation;
+            Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Console.WriteLine(pulverTest.getExpectedSurvivalRate());
             
             /*
             Del defaultPolicy = NearestStation;
@@ -99,12 +112,13 @@ namespace DronePlacementSimulator
                 }
             }
 
+            /*
             Console.WriteLine("sx : " + stationList[nearest].latitude);
             Console.WriteLine("sy : " + stationList[nearest].longitude);
             Console.WriteLine("ox : " + ohca.latitude);
             Console.WriteLine("oy : " + ohca.longitude);
             Console.WriteLine(ohca.occurrenceTime);
-            Console.WriteLine(nearest);
+            Console.WriteLine(nearest);*/
 
             return nearest;
         }
@@ -147,20 +161,20 @@ namespace DronePlacementSimulator
        
         private void drawGrid(Graphics g)
         {
-            int cellWidth = this.Width / NUM_LONGITUDE;
-
-            int numXCells = this.Width / cellWidth;
-            int numYCells = this.Height / cellWidth;
+            int numXCells = (int) Math.Ceiling((MAX_LONGITUDE - MIN_LONGITUDE) / UNIT);
+            int numYCells = (int) Math.Ceiling((MAX_LATITUDE - MIN_LATITUDE) / UNIT);
+            int cellWidth = this.Width / numXCells;
+            int cellHeight = this.Height / numYCells;
 
             Pen p = new Pen(Color.LightGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
-                g.DrawLine(p, x * cellWidth, 0, x * cellWidth, numXCells * cellWidth);
+                g.DrawLine(p, x * cellWidth, 0, x * cellWidth, this.Height);
             }
 
             for (int y = 0; y <= numYCells; ++y)
             {
-                g.DrawLine(p, 0, y * cellWidth, this.Width, y * cellWidth);
+                g.DrawLine(p, 0, y * cellHeight, this.Width, y * cellHeight);
             }
         }
 

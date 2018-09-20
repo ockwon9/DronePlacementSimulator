@@ -11,9 +11,11 @@ namespace DronePlacementSimulator
         public int          x, y;
         public List<Drone>  droneList;
 
-        public Station()
+        public Station(double longitude, double latitude)
         {
             this.stationID = ID++;
+            this.longitude = longitude;
+            this.latitude = latitude;
             droneList = new List<Drone>();
         }
 

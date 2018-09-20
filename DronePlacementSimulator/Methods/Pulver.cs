@@ -25,15 +25,15 @@ namespace DronePlacementSimulator
     class Pulver
     {
         private static double DRONE_VELOCITY = 1.0f;
-        public int n;
-        public int m;
-        public double w;
-        public double h;
-        public double[][] b;
-        public int t;
-        public double optimalCoverage;
-        public List<Demand> demandList;
-        public List<int>[] N;
+        private int n;
+        private int m;
+        private double w;
+        private double h;
+        private double[][] b;
+        private int t;
+        private double optimalCoverage;
+        private List<Demand> demandList;
+        private List<int>[] N;
 
         public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
         {
@@ -125,7 +125,7 @@ namespace DronePlacementSimulator
 
             try
             {
-                GRBEnv env = new GRBEnv();
+                GRBEnv env = new GRBEnv("Pulver.log");
                 GRBModel model = new GRBModel(env);
 
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
@@ -232,9 +232,9 @@ namespace DronePlacementSimulator
                 model.Dispose();
                 env.Dispose();
             }
-            catch (GRBException e)
+            catch (Exception e)
             {
-                Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
+                Console.WriteLine("GRB::" + e.ToString());
             }
 
             return res;
