@@ -17,7 +17,7 @@ namespace DronePlacementSimulator
         public double[] pdf;
         public IdwInterpolator idw;
         
-        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<OHCAEvent> eventList, ref List<Polygon> polygonList)
+        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<OHCAEvent> eventList, ref List<List<double[]>> polyCoordList)
         {
             this.numCells = 0;
             this.cells = new List<double[]>();
@@ -33,7 +33,7 @@ namespace DronePlacementSimulator
                     double lon = minLon + j * unit;
                     double lat = minLat + i * unit;
 
-                    if (intersects(lon, lat, ref polygonList))
+                    if (intersects(lon, lat, ref polyCoordList))
                     {
                         numCells++;
                         double[] coord = new double[2];
@@ -49,84 +49,78 @@ namespace DronePlacementSimulator
             IdwInterpolate(ref eventList);
         }
 
-        public bool intersects(double lon, double lat, ref List<Polygon> polygonList)
+        public bool intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
         {
             bool intersectsTop = false, intersectsBottom = false, intersectsLeft = false, intersectsRight = false;
 
-            foreach (Polygon p in polygonList)
+            foreach (List<double[]> pList in polyCoordList)
             {
-                System.Windows.Media.PointCollection pc = p.Points;
-                int n = pc.Count;
-                System.Windows.Point p1 = pc[n - 1];
-                System.Windows.Point p2 = pc[0];
-                double x1 = p1.X, y1 = p1.Y;
-                double x2 = p2.X, y2 = p2.Y;
+                int n = pList.Count;
+                double[] p1 = pList[n - 1];
+                double[] p2 = pList[0];
                 double temp;
 
-                if (y1 != y2)
+                if (p1[1] != p2[1])
                 {
                     if (!intersectsTop)
                     {
-                        temp = ((y2 - lat) * x1 + (lat - y1) * x2) / (y2 - y1);
+                        temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
                         intersectsTop |= (lon <= temp) && (temp <= lon + unit);
                     }
 
                     if (!intersectsBottom)
                     {
-                        temp = ((y2 - lat - unit) * x1 + (lat + unit - y1) * x2) / (y2 - y1);
+                        temp = ((p2[1] - lat - unit) * p1[0] + (lat + unit - p1[1]) * p2[0]) / (p2[1] - p1[1]);
                         intersectsBottom |= (lon <= temp) && (temp <= lon + unit);
                     }
                 }
 
-                if (x1 != x2)
+                if (p1[0] != p2[0])
                 {
                     if (!intersectsLeft)
                     {
-                        temp = ((x2 - lon) * y1 + (lon - x1) * y2) / (x2 - x1);
+                        temp = ((p2[0] - lon) * p1[1] + (lon - p1[0]) * p2[1]) / (p2[0] - p1[0]);
                         intersectsLeft |= (lat <= temp) && (temp <= lat + unit);
                     }
 
                     if (!intersectsRight)
                     {
-                        temp = ((x2 - lon - unit) * y1 + (lon + unit - x1) * y2) / (x2 - x1);
+                        temp = ((p2[0] - lon - unit) * p1[1] + (lon + unit - p1[0]) * p2[1]) / (p2[0] - p1[0]);
                         intersectsRight |= (lat <= temp) && (temp <= lat + unit);
                     }
                 }
 
                 for (int i = 1; i < n; i++)
                 {
-                    p2 = pc[i];
-                    x1 = x2;
-                    y1 = y2;
-                    x2 = p2.X;
-                    y2 = p2.Y;
+                    p1 = p2;
+                    p2 = pList[i];
 
-                    if (y1 != y2)
+                    if (p1[1] != p2[1])
                     {
                         if (!intersectsTop)
                         {
-                            temp = ((y2 - lat) * x1 + (lat - y1) * x2) / (y2 - y1);
+                            temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
                             intersectsTop |= (lon <= temp) && (temp <= lon + unit);
                         }
 
                         if (!intersectsBottom)
                         {
-                            temp = ((y2 - lat - unit) * x1 + (lat + unit - y1) * x2) / (y2 - y1);
+                            temp = ((p2[1] - lat - unit) * p1[0] + (lat + unit - p1[1]) * p2[0]) / (p2[1] - p1[1]);
                             intersectsBottom |= (lon <= temp) && (temp <= lon + unit);
                         }
                     }
 
-                    if (x1 != x2)
+                    if (p1[0] != p2[0])
                     {
                         if (!intersectsLeft)
                         {
-                            temp = ((x2 - lon) * y1 + (lon - x1) * y2) / (x2 - x1);
+                            temp = ((p2[0] - lon) * p1[1] + (lon - p1[0]) * p2[1]) / (p2[0] - p1[0]);
                             intersectsLeft |= (lat <= temp) && (temp <= lat + unit);
                         }
 
                         if (!intersectsRight)
                         {
-                            temp = ((x2 - lon - unit) * y1 + (lon + unit - x1) * y2) / (x2 - x1);
+                            temp = ((p2[0] - lon - unit) * p1[1] + (lon + unit - p1[0]) * p2[1]) / (p2[0] - p1[0]);
                             intersectsRight |= (lat <= temp) && (temp <= lat + unit);
                         }
                     }

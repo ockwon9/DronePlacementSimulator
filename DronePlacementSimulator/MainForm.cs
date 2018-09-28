@@ -16,14 +16,17 @@ namespace DronePlacementSimulator
         private static float MAX_LONGITUDE = 127.1831312f;
         private static float MIN_LATITUDE = 37.42834757f;
         private static float MAX_LATITUDE = 37.70130154f;
+        private static double SEOUL_WIDTH = 36.89;
+        private static double SEOUL_HEIGHT = 30.35;
 
-        private static double UNIT = 0.04f;
+        private static double UNIT = 3;
 
-        private static int COVER_RANGE = 180;
+        private static int COVER_RANGE = 20;
 
         List<Station> stationList;
         List<OHCAEvent> eventList;
         List<Polygon> polygonList;
+        List<List<double[]>> polyCoordList;
 
         private Bitmap _canvas;
         private Point _anchor; //The start point for click-drag operations
@@ -37,21 +40,25 @@ namespace DronePlacementSimulator
             stationList = new List<Station>();
             eventList = new List<OHCAEvent>();
             polygonList = new List<Polygon>();
+            polyCoordList = new List<List<double[]>>();
 
             // Set ths simulator's window size
             this.Height = Screen.PrimaryScreen.Bounds.Height;
-            this.Width = (int)(this.Height * (MAX_LONGITUDE - MIN_LONGITUDE) / (MAX_LATITUDE - MIN_LATITUDE));
+            this.Width = (int)(this.Height * SEOUL_WIDTH / SEOUL_HEIGHT);
             
             // Read OHCA events data
             ReadEventData();
             ReadMapData();
 
             // Create grid with distribution
-            Grid grid = new Grid(MIN_LATITUDE, MIN_LONGITUDE, MAX_LATITUDE, MAX_LONGITUDE, UNIT, ref eventList, ref polygonList);
+            Grid grid = new Grid(0.0, 0.0, SEOUL_WIDTH, SEOUL_HEIGHT, UNIT, ref eventList, ref polyCoordList);
 
             foreach (double[] coord in grid.cells)
             {
-                stationList.Add(new Station(coord[0], coord[1]));
+                Station s = new Station(coord[0] + 0.5 * UNIT, coord[1] + 0.5 * UNIT);
+                s.x = transformLongitudeToInt(s.longitude);
+                s.y = transformLatitudeToInt(s.latitude);
+                stationList.Add(s);
             }
 
             Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref grid);
@@ -78,7 +85,6 @@ namespace DronePlacementSimulator
                 }
             }
             */
-
             Del defaultPolicy = NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(pulverTest.getExpectedSurvivalRate());
@@ -88,6 +94,16 @@ namespace DronePlacementSimulator
             Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(kMeansTest.expectedSurvivalRate);
             */
+        }
+
+        public double LonToKilos(double lon)
+        {
+            return (lon - MIN_LONGITUDE) / 0.4185506 * SEOUL_WIDTH;
+        }
+
+        public double LatToKilos(double lat)
+        {
+            return (lat - MIN_LATITUDE) / 0.27295397 * SEOUL_HEIGHT;
         }
 
         public double Distance(double x1, double y1, double x2, double y2)
@@ -104,7 +120,7 @@ namespace DronePlacementSimulator
             for (int i = 0; i < n; i++)
             {
                 Station s = stationList[i];
-                double distance = Distance(s.latitude, s.longitude, ohca.latitude, ohca.longitude);
+                double distance = Distance(s.longitude, s.latitude, LonToKilos(ohca.longitude), LatToKilos(ohca.latitude));
                 if (distance < min)
                 {
                     min = distance;
@@ -161,20 +177,20 @@ namespace DronePlacementSimulator
        
         private void drawGrid(Graphics g)
         {
-            int numXCells = (int) Math.Ceiling((MAX_LONGITUDE - MIN_LONGITUDE) / UNIT);
-            int numYCells = (int) Math.Ceiling((MAX_LATITUDE - MIN_LATITUDE) / UNIT);
-            int cellWidth = this.Width / numXCells;
-            int cellHeight = this.Height / numYCells;
+            int numXCells = (int) Math.Ceiling(SEOUL_WIDTH / UNIT);
+            int numYCells = (int) Math.Ceiling(SEOUL_HEIGHT / UNIT);
 
             Pen p = new Pen(Color.LightGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
-                g.DrawLine(p, x * cellWidth, 0, x * cellWidth, this.Height);
+                int xInt = (int)(x * UNIT / SEOUL_WIDTH * this.Width);
+                g.DrawLine(p, xInt, 0, xInt, this.Height);
             }
 
             for (int y = 0; y <= numYCells; ++y)
             {
-                g.DrawLine(p, 0, y * cellHeight, this.Width, y * cellHeight);
+                int yInt = this.Height - (int)(y * UNIT / SEOUL_HEIGHT * this.Height);
+                g.DrawLine(p, 0, yInt, this.Width, yInt);
             }
         }
 
@@ -185,7 +201,7 @@ namespace DronePlacementSimulator
             {
                 for (int i = 0; i < polygon.Points.Count; i++)
                 {
-                    if(i < polygon.Points.Count-1)
+                    if (i < polygon.Points.Count - 1)
                     {
                         g.DrawLine(p, (float)polygon.Points[i].X, (float)polygon.Points[i].Y, (float)polygon.Points[i + 1].X, (float)polygon.Points[i + 1].Y);
                     }
@@ -217,14 +233,14 @@ namespace DronePlacementSimulator
 
         private int transformLatitudeToInt(double latitude)
         {
-            double latitudeRatio = (latitude - MIN_LATITUDE) / (MAX_LATITUDE - MIN_LATITUDE);
+            double latitudeRatio = latitude / SEOUL_HEIGHT;
             return this.Height - (int)(this.Height * latitudeRatio);
         }
 
         private int transformLongitudeToInt(double longitude)
         {
-            double longitudeRatio = (longitude - MIN_LONGITUDE) / (MAX_LONGITUDE - MIN_LONGITUDE);
-            return this.Width - (int)(this.Width * longitudeRatio);
+            double longitudeRatio = longitude / SEOUL_WIDTH;
+            return (int)(this.Width * longitudeRatio);
         }
 
         public void ReadEventData()
@@ -247,24 +263,12 @@ namespace DronePlacementSimulator
                     try
                     {
                         OHCAEvent e = new OHCAEvent();
-                        e.latitude = float.Parse(data[r, 15].ToString());
-                        e.longitude = float.Parse(data[r, 16].ToString());
+                        e.latitude = LatToKilos(float.Parse(data[r, 15].ToString()));
+                        e.longitude = LonToKilos(float.Parse(data[r, 16].ToString()));
                         e.occurrenceTime = DateTime.Parse(data[r, 19].ToString());
                         e.x = transformLongitudeToInt(e.longitude);
                         e.y = transformLatitudeToInt(e.latitude);
                         eventList.Add(e);
-
-                        // Location of stations that dispatched the ambulance to OHCA patients
-                        /*Station s = new Station();
-                        s.latitude = float.Parse(data[r, 17].ToString());
-                        s.longitude = float.Parse(data[r, 18].ToString());
-                        s.x = transformLongitudeToInt(s.longitude);
-                        s.y = transformLatitudeToInt(s.latitude);
-                        if (!stationList.Contains(s))
-                        {
-                            stationList.Add(s);
-                        }
-                        */
                     }
                     catch (Exception ex)
                     {
@@ -299,11 +303,12 @@ namespace DronePlacementSimulator
                 object[,] data = rng.Value;
 
                 int r = 1;
-                for (int i = 0; i < 25; i++) 
+                for (int i = 0; i < 25; i++)
                 {
                     Polygon p = new Polygon();
                     p.Name = data[r, 2].ToString().Replace("-", "");
                     System.Windows.Media.PointCollection pc = new System.Windows.Media.PointCollection();
+                    List<double[]> pList = new List<double[]>();
                     r++;
 
                     for (int j = r; j <= data.GetLength(0); j++)
@@ -314,6 +319,7 @@ namespace DronePlacementSimulator
                             {
                                 p.Points = pc;
                                 polygonList.Add(p);
+                                polyCoordList.Add(pList);
                                 r = j;
                                 break;
                             }
@@ -321,9 +327,13 @@ namespace DronePlacementSimulator
                             {
                                 float lon = float.Parse(data[j, 1].ToString());
                                 float lat = float.Parse(data[j, 2].ToString());
-                                int pLon = transformLongitudeToInt(lon);
-                                int pLat = transformLatitudeToInt(lat);
+                                double[] coord = new double[2];
+                                coord[0] = LonToKilos(lon);
+                                coord[1] = LatToKilos(lat);
+                                int pLon = transformLongitudeToInt(coord[0]);
+                                int pLat = transformLatitudeToInt(coord[1]);
                                 pc.Add(new System.Windows.Point(pLon, pLat));
+                                pList.Add(coord);
                             }
                         }
                         catch (Exception ex)

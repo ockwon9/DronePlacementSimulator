@@ -10,21 +10,21 @@ namespace DronePlacementSimulator
 {
     class Demand
     {
-        public double x;
-        public double y;
+        public double lon;
+        public double lat;
         public double d;
 
-        public Demand(double x, double y, double d)
+        public Demand(double lon, double lat, double d)
         {
-            this.x = x;
-            this.y = y;
+            this.lon = lon;
+            this.lat = lat;
             this.d = d;
         }
     }
 
     class Pulver
     {
-        private static double DRONE_VELOCITY = 1.0f;
+        private static double DRONE_VELOCITY = 1.0;
         private int n;
         private int m;
         private double w;
@@ -57,7 +57,7 @@ namespace DronePlacementSimulator
             {
                 this.N[i] = new List<int>();
             }
-            BoundByT(ref stationList, ref this.demandList, t);
+            BoundByT(ref grid, ref stationList, ref this.demandList, t);
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 
@@ -68,8 +68,8 @@ namespace DronePlacementSimulator
             int i = 0;
             foreach (double[] temp in grid.cells)
             {
-                double x = temp[0] + grid.unit;
-                double y = temp[1] + grid.unit;
+                double x = temp[0];
+                double y = temp[1];
 
                 int j = 0;
                 foreach (Station s in stationList)
@@ -84,18 +84,19 @@ namespace DronePlacementSimulator
 
         public void Demandify(Grid grid)
         {
+
             this.demandList.Clear();
 
             double maxDemand = grid.getMaxDemand();
             int i = 0;
             foreach (double[] temp in grid.cells)
             {
-                this.demandList.Add(new Demand(temp[0], temp[1], grid.pdf[i] / maxDemand));
+                this.demandList.Add(new Demand(temp[0] + 0.5 * grid.unit, temp[1] + 0.5 * grid.unit, grid.pdf[i] / maxDemand));
                 i++;
             }
         }
 
-        public void BoundByT(ref List<Station> stationList, ref List<Demand> demandList, int t)
+        public void BoundByT(ref Grid grid, ref List<Station> stationList, ref List<Demand> demandList, int t)
         {
             int i = 0;
             foreach (Demand d in demandList)
@@ -103,7 +104,7 @@ namespace DronePlacementSimulator
                 int j = 0;
                 foreach (Station s in stationList)
                 {
-                    if (Distance(s.x, s.y, d.x, d.y) <= DRONE_VELOCITY * (double)t)
+                    if (Distance(s.longitude + 0.5 * grid.unit, s.latitude + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
                     {
                         this.N[i].Add(j);
                     }
@@ -125,7 +126,7 @@ namespace DronePlacementSimulator
 
             try
             {
-                GRBEnv env = new GRBEnv("Pulver.log");
+                GRBEnv env = new GRBEnv("pulver.log");
                 GRBModel model = new GRBModel(env);
 
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
@@ -137,59 +138,72 @@ namespace DronePlacementSimulator
                 GRBVar[] Z = new GRBVar[n];         // amount of total overall coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    Z[i] = model.AddVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z_" + i);
+                    Z[i] = model.AddVar(0.0, 10.0, 0.0, GRB.CONTINUOUS, "Z_" + i);
                 }
 
                 GRBVar[] Y = new GRBVar[n];         // amount of backup coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    Y[i] = model.AddVar(0.0, 1.0, w, GRB.CONTINUOUS, "Y_" + i);
+                    Y[i] = model.AddVar(0.0, 10.0, w, GRB.CONTINUOUS, "Y_" + i);
                 }
 
                 GRBVar[] W = new GRBVar[n];         // amount of primary coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    W[i] = model.AddVar(0.0, 1.0, 1 - w, GRB.CONTINUOUS, "W_" + i);
+                    W[i] = model.AddVar(0.0, 10.0, 1 - w, GRB.CONTINUOUS, "W_" + i);
                 }
-
-                GRBLinExpr expr;
+                
                 for (int i = 0; i < n; i++)         // sum_{j} {b_i,j * X_j} >= Z_i for i = 0, ..., n - 1
                 {
-                    expr = 0;
+                    GRBLinExpr expr = 0.0;
                     foreach (int j in N[i])
                     {
-                        expr = expr + b[i][j] * X[j];
+                        expr.AddTerm(b[i][j], X[j]);
                     }
-                    expr = expr - Z[i];
+                    expr.AddTerm(-1.0, Z[i]);
                     model.AddConstr(expr, GRB.GREATER_EQUAL, 0.0, "c0_" + i);
                 }
 
                 for (int i = 0; i < n; i++)         // Y_i <= Z_i - d_i
                 {
-                    model.AddConstr(Y[i] - Z[i] + demandList[i].d <= 0, "c1_" + i);
+                    GRBLinExpr expr = 0.0;
+                    expr.AddTerm(1.0, Y[i]);
+                    expr.AddTerm(-1.0, Z[i]);
+                    expr.AddConstant(demandList[i].d);
+                    model.AddConstr(expr, GRB.LESS_EQUAL, 0, "c1_" + i);
                 }
 
                 for (int i = 0; i < n; i++)         // W_i <= Z_i
                 {
-                    model.AddConstr(W[i] - Z[i] <= 0, "c2_" + i);
+                    GRBLinExpr expr = 0.0;
+                    expr.AddTerm(1.0, W[i]);
+                    expr.AddTerm(-1.0, Z[i]);
+                    model.AddConstr(expr, GRB.LESS_EQUAL, 0, "c2_" + i);
                 }
 
                 for (int i = 0; i < n; i++)         // W_i <= d_i
                 {
-                    model.AddConstr(W[i] - demandList[i].d <= 0, "c3_" + i);
+                    GRBLinExpr expr = 0.0;
+                    expr.AddTerm(1.0, W[i]);
+                    expr.AddConstant(-demandList[i].d);
+                    model.AddConstr(expr, GRB.LESS_EQUAL, 0, "c3_" + i);
                 }
 
                 for (int i = 0; i < n; i++)         // Z_i <= h * d_i
                 {
-                    model.AddConstr(Z[i] - h * demandList[i].d <= 0, "c4_" + i);
+                    GRBLinExpr expr = 0.0;
+                    expr.AddTerm(1.0, Z[i]);
+                    expr.AddConstant(-h * demandList[i].d);
+                    model.AddConstr(expr, GRB.LESS_EQUAL, 0, "c4_" + i);
                 }
 
-                expr = 0;
+                GRBLinExpr p_expr = 0.0;
                 for (int j = 0; j < m; j++)         // sum_{j} {X_j} <= p
                 {
-                    expr = expr + X[j];
+                    p_expr.AddTerm(1.0, X[j]);
                 }
-                model.AddConstr(expr, GRB.LESS_EQUAL, p, "c_p");
+                model.AddConstr(p_expr, GRB.LESS_EQUAL, p, "c_p");
+                model.Write("model.lp");
 
                 model.Optimize();
 
@@ -232,9 +246,9 @@ namespace DronePlacementSimulator
                 model.Dispose();
                 env.Dispose();
             }
-            catch (Exception e)
+            catch (GRBException e)
             {
-                Console.WriteLine("GRB::" + e.ToString());
+                Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
             }
 
             return res;
