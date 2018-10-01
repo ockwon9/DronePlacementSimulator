@@ -15,7 +15,7 @@ namespace DronePlacementSimulator
         {
             this.stationID = ID++;
             this.longitude = longitude;
-            this.latitude = latitude;
+            this.latitude = latitude;            
             droneList = new List<Drone>();
         }
 
