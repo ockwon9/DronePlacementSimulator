@@ -28,7 +28,7 @@ namespace DronePlacementSimulator
             int numLon = (int) Math.Ceiling((maxLon - minLon) / unit);
             int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
 
-            intCoords = new List<int[]>();
+            this.intCoords = new List<int[]>();
             for (int i = 0; i < numLat; i++)
             {
                 for (int j = 0; j < numLon; j++)
@@ -144,11 +144,11 @@ namespace DronePlacementSimulator
         public void IdwInterpolate(ref List<OHCAEvent> eventList)
         {
             List<CSharpIDW.Point> eventLocations = new List<CSharpIDW.Point>();
-            int[][] count = new int[3690][];
-            for (int i = 0; i < 3690; i++)
+            int[][] count = new int[370][];
+            for (int i = 0; i < 370; i++)
             {
-                count[i] = new int[3036];
-                for (int j = 0; j < 3036; j++)
+                count[i] = new int[305];
+                for (int j = 0; j < 305; j++)
                 {
                     count[i][j] = 0;
                 }
@@ -156,14 +156,14 @@ namespace DronePlacementSimulator
 
             foreach (OHCAEvent e in eventList)
             {
-                count[(int)Math.Round(100 * e.kiloX)][(int)Math.Round(100 * e.kiloY)]++;
+                count[(int)Math.Round(10 * e.kiloX)][(int)Math.Round(10 * e.kiloY)]++;
             }
 
-            for (int i = 0; i < 3690; i++)
+            for (int i = 0; i < 370; i++)
             {
-                for (int j = 0; j < 3036; j++)
+                for (int j = 0; j < 305; j++)
                 {
-                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 100.0, j / 100.0));
+                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 10, j / 10));
                 }
             }
             
@@ -171,6 +171,7 @@ namespace DronePlacementSimulator
             const int dimension = 2;
             const int numberOfNeighbors = 3;
             var interpolator = new IdwInterpolator(dimension, power, numberOfNeighbors);
+            Console.WriteLine("Done adding data to idw.");
             interpolator.AddPointRange(eventLocations);
 
             for (int i = 0; i < numCells; i++)

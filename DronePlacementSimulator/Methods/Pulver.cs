@@ -35,7 +35,7 @@ namespace DronePlacementSimulator
         private List<Demand> demandList;
         private List<int>[] N;
 
-        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid, ref List<OHCAEvent> eventList)
+        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
         {
             this.n = grid.numCells;
             this.m = stationList.Count();
@@ -58,34 +58,29 @@ namespace DronePlacementSimulator
                 this.N[i] = new List<int>();
             }
             BoundByT(ref grid, ref stationList, ref this.demandList, t);
-            grid.IdwInterpolate(ref eventList);
-            for (int i = 0; i < grid.numCells; i++)
-            {
-                Console.WriteLine("lon = " + grid.cells[i][0] + ", lat = " + grid.cells[i][1] + ", pdf = " + grid.pdf[i]);
-            }
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, int t)
         {
-            /*            Overlap overlap = new Overlap();
+            Overlap overlap = new Overlap();
 
-                        int i = 0;
-                        foreach (double[] temp in grid.cells)
-                        {
-                            double x = temp[0];
-                            double y = temp[1];
+            int i = 0;
+            foreach (double[] temp in grid.cells)
+            {
+                double x = temp[0];
+                double y = temp[1];
 
-                            int j = 0;
-                            foreach (Station s in stationList)
-                            {
-                                this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.latitude, s.longitude, t);
-                                j++;
-                            }
+                int j = 0;
+                foreach (Station s in stationList)
+                {
+                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.kiloX, s.kiloY, t) / (grid.unit * grid.unit);
+                    j++;
+                }
 
-                            i++;
-                        }
-            */
+                i++;
+            }
+            /*
             int i = 0;
             foreach (int[] coord in grid.intCoords)
             {
@@ -111,6 +106,7 @@ namespace DronePlacementSimulator
                     }
                 }
             }
+            */
         }
 
         public void Demandify(Grid grid)
