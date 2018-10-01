@@ -74,7 +74,7 @@ namespace DronePlacementSimulator
                 int j = 0;
                 foreach (Station s in stationList)
                 {
-                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.latitude, s.longitude, t);
+                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.kiloX, s.kiloY, t);
                     j++;
                 }
 
@@ -104,7 +104,7 @@ namespace DronePlacementSimulator
                 int j = 0;
                 foreach (Station s in stationList)
                 {
-                    if (Distance(s.longitude + 0.5 * grid.unit, s.latitude + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
+                    if (Distance(s.kiloX + 0.5 * grid.unit, s.kiloY + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
                     {
                         this.N[i].Add(j);
                     }
@@ -126,7 +126,7 @@ namespace DronePlacementSimulator
 
             try
             {
-                GRBEnv env = new GRBEnv("pulver.log");
+                GRBEnv env = new GRBEnv();
                 GRBModel model = new GRBModel(env);
 
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
@@ -253,5 +253,5 @@ namespace DronePlacementSimulator
 
             return res;
         }
-    }
+    }    
 }
