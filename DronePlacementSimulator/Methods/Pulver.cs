@@ -35,7 +35,7 @@ namespace DronePlacementSimulator
         private List<Demand> demandList;
         private List<int>[] N;
 
-        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid, ref List<OHCAEvent> eventList)
         {
             this.n = grid.numCells;
             this.m = stationList.Count();
@@ -58,6 +58,11 @@ namespace DronePlacementSimulator
                 this.N[i] = new List<int>();
             }
             BoundByT(ref grid, ref stationList, ref this.demandList, t);
+            grid.IdwInterpolate(ref eventList);
+            for (int i = 0; i < grid.numCells; i++)
+            {
+                Console.WriteLine("lon = " + grid.cells[i][0] + ", lat = " + grid.cells[i][1] + ", pdf = " + grid.pdf[i]);
+            }
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 

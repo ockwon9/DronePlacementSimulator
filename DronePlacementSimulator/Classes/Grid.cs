@@ -16,8 +16,7 @@ namespace DronePlacementSimulator
         public double unit;
         public double[] pdf;
         public IdwInterpolator idw;
-
-        public bool[][] intersect;
+        
         public List<int[]> intCoords;
         
         public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<OHCAEvent> eventList, ref List<List<double[]>> polyCoordList)
@@ -54,13 +53,10 @@ namespace DronePlacementSimulator
             }
 
             this.pdf = new double[numCells];
-
-            IdwInterpolate(ref eventList);
         }
 
         public bool intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
         {
-            Console.WriteLine("lon = " + lon + ", lat = " + lat);
             bool ans = false, intersectsTop = false, intersectsBottom = false, intersectsLeft = false, intersectsRight = false;
 
             foreach (List<double[]> pList in polyCoordList)
@@ -148,34 +144,40 @@ namespace DronePlacementSimulator
 
         public void IdwInterpolate(ref List<OHCAEvent> eventList)
         {
-            Dictionary<double[], int> eventDict = new Dictionary<double[], int>();
-
-            foreach (var ohca in eventList)
+            List<CSharpIDW.Point> eventLocations = new List<CSharpIDW.Point>();
+            int[][] count = new int[3690][];
+            for (int i = 0; i < 3690; i++)
             {
-                double[] ohcaGps = new double[2] { ohca.longitude, ohca.latitude };
-                if (eventDict.ContainsKey(ohcaGps))
+                count[i] = new int[3036];
+                for (int j = 0; j < 3036; j++)
                 {
-                    eventDict[ohcaGps]++;
-                }
-                else
-                {
-                    eventDict.Add(ohcaGps, 1);
+                    count[i][j] = 0;
                 }
             }
 
-            foreach (KeyValuePair<double[], int> entry in eventDict)
+            foreach (OHCAEvent e in eventList)
             {
-                idw.AddPoint((double) entry.Value, entry.Key);
+                count[(int)Math.Round(100 * e.longitude)][(int)Math.Round(100 * e.latitude)]++;
             }
 
-            int i = 0;
-            foreach (double[] temp in cells)
+            for (int i = 0; i < 3690; i++)
             {
-                this.pdf[i] = idw.Interpolate(temp).Value;
-                i++;
+                for (int j = 0; j < 3036; j++)
+                {
+                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 100.0, j / 100.0));
+                }
             }
+            
+            const int power = 3;
+            const int dimension = 2;
+            const int numberOfNeighbors = 3;
+            var interpolator = new IdwInterpolator(dimension, power, numberOfNeighbors);
+            interpolator.AddPointRange(eventLocations);
 
-            return;
+            for (int i = 0; i < numCells; i++)
+            {
+                this.pdf[i] = interpolator.Interpolate(this.cells[i]).Value;
+            }
         }
 
         public double getMaxDemand()
