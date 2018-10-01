@@ -17,7 +17,7 @@ namespace DronePlacementSimulator
         List<List<double[]>> polyCoordList;
 
         private int coverRange;
-        private Grid gridEvent;
+        //private Grid gridEvent;
 
         private Bitmap _canvas;
         //private Point _anchor; //The start point for click-drag operations
@@ -122,7 +122,7 @@ namespace DronePlacementSimulator
         private void doRubis()
         {
             Rubis.doCalculate(eventList, polyCoordList, ref stationList);
-            Del rubisPolicy = HighestSurvalRateStation;
+            Del rubisPolicy = NearestStation;
             Test rubisTest = new Test(ref stationList, ref eventList, rubisPolicy);
             Console.WriteLine(rubisTest.getExpectedSurvivalRate());
         }

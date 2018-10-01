@@ -13,8 +13,8 @@ namespace DronePlacementSimulator
     {
         public static void doCalculate(List<OHCAEvent> eventList, List<List<double[]>> polyCoordList, ref List<Station> stationList)
         {
-            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
-            gridEvent.IdwInterpolate(ref eventList);
+            //Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            //gridEvent.IdwInterpolate(ref eventList);
 
             // Find intial placement of stations
             Grid gridStation = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, 9, ref polyCoordList);
@@ -25,7 +25,7 @@ namespace DronePlacementSimulator
                 Station s = new Station(kiloX, kiloY);
                 s.pixelX = Utils.transformKiloXToPixel(kiloX);
                 s.pixelY = Utils.transformKiloYToPixel(kiloY);
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 1; i++)
                 {
                     Drone drone = new Drone(s.stationID);
                     s.droneList.Add(drone);
@@ -37,7 +37,7 @@ namespace DronePlacementSimulator
             int[] numDronesAtStation = new int[n];
             for (int i = 0; i < n; i++)
             {
-                numDronesAtStation[i] = 10;
+                numDronesAtStation[i] = 0;
             }
 
             Counter counter = new Counter(stationList.Count, ref numDronesAtStation);

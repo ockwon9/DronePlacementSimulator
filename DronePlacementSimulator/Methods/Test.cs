@@ -32,6 +32,7 @@ namespace DronePlacementSimulator
             {
                 initialCount[i] = stationList[i].droneList.Count;
             }
+
             Counter current = new Counter(n, ref initialCount);
             int numEvents = eventList.Count;
             List<OHCAEvent> sortedEventList = eventList.OrderBy(o => o.occurrenceTime).ToList();
