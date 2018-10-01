@@ -156,7 +156,7 @@ namespace DronePlacementSimulator
 
             foreach (OHCAEvent e in eventList)
             {
-                count[(int)Math.Round(100 * e.longitude)][(int)Math.Round(100 * e.latitude)]++;
+                count[(int)Math.Round(100 * e.kiloX)][(int)Math.Round(100 * e.kiloY)]++;
             }
 
             for (int i = 0; i < 3690; i++)

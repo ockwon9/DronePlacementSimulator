@@ -17,7 +17,7 @@ namespace DronePlacementSimulator
         List<List<double[]>> polyCoordList;
 
         private int coverRange;
-        private Grid gridEvent;
+        //private Grid gridEvent;
 
         private Bitmap _canvas;
         //private Point _anchor; //The start point for click-drag operations
@@ -80,7 +80,7 @@ namespace DronePlacementSimulator
                 Station s = new Station(d[0], d[1]);
                 s.pixelX = Utils.transformKiloXToPixel(s.kiloX);
                 s.pixelY = Utils.transformKiloYToPixel(s.kiloY);
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 1; i++)
                 {
                     Drone drone = new Drone(s.stationID);
                     s.droneList.Add(drone);
@@ -118,7 +118,7 @@ namespace DronePlacementSimulator
         private void doRubis()
         {
             Rubis.doCalculate(eventList, polyCoordList, ref stationList);
-            Del rubisPolicy = HighestSurvalRateStation;
+            Del rubisPolicy = NearestStation;
             Test rubisTest = new Test(ref stationList, ref eventList, rubisPolicy);
             Console.WriteLine(rubisTest.getExpectedSurvivalRate());
         }
@@ -132,7 +132,7 @@ namespace DronePlacementSimulator
             for (int i = 0; i < n; i++)
             {
                 Station s = stationList[i];
-                double distance = Utils.getDistance(s.kiloX, s.kiloY, Utils.LonToKilos(ohca.kiloX), Utils.LatToKilos(ohca.kiloY));
+                double distance = Utils.getDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
                 if (distance < min)
                 {
                     min = distance;
