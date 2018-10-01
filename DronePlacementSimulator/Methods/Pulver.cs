@@ -157,7 +157,7 @@ namespace DronePlacementSimulator
 
             try
             {
-                GRBEnv env = new GRBEnv("pulver.log");
+                GRBEnv env = new GRBEnv();
                 GRBModel model = new GRBModel(env);
 
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
@@ -284,5 +284,5 @@ namespace DronePlacementSimulator
 
             return res;
         }
-    }
+    }    
 }
