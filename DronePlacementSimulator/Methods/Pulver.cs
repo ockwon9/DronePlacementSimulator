@@ -35,7 +35,7 @@ namespace DronePlacementSimulator
         private List<Demand> demandList;
         private List<int>[] N;
 
-        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid, ref List<OHCAEvent> eventList)
         {
             this.n = grid.numCells;
             this.m = stationList.Count();
@@ -58,27 +58,58 @@ namespace DronePlacementSimulator
                 this.N[i] = new List<int>();
             }
             BoundByT(ref grid, ref stationList, ref this.demandList, t);
+            grid.IdwInterpolate(ref eventList);
+            for (int i = 0; i < grid.numCells; i++)
+            {
+                Console.WriteLine("lon = " + grid.cells[i][0] + ", lat = " + grid.cells[i][1] + ", pdf = " + grid.pdf[i]);
+            }
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, int t)
         {
-            Overlap overlap = new Overlap();
+            /*            Overlap overlap = new Overlap();
 
+                        int i = 0;
+                        foreach (double[] temp in grid.cells)
+                        {
+                            double x = temp[0];
+                            double y = temp[1];
+
+                            int j = 0;
+                            foreach (Station s in stationList)
+                            {
+                                this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.latitude, s.longitude, t);
+                                j++;
+                            }
+
+                            i++;
+                        }
+            */
             int i = 0;
-            foreach (double[] temp in grid.cells)
+            foreach (int[] coord in grid.intCoords)
             {
-                double x = temp[0];
-                double y = temp[1];
-
                 int j = 0;
-                foreach (Station s in stationList)
+                foreach(int[] coor in grid.intCoords)
                 {
-                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.kiloX, s.kiloY, t);
-                    j++;
-                }
+                    int x1 = coord[0];
+                    int y1 = coord[1];
+                    int x2 = coor[0];
+                    int y2 = coor[1];
 
-                i++;
+                    switch ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+                    {
+                        case 0:
+                            this.b[i][j] = 1.0;
+                            break;
+                        case 1:
+                            this.b[i][j] = (Math.PI - 2.25);
+                            break;
+                        default:
+                            this.b[i][j] = 0.0;
+                            break;
+                    }
+                }
             }
         }
 
