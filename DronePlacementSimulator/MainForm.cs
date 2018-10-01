@@ -132,7 +132,7 @@ namespace DronePlacementSimulator
             for (int i = 0; i < n; i++)
             {
                 Station s = stationList[i];
-                double distance = Utils.Distance(s.kiloX, s.kiloY, Utils.LonToKilos(ohca.kiloX), Utils.LatToKilos(ohca.kiloY));
+                double distance = Utils.getDistance(s.kiloX, s.kiloY, Utils.LonToKilos(ohca.kiloX), Utils.LatToKilos(ohca.kiloY));
                 if (distance < min)
                 {
                     min = distance;

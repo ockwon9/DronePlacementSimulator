@@ -10,7 +10,6 @@ namespace DronePlacementSimulator
 
     class Test
     {
-        private static int GOLDEN_TIME = 5;
         private double expectedSurvivalRate;
         private Del policy;
         
@@ -53,13 +52,8 @@ namespace DronePlacementSimulator
         public double SurvivalRate(Station s, OHCAEvent e)
         {
             /* SurvivalRate is 0 when the time to arrival is greater than GOLDEN_TIME */
-            double d = Distance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
-            return 0.7f - 0.1f * (d > GOLDEN_TIME ? 7 : d);
-        }
-
-        public double Distance(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            double d = Utils.getDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+            return 0.7f - 0.1f * (d > Utils.GOLDEN_TIME ? 7 : d);
         }
     }
 }
