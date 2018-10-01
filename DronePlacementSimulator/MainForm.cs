@@ -52,7 +52,7 @@ namespace DronePlacementSimulator
             //gridEvent = new Grid(0.0, 0.0, SEOUL_WIDTH, SEOUL_HEIGHT, UNIT, ref polyCoordList);
             
             // Choose the test method
-            TestMethod testMethod = TestMethod.RUBIS;
+            TestMethod testMethod = TestMethod.KMeans;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
@@ -123,28 +123,48 @@ namespace DronePlacementSimulator
             Console.WriteLine(rubisTest.getExpectedSurvivalRate());
         }
 
-        private int NearestStation(ref List<Station> stationList, OHCAEvent ohca)
+        private int NearestStation(ref List<Station> stationList, ref Counter counter, OHCAEvent ohca)
         {
             int n = stationList.Count;
-            double min = Double.PositiveInfinity;
-            int nearest = -1;
+            int[] index = new int[n];
+            double[] distance = new double[n];
 
             for (int i = 0; i < n; i++)
             {
                 Station s = stationList[i];
-                double distance = Utils.getDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
-                if (distance < min)
+                index[i] = i;
+                distance[i] = Utils.getDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
+
+                for (int j = i; j > 0; j--)
                 {
-                    min = distance;
-                    nearest = i;
+                    if (distance[j] < distance[j - 1])
+                    {
+                        int temp = index[j];
+                        index[j] = index[j - 1];
+                        index[j - 1] = temp;
+                        double tem = distance[j];
+                        distance[j] = distance[j - 1];
+                        distance[j - 1] = tem;
+                    }
                 }
             }
 
-            return nearest;
+            int k = 0;
+            while (k < n && counter.whenReady[index[k]].Count == stationList[index[k]].droneList.Count)
+            {
+                k++;
+            }
+
+            if (k == n)
+            {
+                return -1;
+            }
+
+            return index[k];
         }
 
         //TODO: How to refer the Counter object?
-        public static int HighestSurvalRateStation(ref List<Station> stationList, OHCAEvent ohca)
+        private int HighestSurvalRateStation(ref List<Station> stationList, ref Counter counter, OHCAEvent ohca)
         {
             //counter.flush(ohca.occurrenceTime);
             int index = 0;
