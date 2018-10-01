@@ -74,7 +74,7 @@ namespace DronePlacementSimulator
                 //data.Add(values.ToArray());
 
                 OHCAEvent e = item as OHCAEvent;
-                data.Add(new double[]{e.latitude, e.longitude});
+                data.Add(new double[]{e.kiloX, e.kiloY});
             }
 
             return data.ToArray();

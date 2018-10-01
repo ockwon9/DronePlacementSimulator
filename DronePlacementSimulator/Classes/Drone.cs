@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
-    class Drone
+    public class Drone
     {
         private static int ID = 1000;
 
