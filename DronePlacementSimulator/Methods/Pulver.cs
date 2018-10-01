@@ -135,7 +135,7 @@ namespace DronePlacementSimulator
                 int j = 0;
                 foreach (Station s in stationList)
                 {
-                    if (Distance(s.longitude + 0.5 * grid.unit, s.latitude + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
+                    if (Distance(s.kiloX + 0.5 * grid.unit, s.kiloY + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
                     {
                         this.N[i].Add(j);
                     }
