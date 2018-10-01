@@ -2,20 +2,20 @@
 
 namespace DronePlacementSimulator
 {
-    class Station
+    public class Station
     {
         private static int ID = 100;
 
         public int          stationID;
-        public double       latitude, longitude;
-        public int          x, y;
+        public double       kiloX, kiloY;
+        public int          pixelX, pixelY;
         public List<Drone>  droneList;
 
-        public Station(double longitude, double latitude)
+        public Station(double kiloX, double kiloY)
         {
             this.stationID = ID++;
-            this.longitude = longitude;
-            this.latitude = latitude;            
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
             droneList = new List<Drone>();
         }
 
@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             {
                 return false;
             }
-            return (this.latitude == other.latitude && this.longitude == other.longitude);
+            return (this.kiloX == other.kiloX && this.kiloY == other.kiloY);
         }
     }
 }

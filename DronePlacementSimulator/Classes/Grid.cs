@@ -17,10 +17,10 @@ namespace DronePlacementSimulator
         public double[] pdf;
         public IdwInterpolator idw;
 
-        public bool[][] intersect;
+        //public bool[][] intersect;
         public List<int[]> intCoords;
         
-        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<OHCAEvent> eventList, ref List<List<double[]>> polyCoordList)
+        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<List<double[]>> polyCoordList)
         {
             this.numCells = 0;
             this.cells = new List<double[]>();
@@ -28,9 +28,8 @@ namespace DronePlacementSimulator
             this.idw = new IdwInterpolator(2);
             int numLon = (int) Math.Ceiling((maxLon - minLon) / unit);
             int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
-            
-            intCoords = new List<int[]>();
 
+            intCoords = new List<int[]>();
             for (int i = 0; i < numLat; i++)
             {
                 for (int j = 0; j < numLon; j++)
@@ -54,8 +53,6 @@ namespace DronePlacementSimulator
             }
 
             this.pdf = new double[numCells];
-
-            IdwInterpolate(ref eventList);
         }
 
         public bool intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
@@ -152,7 +149,7 @@ namespace DronePlacementSimulator
 
             foreach (var ohca in eventList)
             {
-                double[] ohcaGps = new double[2] { ohca.longitude, ohca.latitude };
+                double[] ohcaGps = new double[2] { ohca.kiloX, ohca.kiloY };
                 if (eventDict.ContainsKey(ohcaGps))
                 {
                     eventDict[ohcaGps]++;

@@ -53,7 +53,7 @@ namespace DronePlacementSimulator
         public double SurvivalRate(Station s, OHCAEvent e)
         {
             /* SurvivalRate is 0 when the time to arrival is greater than GOLDEN_TIME */
-            double d = Distance(s.longitude, s.latitude, e.longitude, e.latitude);
+            double d = Distance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
             return 0.7f - 0.1f * (d > GOLDEN_TIME ? 7 : d);
         }
 

@@ -9,51 +9,46 @@ using CSharpIDW;
 
 namespace DronePlacementSimulator
 {
-    class Rubis
+    public static class Rubis
     {
-        Grid grid;
-        int[] numDronesAtStation;
-        Counter counter;
-
-        public Rubis(double minLat, double minLon, double maxLat, double maxLon, double unit, ref List<OHCAEvent> eventList, ref List<Station> stationList, ref List<List<double[]>> polyCoordList)
+        public static void doCalculate(List<OHCAEvent> eventList, List<List<double[]>> polyCoordList, ref List<Station> stationList)
         {
-            this.grid = new Grid(minLat, minLon, maxLat, maxLon, unit, ref eventList, ref polyCoordList);
+            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            gridEvent.IdwInterpolate(ref eventList);
+
+            // Find intial placement of stations
+            Grid gridStation = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, 9, ref polyCoordList);
+            foreach (double[] cell in gridStation.cells)
+            {
+                double kiloX = cell[0] + 0.5 * 9;
+                double kiloY = cell[1] + 0.5 * 9;
+                Station s = new Station(kiloX, kiloY);
+                s.pixelX = Utils.transformKiloXToPixel(kiloX);
+                s.pixelY = Utils.transformKiloYToPixel(kiloY);
+                for (int i = 0; i < 10; i++)
+                {
+                    Drone drone = new Drone(s.stationID);
+                    s.droneList.Add(drone);
+                }
+                stationList.Add(s);
+            }
+
             int n = stationList.Count;
-            this.numDronesAtStation = new int[n];
+            int[] numDronesAtStation = new int[n];
             for (int i = 0; i < n; i++)
             {
-                numDronesAtStation[i] = 0;
+                numDronesAtStation[i] = 10;
             }
 
-            this.counter = new Counter(stationList.Count, ref numDronesAtStation);
+            Counter counter = new Counter(stationList.Count, ref numDronesAtStation);
         }
 
-        public int RubisPolicy(ref List<Station> stationList, OHCAEvent ohca)
-        {
-            counter.flush(ohca.occurrenceTime);
-            int index = 0;
-            int highest = -1;
-            double max = Double.PositiveInfinity;
-            foreach (var station in stationList)
-            {
-                double temp = SurvivalRate(station, ohca) + PotentialNegativePart(station, ohca);
-                if (temp > max)
-                {
-                    max = temp;
-                    highest = index;
-                }
-                index++;
-            }
-
-            return highest;
-        }
-
-        public double SurvivalRate(Station s, OHCAEvent ohca)
+        public static double SurvivalRate(Station s, OHCAEvent ohca)
         {
             return 1.0f;
         }
 
-        public double PotentialNegativePart(Station s, OHCAEvent ohca)
+        public static double PotentialNegativePart(Station s, OHCAEvent ohca)
         {
             return 0.0f;
         }

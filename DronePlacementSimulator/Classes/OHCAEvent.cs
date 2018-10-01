@@ -7,8 +7,8 @@ namespace DronePlacementSimulator
         private static int ID = 10000;
         
         public int          eventID;
-        public double       latitude, longitude;
-        public int          x, y;
+        public double       kiloX, kiloY;
+        public int          pixelX, pixelY;
         public DateTime     occurrenceTime;
         public DateTime     arrivalTime;
 
