@@ -36,7 +36,7 @@ namespace DronePlacementSimulator
                     double lon = minLon + j * unit;
                     double lat = minLat + i * unit;
 
-                    if (intersects(lon, lat, ref polyCoordList))
+                    if (Intersects(lon, lat, ref polyCoordList))
                     {
                         numCells++;
                         double[] coord = new double[2];
@@ -54,7 +54,7 @@ namespace DronePlacementSimulator
             this.pdf = new double[numCells];
         }
 
-        public bool intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
+        public bool Intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
         {
             bool ans = false, intersectsTop = false, intersectsBottom = false, intersectsLeft = false, intersectsRight = false;
 
@@ -180,7 +180,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public double getMaxDemand()
+        public double GetMaxDemand()
         {
             double mD = 0;
             for (int i = 0; i < numCells; i++)

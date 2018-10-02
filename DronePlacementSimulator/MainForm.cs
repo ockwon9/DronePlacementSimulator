@@ -46,40 +46,37 @@ namespace DronePlacementSimulator
             // Read OHCA events data
             ReadEventData();
             ReadMapData();
-
-            // Find cells for grouping events
-            gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             
             // Choose the test method
             TestMethod testMethod = TestMethod.RUBIS;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
-                    doKMeans();
+                    PerformKMeans();
                     break;
                 case TestMethod.Pulver:
-                    doPulver();
+                    PerformPulver();
                     break;
                 case TestMethod.Boutilier:
-                    doBoutilier();
+                    PerformBoutilier();
                     break;
                 case TestMethod.RUBIS:
-                    doRubis();
+                    PerformRubis();
                     break;
                 default:
                     break;
             }
         }
 
-        private void doKMeans()
+        private void PerformKMeans()
         {
             stationList = new List<Station>();
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 15, 100);
             foreach (double[] d in stations.Means)
             {
                 Station s = new Station(d[0], d[1]);
-                s.pixelX = Utils.transformKiloXToPixel(s.kiloX);
-                s.pixelY = Utils.transformKiloYToPixel(s.kiloY);
+                s.pixelX = Utils.TransformKiloXToPixel(s.kiloX);
+                s.pixelY = Utils.TransformKiloYToPixel(s.kiloY);
                 for (int i = 0; i < 1; i++)
                 {
                     Drone drone = new Drone(s.stationID);
@@ -92,11 +89,12 @@ namespace DronePlacementSimulator
             }
             Del defaultPolicy = Policy.NearestStation;
             Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
-            Console.WriteLine(kMeansTest.getExpectedSurvivalRate());
+            Console.WriteLine(kMeansTest.GetExpectedSurvivalRate());
         }
 
-        private void doPulver()
+        private void PerformPulver()
         {
+            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             foreach (double[] coord in gridEvent.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
@@ -104,12 +102,12 @@ namespace DronePlacementSimulator
 
             gridEvent.IdwInterpolate(ref eventList);
             Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref gridEvent);
-            Del defaultPolicy = NearestStation;
+            Del defaultPolicy = Policy.NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
-            Console.WriteLine(pulverTest.getExpectedSurvivalRate());
+            Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
         }
 
-        private void doBoutilier()
+        private void PerformBoutilier()
         {
             /*
             Boutilier boutilier = new Boutilier(ref eventList, ref stationList);
@@ -119,20 +117,20 @@ namespace DronePlacementSimulator
             */
         }
 
-        private void doRubis()
+        private void PerformRubis()
         {
-            stationList = Rubis.doCalculate(eventList, polyCoordList);
+            stationList = Rubis.Calculate(eventList, polyCoordList);
             Del rubisPolicy = Policy.NearestStation;
             Test rubisTest = new Test(ref stationList, ref eventList, rubisPolicy);
-            Console.WriteLine(rubisTest.getExpectedSurvivalRate());
+            Console.WriteLine(rubisTest.GetExpectedSurvivalRate());
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            resizeCanvas();
+            ResizeCanvas();
         }
 
-        private void resizeCanvas()
+        private void ResizeCanvas()
         {
             Bitmap tmp = new Bitmap(this.Width, this.Height, PixelFormat.Format32bppRgb);
             using (Graphics g = Graphics.FromImage(tmp))
@@ -153,15 +151,15 @@ namespace DronePlacementSimulator
         {
             using (Graphics g = Graphics.FromImage(_canvas))
             {
-                drawGrid(g);
-                drawMap(g);
-                drawOHCAEvents(g);
-                drawStations(g);
+                DrawGrid(g);
+                DrawMap(g);
+                DrawOHCAEvents(g);
+                DrawStations(g);
                 e.Graphics.DrawImage(_canvas, 0, 0);
             }
         }
        
-        private void drawGrid(Graphics g)
+        private void DrawGrid(Graphics g)
         {
             int numXCells = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
             int numYCells = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
@@ -180,7 +178,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        private void drawMap(Graphics g)
+        private void DrawMap(Graphics g)
         {
             Pen p = new Pen(Color.Green, 1);
             foreach(Polygon polygon in polygonList)
@@ -199,7 +197,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        private void drawStations(Graphics g)
+        private void DrawStations(Graphics g)
         {
             foreach (Station s in stationList)
             {
@@ -209,7 +207,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        private void drawOHCAEvents(Graphics g)
+        private void DrawOHCAEvents(Graphics g)
         {
             foreach (OHCAEvent e in eventList)
             {
@@ -240,8 +238,8 @@ namespace DronePlacementSimulator
                         e.kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
                         e.kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
                         e.occurrenceTime = DateTime.Parse(data[r, 19].ToString());
-                        e.pixelX = Utils.transformKiloXToPixel(e.kiloX);
-                        e.pixelY = Utils.transformKiloYToPixel(e.kiloY);
+                        e.pixelX = Utils.TransformKiloXToPixel(e.kiloX);
+                        e.pixelY = Utils.TransformKiloYToPixel(e.kiloY);
                         eventList.Add(e);
                     }
                     catch (Exception ex)
@@ -303,8 +301,8 @@ namespace DronePlacementSimulator
                                 double[] coord = new double[2];
                                 coord[0] = Utils.LonToKilos(lon);
                                 coord[1] = Utils.LatToKilos(lat);
-                                int pixelX = Utils.transformKiloXToPixel(coord[0]);
-                                int pixelY = Utils.transformKiloYToPixel(coord[1]);
+                                int pixelX = Utils.TransformKiloXToPixel(coord[0]);
+                                int pixelY = Utils.TransformKiloYToPixel(coord[1]);
                                 pc.Add(new System.Windows.Point(pixelX, pixelY));
                                 pList.Add(coord);
                             }

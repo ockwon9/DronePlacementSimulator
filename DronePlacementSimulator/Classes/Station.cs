@@ -17,8 +17,8 @@ namespace DronePlacementSimulator
             this.stationID = ID++;
             this.kiloX = kiloX;
             this.kiloY = kiloY;
-            this.pixelX = Utils.transformKiloXToPixel(kiloX);
-            this.pixelY = Utils.transformKiloYToPixel(kiloY);
+            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
+            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
             droneList = new List<Drone>();
         }
 
@@ -54,12 +54,12 @@ namespace DronePlacementSimulator
             return (this.kiloX == other.kiloX && this.kiloY == other.kiloY);
         }
 
-        public void setLocation(double kiloX, double kiloY)
+        public void SetLocation(double kiloX, double kiloY)
         {
             this.kiloX = kiloX;
             this.kiloY = kiloY;
-            this.pixelX = Utils.transformKiloXToPixel(kiloX);
-            this.pixelY = Utils.transformKiloYToPixel(kiloY);
+            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
+            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
         }
     }
 }

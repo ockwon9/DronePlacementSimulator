@@ -34,13 +34,13 @@ namespace DronePlacementSimulator
             SCREEN_WIDTH = (int)(SCREEN_HEIGHT * SEOUL_WIDTH / SEOUL_HEIGHT);
         }
 
-        public static int transformKiloXToPixel(double kiloX)
+        public static int TransformKiloXToPixel(double kiloX)
         {           
             double ratio = kiloX / SEOUL_WIDTH;
             return (int)(SCREEN_WIDTH * ratio);
         }
 
-        public static int transformKiloYToPixel(double kiloY)
+        public static int TransformKiloYToPixel(double kiloY)
         {
             double ratio = kiloY / SEOUL_HEIGHT;
             return SCREEN_HEIGHT - (int)(SCREEN_HEIGHT * ratio);
@@ -56,7 +56,7 @@ namespace DronePlacementSimulator
             return (latitude - MIN_LATITUDE) / 0.27295397 * SEOUL_HEIGHT;
         }
 
-        public static double getDistance(double x1, double y1, double x2, double y2)
+        public static double GetDistance(double x1, double y1, double x2, double y2)
         {
             return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
         }

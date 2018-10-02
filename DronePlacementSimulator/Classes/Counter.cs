@@ -28,7 +28,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void flush(DateTime now)
+        public void Flush(DateTime now)
         {
             for (int i = 0; i < this.numStations; i++)
             {
@@ -41,7 +41,7 @@ namespace DronePlacementSimulator
 
         public void Dispatch(int i, DateTime now)
         {
-            this.flush(now);
+            this.Flush(now);
             this.whenReady[i].Enqueue(now + new TimeSpan(1, 0, 0));
         }
     }

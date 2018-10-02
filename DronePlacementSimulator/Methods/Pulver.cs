@@ -114,7 +114,7 @@ namespace DronePlacementSimulator
 
             this.demandList.Clear();
 
-            double maxDemand = grid.getMaxDemand();
+            double maxDemand = grid.GetMaxDemand();
             int i = 0;
             foreach (double[] temp in grid.cells)
             {

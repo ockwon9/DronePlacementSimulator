@@ -18,7 +18,7 @@ namespace DronePlacementSimulator
             {
                 Station s = stationList[i];
                 index[i] = i;
-                distance[i] = Utils.getDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
+                distance[i] = Utils.GetDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
 
                 for (int j = i; j > 0; j--)
                 {
@@ -56,7 +56,7 @@ namespace DronePlacementSimulator
             double maxSurvivalRate = Double.PositiveInfinity;
             foreach (Station s in stationList)
             {
-                double survivalRate = Rubis.getSurvivalRate(stationList, s, e);
+                double survivalRate = Rubis.GetSurvivalRate(stationList, s, e);
                 if (survivalRate > maxSurvivalRate)
                 {
                     maxSurvivalRate = survivalRate;

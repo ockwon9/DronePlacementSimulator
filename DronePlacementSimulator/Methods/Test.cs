@@ -19,7 +19,7 @@ namespace DronePlacementSimulator
             this.expectedSurvivalRate = ComputeSurvivalRate(ref stationList, ref eventList, policy);
         }
 
-        public double getExpectedSurvivalRate()
+        public double GetExpectedSurvivalRate()
         {
             return expectedSurvivalRate;
         }
@@ -54,7 +54,7 @@ namespace DronePlacementSimulator
         public double SurvivalRate(Station s, OHCAEvent e)
         {
             /* SurvivalRate is 0 when the time to arrival is greater than GOLDEN_TIME */
-            double d = Utils.getDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+            double d = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
             return 0.7f - 0.1f * (d > Utils.GOLDEN_TIME ? 7 : d);
         }
     }
