@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             ReadMapData();
 
             // Find cells for grouping events
-            //gridEvent = new Grid(0.0, 0.0, SEOUL_WIDTH, SEOUL_HEIGHT, UNIT, ref polyCoordList);
+            gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             
             // Choose the test method
             TestMethod testMethod = TestMethod.RUBIS;
@@ -97,12 +97,16 @@ namespace DronePlacementSimulator
 
         private void doPulver()
         {
-            /*
+            foreach (double[] coord in gridEvent.cells)
+            {
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+            }
+
+            gridEvent.IdwInterpolate(ref eventList);
             Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref gridEvent);
             Del defaultPolicy = NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(pulverTest.getExpectedSurvivalRate());
-            */
         }
 
         private void doBoutilier()
