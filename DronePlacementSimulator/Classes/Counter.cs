@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
-    class Counter
+    public class Counter
     {
         public int numStations;
         public int[] limits;

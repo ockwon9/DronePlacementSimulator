@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace DronePlacementSimulator
 {
-    public class Utils
+    public static class Utils
     {
         public static double MIN_LONGITUDE = 126.7645806f;
         public static double MAX_LONGITUDE = 127.1831312f;
@@ -17,10 +17,16 @@ namespace DronePlacementSimulator
         public static double SEOUL_HEIGHT = 30.35;
 
         public static double UNIT = 3.0;
-        public static double GOLDEN_TIME = 6.36;
+        public static double GOLDEN_TIME = 4.949;
 
         public static int SCREEN_WIDTH;
         public static int SCREEN_HEIGHT;
+
+        public static int BUDGET = 600000;
+        public static int STATION_PRICE = 10000;
+        public static int DRONE_PRICE = 10000;
+
+        public static int ITERATION_COUNT = 500;
 
         static Utils()
         {

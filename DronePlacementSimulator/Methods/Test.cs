@@ -43,8 +43,6 @@ namespace DronePlacementSimulator
                 int dispatchFrom = policy(ref stationList, ref current, ohca);
                 if (dispatchFrom >= 0)
                 {
-                    Console.WriteLine("s.kiloX = " + stationList[dispatchFrom].kiloX + ", s.kiloY = " + stationList[dispatchFrom].kiloY + ", e.kiloX = " + ohca.kiloX + ", e.kiloY = " + ohca.kiloY);
-                    Console.WriteLine("survival rate = " + SurvivalRate(stationList[dispatchFrom], ohca));
                     current.Dispatch(dispatchFrom, ohca.occurrenceTime);
                     sum += SurvivalRate(stationList[dispatchFrom], ohca);
                 }

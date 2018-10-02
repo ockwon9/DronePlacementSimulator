@@ -150,6 +150,7 @@
   <ItemGroup>
     <Compile Include="Classes\Counter.cs" />
     <Compile Include="Classes\Drone.cs" />
+    <Compile Include="Classes\Policy.cs" />
     <Compile Include="Classes\Utils.cs" />
     <Compile Include="Methods\KMeans.cs" />
     <Compile Include="Classes\Grid.cs" />

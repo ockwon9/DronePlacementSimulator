@@ -6,16 +6,19 @@ namespace DronePlacementSimulator
     {
         private static int ID = 100;
 
-        public int          stationID;
-        public double       kiloX, kiloY;
-        public int          pixelX, pixelY;
-        public List<Drone>  droneList;
+        public int stationID;
+        public double kiloX, kiloY;
+        public int pixelX, pixelY;
+        public List<Drone> droneList;
+        public int eventCount;
 
         public Station(double kiloX, double kiloY)
         {
             this.stationID = ID++;
             this.kiloX = kiloX;
             this.kiloY = kiloY;
+            this.pixelX = Utils.transformKiloXToPixel(kiloX);
+            this.pixelY = Utils.transformKiloYToPixel(kiloY);
             droneList = new List<Drone>();
         }
 
@@ -49,6 +52,14 @@ namespace DronePlacementSimulator
                 return false;
             }
             return (this.kiloX == other.kiloX && this.kiloY == other.kiloY);
+        }
+
+        public void setLocation(double kiloX, double kiloY)
+        {
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
+            this.pixelX = Utils.transformKiloXToPixel(kiloX);
+            this.pixelY = Utils.transformKiloYToPixel(kiloY);
         }
     }
 }
