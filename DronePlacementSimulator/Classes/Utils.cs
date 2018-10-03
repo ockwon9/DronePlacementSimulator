@@ -26,7 +26,7 @@ namespace DronePlacementSimulator
         public static int STATION_PRICE = 10000;
         public static int DRONE_PRICE = 10000;
 
-        public static int ITERATION_COUNT = 500;
+        public static int ITERATION_COUNT = 100;
 
         static Utils()
         {
