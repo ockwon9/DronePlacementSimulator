@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Shapes;
@@ -48,7 +49,7 @@ namespace DronePlacementSimulator
             ReadMapData();
             
             // Choose the test method
-            TestMethod testMethod = TestMethod.RUBIS;
+            TestMethod testMethod = TestMethod.Pulver;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
@@ -100,11 +101,44 @@ namespace DronePlacementSimulator
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
             }
 
-            gridEvent.IdwInterpolate(ref eventList);
+            if (File.Exists("pdf.csv"))
+            {
+                ReadPDF(ref gridEvent);
+            }
+            else
+            {
+                gridEvent.IdwInterpolate(ref eventList);
+                WritePDF(ref gridEvent);
+            }
+            
             Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref gridEvent);
             Del defaultPolicy = Policy.NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
+        }
+
+        private void ReadPDF(ref Grid grid)
+        {
+            using (StreamReader sr = new StreamReader("pdf.csv"))
+            {
+                String line = sr.ReadLine();
+                while (line != null)
+                {
+                    grid.pdf = Array.ConvertAll(line.Split(','), double.Parse);
+                    line = sr.ReadLine();
+                }
+            }
+        }
+
+        private void WritePDF(ref Grid grid)
+        {
+            StreamWriter file = new StreamWriter("pdf.csv");
+            for (int i = 0; i < grid.pdf.GetLength(0); i++)
+            {
+                file.Write(grid.pdf[i]);
+                file.Write(",");
+            }
+            file.Write("\n");
         }
 
         private void PerformBoutilier()
