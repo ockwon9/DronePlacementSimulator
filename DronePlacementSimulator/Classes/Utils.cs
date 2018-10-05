@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
 
-        public static double UNIT = 1.0;
+        public static double UNIT = 5.0;
         public static double GOLDEN_TIME = 4.949;
 
         public static int SCREEN_WIDTH;

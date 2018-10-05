@@ -169,7 +169,7 @@ namespace DronePlacementSimulator
             
             const int power = 1;
             const int dimension = 2;
-            const int numberOfNeighbors = 10000;
+            const int numberOfNeighbors = 500; // 10000
             var interpolator = new IdwInterpolator(dimension, power, numberOfNeighbors);
             interpolator.AddPointRange(eventLocations);
 

@@ -49,7 +49,7 @@ namespace DronePlacementSimulator
             ReadMapData();
             
             // Choose the test method
-            TestMethod testMethod = TestMethod.KMeans;
+            TestMethod testMethod = TestMethod.Pulver;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
@@ -103,7 +103,6 @@ namespace DronePlacementSimulator
             foreach (double[] coord in gridEvent.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
-
             }
 
             if (File.Exists("pdf.csv"))
@@ -116,37 +115,13 @@ namespace DronePlacementSimulator
                 WritePDF(ref gridEvent);
             }
             
-            Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref gridEvent);
+            Pulver pulver = new Pulver(0.2, 20, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
             Del defaultPolicy = Policy.NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
             Console.WriteLine(pulverTest.missCount);
             Console.WriteLine(pulverTest.over3MinCount);
             Console.WriteLine(pulverTest.over5MinCount);
-        }
-
-        private void ReadPDF(ref Grid grid)
-        {
-            using (StreamReader sr = new StreamReader("pdf.csv"))
-            {
-                String line = sr.ReadLine();
-                while (line != null)
-                {
-                    grid.pdf = Array.ConvertAll(line.Split(','), double.Parse);
-                    line = sr.ReadLine();
-                }
-            }
-        }
-
-        private void WritePDF(ref Grid grid)
-        {
-            StreamWriter file = new StreamWriter("pdf.csv");
-            for (int i = 0; i < grid.pdf.GetLength(0); i++)
-            {
-                file.Write(grid.pdf[i]);
-                file.Write(",");
-            }
-            file.Write("\n");
         }
 
         private void PerformBoutilier()
@@ -365,6 +340,34 @@ namespace DronePlacementSimulator
                 ReleaseExcelObject(wb);
                 ReleaseExcelObject(excelApp);
             }
+        }
+
+        private void ReadPDF(ref Grid grid)
+        {
+            StreamReader sr = new StreamReader("pdf.csv");
+            String line = sr.ReadLine();
+            while (line != null)
+            {
+                string[] cells = line.Split(',');
+                for(int i = 0; i < cells.Length - 1; i++)
+                {
+                    grid.pdf[i] = (double)Double.Parse(cells[i]);
+                }
+                line = sr.ReadLine();
+            }
+            sr.Close();
+        }
+
+        private void WritePDF(ref Grid grid)
+        {
+            StreamWriter file = new StreamWriter("pdf.csv");
+            for (int i = 0; i < grid.pdf.GetLength(0); i++)
+            {
+                file.Write(grid.pdf[i]);
+                file.Write(",");
+            }
+            file.Write("\n");
+            file.Close();
         }
 
         private static void ReleaseExcelObject(object obj)
