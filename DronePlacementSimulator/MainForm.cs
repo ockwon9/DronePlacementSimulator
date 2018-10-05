@@ -18,11 +18,10 @@ namespace DronePlacementSimulator
         List<List<double[]>> polyCoordList;
 
         private int coverRange;
-        //private Grid gridEvent;
+        private Grid gridEvent;
 
         private Bitmap _canvas;
-        //private Point _anchor; //The start point for click-drag operations
-        //private Brush _ghostBrush;
+
         public enum TestMethod
         {
             KMeans,
@@ -48,26 +47,25 @@ namespace DronePlacementSimulator
             ReadEventData();
             ReadMapData();
 
-            DateTime maxT = new DateTime(2000, 1, 1);
-            DateTime minT = new DateTime(2020, 1, 1);
-            
-            /*
-            foreach (OHCAEvent e in eventList)
+            gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            stationList = new List<Station>();
+            foreach (double[] coord in gridEvent.cells)
             {
-                if (e.occurrenceTime < minT)
-                {
-                    minT = e.occurrenceTime;
-                }
-                if (e.occurrenceTime > maxT)
-                {
-                    maxT = e.occurrenceTime;
-                }
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
             }
-            double mean = eventList.Count / (maxT - minT).TotalMinutes;
-            */
+
+            if (File.Exists("pdf.csv"))
+            {
+                ReadPDF(ref gridEvent);
+            }
+            else
+            {
+                gridEvent.IdwInterpolate(ref eventList);
+                WritePDF(ref gridEvent);
+            }
 
             // Choose the test method
-            TestMethod testMethod = TestMethod.Pulver;
+            TestMethod testMethod = TestMethod.KMeans;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
@@ -107,33 +105,16 @@ namespace DronePlacementSimulator
                 }
             }
             Del defaultPolicy = Policy.NearestStation;
-            Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Test kMeansTest = new Test(ref stationList, gridEvent, defaultPolicy);
             Console.WriteLine(kMeansTest.GetExpectedSurvivalRate());
             Console.WriteLine("Total Miss Count = " + kMeansTest.GetMissCount());
         }
 
         private void PerformPulver()
         {
-            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
-            stationList = new List<Station>();
-            foreach (double[] coord in gridEvent.cells)
-            {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
-            }
-
-            if (File.Exists("pdf.csv"))
-            {
-                ReadPDF(ref gridEvent);
-            }
-            else
-            {
-                gridEvent.IdwInterpolate(ref eventList);
-                WritePDF(ref gridEvent);
-            }
-            
             Pulver pulver = new Pulver(0.2, 9, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
             Del defaultPolicy = Policy.NearestStation;
-            Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Test pulverTest = new Test(ref stationList, gridEvent, defaultPolicy);
             Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
             Console.WriteLine(pulverTest.GetMissCount());
         }
@@ -143,7 +124,7 @@ namespace DronePlacementSimulator
             /*
             Boutilier boutilier = new Boutilier(ref eventList, ref stationList);
             Del defaultPolicy = NearestStation;
-            Test boutilierTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Test boutilierTest = new Test(ref stationList, gridEvent, defaultPolicy);
             Console.WriteLine(boutilierTest.getExpectedSurvivalRate());
             */
         }
@@ -152,7 +133,7 @@ namespace DronePlacementSimulator
         {
             stationList = Rubis.Calculate(eventList, polyCoordList);
             Del rubisPolicy = Policy.NearestStation;
-            Test rubisTest = new Test(ref stationList, ref eventList, rubisPolicy);
+            Test rubisTest = new Test(ref stationList, gridEvent, rubisPolicy);
             Console.WriteLine(rubisTest.GetExpectedSurvivalRate());
         }
 

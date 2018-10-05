@@ -34,14 +34,18 @@ namespace DronePlacementSimulator
             double sum = 0;
 
             DateTime currentTime = new DateTime(2018, 1, 1);
-            for(int i = 0; i<Utils.SIMULATION_EVENTS; i++)
+            List<OHCAEvent> eventList = new List<OHCAEvent>();
+            for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
             {
                 OHCAEvent e = new OHCAEvent();
                 double min = nextEventTime(Utils.ARRIVAL_RATE);
-                e.occurrenceTime = currentTime.AddMinutes(min);
+                currentTime = currentTime.AddMinutes(min);
+                e.occurrenceTime = currentTime;
                 int selectedIndex = eventGrid.SelectCell();
                 e.kiloX = eventGrid.cells[selectedIndex][0];
                 e.kiloY = eventGrid.cells[selectedIndex][1];
+
+                eventList.Add(e);
 
                 int dispatchFrom = policy(ref stationList, ref current, e);
                 if (dispatchFrom == -1)
@@ -60,7 +64,9 @@ namespace DronePlacementSimulator
                     sum += SurvivalRate(stationList[dispatchFrom], e);
                 }
             }
-            
+
+            double rate = Utils.SIMULATION_EVENTS / (eventList[Utils.SIMULATION_EVENTS-1].occurrenceTime - eventList[0].occurrenceTime).TotalMinutes;
+
             return sum / Utils.SIMULATION_EVENTS;
         }
 
@@ -82,7 +88,7 @@ namespace DronePlacementSimulator
         {
             unchecked
             {
-                double rand = ((double)new Random().Next(100) / 101.0f);
+                double rand = new Random().NextDouble() / 1.000001f;
                 return -Math.Log(1.0f - rand) / arrivalRate;
             }
         }
