@@ -156,27 +156,27 @@ namespace DronePlacementSimulator
 
             foreach (OHCAEvent e in eventList)
             {
-                count[(int)Math.Round(10 * e.kiloX)][(int)Math.Round(10 * e.kiloY)]++;
+                count[(int)Math.Round(10 * e.kiloX + 0.5)][(int)Math.Round(10 * e.kiloY + 0.5)]++;
             }
 
             for (int i = 0; i < 370; i++)
             {
                 for (int j = 0; j < 305; j++)
                 {
-                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 10, j / 10));
+                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 10.0 + 0.05, j / 10.0 + 0.05));
                 }
             }
             
-            const int power = 3;
+            const int power = 1;
             const int dimension = 2;
-            const int numberOfNeighbors = 3;
+            const int numberOfNeighbors = 10000;
             var interpolator = new IdwInterpolator(dimension, power, numberOfNeighbors);
-            Console.WriteLine("Done adding data to idw.");
             interpolator.AddPointRange(eventLocations);
 
             for (int i = 0; i < numCells; i++)
             {
-                this.pdf[i] = interpolator.Interpolate(this.cells[i]).Value;
+                this.pdf[i] = (Utils.UNIT * 10) * (Utils.UNIT * 10) * interpolator.Interpolate(this.cells[i]).Value;
+                // Console.WriteLine(pdf[i]);
             }
         }
 

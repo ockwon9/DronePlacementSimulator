@@ -30,13 +30,16 @@ namespace DronePlacementSimulator
         /// <param name="r">The radius of the circle</param>
         public double Area(double x, double y, double width, double height, double circleX, double circleY, double r)
         {
-            return IntersectionArea(new RectangleF((float)x, (float)y, (float)width, (float)height), new PointF((float)circleX, (float)circleY), (float)r);
+            // Console.WriteLine("x = " + x + ", y = " + y + ", width = " + width + ", height = " + height + ", cX = " + circleX + ", cY = " + circleY + ", r = " + r);
+            double a = IntersectionArea(x, y, width, height, circleX, circleY, r);
+            // Console.WriteLine("a = " + a);
+            return a;
         }
 
         /// <summary>
         /// The resolution to use for approximation.
         /// </summary>
-        const decimal Resolution = 0.01M;
+        const double Resolution = 0.0001;
 
         /// <summary>
         /// Calculates the intersection area between a rectangle and a circle
@@ -45,21 +48,21 @@ namespace DronePlacementSimulator
         /// <param name="m">The center of the circle</param>
         /// <param name="r">The radius</param>
         /// <returns>The intersection area of the two shapes</returns>
-        double IntersectionArea(RectangleF rect, PointF m, float r)
+        double IntersectionArea(double x, double y, double width, double height, double circleX, double circleY, double r)
         {
-            decimal a = 0; //Area
+            double a = 0; //Area
 
             //Check whether the rectangle lies completely outside of the circle. 
             //Note: It is easier to check if a rectangle is outside another rectangle or
             //circle than to check whether it is inside.
-            if ((rect.Bottom < m.Y && rect.Right < m.X)
-                 && (GetDistance(new PointF(rect.Bottom, rect.Right), m) > r) ||
-               (rect.Top > m.Y && rect.Right < m.X)
-                 && (GetDistance(new PointF(rect.Top, rect.Right), m) > r) ||
-               (rect.Bottom < m.Y && rect.Left > m.X)
-                 && (GetDistance(new PointF(rect.Bottom, rect.Left), m) > r) ||
-              (rect.Top > m.Y && rect.Left > m.X)
-                 && (GetDistance(new PointF(rect.Top, rect.Left), m) > r))
+            if ((x > circleX && y > circleY)
+                 && (GetDistance(x, y, circleX, circleY) > r) ||
+               (x > circleX && y + height < circleY)
+                 && (GetDistance(x, y + height, circleX, circleY) > r) ||
+               (x + width < circleX && y > circleY)
+                 && (GetDistance(x + width, y, circleX, circleY) > r) ||
+               (x + width < circleX && y + height < circleY)
+                 && (GetDistance(x + width, y + height, circleX, circleY) > r))
             {
                 return 0; //Terminate fast
             }
@@ -68,111 +71,77 @@ namespace DronePlacementSimulator
             double nearestRectangleEdge = 0;
 
             //Determine what is nearer to the circle center - the rectangle top edge or the rectangle bottom edge
-            if (Math.Abs(m.Y - rect.Top) > Math.Abs(m.Y - rect.Bottom))
+            if (Math.Abs(circleY - y) > Math.Abs(circleY - y - height))
             {
-                nearestRectangleEdge = rect.Bottom;
+                nearestRectangleEdge = y + height;
             }
             else
             {
-                nearestRectangleEdge = rect.Top; 
+                nearestRectangleEdge = y; 
             }
 
             //The bounds of our integration
-            decimal leftBound = 0;
-            decimal rightBound = 0;
+            double leftBound = 0;
+            double rightBound = 0;
 
-            if (m.Y >= rect.Top && m.Y <= rect.Bottom)
+            if (circleY >= y && circleY <= y + height)
             {
                 //Take care if the circle's center lies within the rectangle. 
-                leftBound = RoundToDecimal(Math.Max(-r + m.X, rect.Left));
-                rightBound = RoundToDecimal(Math.Min(r + m.X, rect.Right));
+                leftBound = Math.Max(-r + circleX, x);
+                rightBound = Math.Min(r + circleX, x + width);
             }
-            else if (r >= Math.Abs(nearestRectangleEdge - m.Y))
+            else if (r >= Math.Abs(nearestRectangleEdge - circleY))
             {
                 //If the circle's center lies outside of the rectangle, we can choose optimal bounds.
-                leftBound = RoundToDecimal(Math.Max(-Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - m.Y, 2))) + m.X, rect.Left));
-                rightBound = RoundToDecimal(Math.Min(Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - m.Y, 2))) + m.X, rect.Right));
+                leftBound = Math.Max(-Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleY, 2))) + circleX, x);
+                rightBound = Math.Min(Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleY, 2))) + circleX, x + width);
             }
 
             double upperBound;
             double lowerBound;
 
             //Loop trough the intersection area and sum up the area
-            for (decimal i = leftBound + Resolution; i <= rightBound; i += Resolution)
+            for (double i = leftBound + Resolution; i <= rightBound; i += Resolution)
             {
-                upperBound = Math.Max(UpperRectangleFunction(rect, i - Resolution / 2), UpperCircleFunction(m, r, i - Resolution / 2));
-                lowerBound = Math.Min(LowerRectangleFunction(rect, i - Resolution / 2), LowerCircleFunction(m, r, i - Resolution / 2));
+                upperBound = Math.Min(y + height, UpperCircleFunction(circleX, circleY, r, i - Resolution / 2));
+                lowerBound = Math.Max(y, LowerCircleFunction(circleX, circleY, r, i - Resolution / 2));
 
-                a += ((decimal)lowerBound - (decimal)upperBound) * Resolution;
+                a += (upperBound - lowerBound) * Resolution;
             }
-
-            return (float)a;
+            
+            return (double)Math.Round((decimal)a, 4);
         }
 
         /// <summary>
         /// Gets the distance between two points using trigonometry
         /// </summary>
-        static double GetDistance(PointF p1, PointF p2)
+        static double GetDistance(double x1, double y1, double x2, double y2)
         {
-            return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2));
-        }
-
-        /// <summary>
-        /// Discards all information behind the 3rd decimal place 
-        /// and converts the double to a decimal to work around precision 
-        /// errors when comparing double or float values. 
-        /// </summary>
-        static decimal RoundToDecimal(double d)
-        {
-            return Math.Round((decimal)d * 1000) / 1000;
-        }
-
-        /// <summary>
-        /// Function which defines the upper rectangle curve
-        /// </summary>
-        static double UpperRectangleFunction(RectangleF rect, decimal x)
-        {
-            if (RoundToDecimal(rect.Left) > x || RoundToDecimal(rect.Right) < x)
-            {
-                throw new InvalidOperationException("The requested point lies outside of the rectangle");
-            }
-            return rect.Top;
-        }
-
-        /// <summary>
-        /// Function which defines the lower rectangle curve
-        /// </summary>
-        static double LowerRectangleFunction(RectangleF rect, decimal x)
-        {
-            if (RoundToDecimal(rect.Left) > x || RoundToDecimal(rect.Right) < x)
-            {
-                throw new InvalidOperationException("The requested point lies outside of the rectangle");
-            }
-            return rect.Bottom;
+            return Math.Sqrt(Math.Pow(x1 -x2, 2) + Math.Pow(y1 - y2, 2));
         }
 
         /// <summary>
         /// Function which defines the upper circle curve
         /// </summary>
-        static double UpperCircleFunction(PointF m, float r, decimal x)
+        static double UpperCircleFunction(double circleX, double circleY, double r, double x)
         {
-            if (RoundToDecimal(m.X - r) > x || RoundToDecimal(m.X + r) < x)
+            if (circleX - r > x || circleX + r < x)
             {
                 throw new InvalidOperationException("The requested point lies outside of the circle");
             }
-            return m.Y - Math.Sqrt((r * r) - Math.Pow(((double)x - m.X), 2));
+            return circleY + Math.Sqrt((r * r) - Math.Pow((x - circleX), 2));
          }
 
         /// <summary>
         /// Function which defines the lower circle curve
         /// </summary>
-        static double LowerCircleFunction(PointF m, float r, decimal x)
+        static double LowerCircleFunction(double circleX, double circleY, double r, double x)
         {
-            if (RoundToDecimal(m.X - r) > x || RoundToDecimal(m.X + r) < x)
+            if (circleX - r > x || circleX + r < x)
             {
                 throw new InvalidOperationException("The requested point lies outside of the circle");
             }
-            return m.Y + Math.Sqrt((r * r) - Math.Pow(((double)x - m.X), 2));
+            return circleY - Math.Sqrt((r * r) - Math.Pow((x - circleX), 2));
         }
     }
 }
