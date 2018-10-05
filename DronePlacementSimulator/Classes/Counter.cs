@@ -8,21 +8,15 @@ namespace DronePlacementSimulator
 {
     public class Counter
     {
-        public int numStations;
         public int[] limits;
         public Queue<DateTime>[] whenReady;
 
-        public Counter(int numStations, ref int[] limits)
+        public Counter(ref int[] limits)
         {
-            this.numStations = numStations;
-            this.limits = new int[numStations];
-            for (int i = 0; i < numStations; i++)
-            {
-                this.limits[i] = limits[i];
-            }
-
-            this.whenReady = new Queue<DateTime>[numStations];
-            for (int i = 0; i < numStations; i++)
+            this.limits = new int[limits.Length];
+            Array.Copy(limits, this.limits, limits.Length);
+            this.whenReady = new Queue<DateTime>[limits.Length];
+            for (int i = 0; i < limits.Length; i++)
             {
                 this.whenReady[i] = new Queue<DateTime>();
             }
@@ -30,7 +24,7 @@ namespace DronePlacementSimulator
 
         public void Flush(DateTime now)
         {
-            for (int i = 0; i < this.numStations; i++)
+            for (int i = 0; i < this.limits.Length; i++)
             {
                 while (this.whenReady[i].Count > 0 && this.whenReady[i].Peek() <= now)
                 {

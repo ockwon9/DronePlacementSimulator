@@ -66,21 +66,16 @@ namespace DronePlacementSimulator
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, double t)
         {
             Overlap overlap = new Overlap();
-
-            int i = 0;
-            foreach (double[] temp in grid.cells)
+            
+            for (int i = 0; i < grid.cells.Count; i++)
             {
-                double x = temp[0];
-                double y = temp[1];
-
-                int j = 0;
-                foreach (Station s in stationList)
+                double x = grid.cells[i][0];
+                double y = grid.cells[i][1];
+                
+                for (int j = 0; j < stationList.Count; j++)
                 {
-                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, s.kiloX, s.kiloY, t) / (grid.unit * grid.unit);
-                    j++;
+                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, stationList[j].kiloX, stationList[j].kiloY, DRONE_VELOCITY * t) / (grid.unit * grid.unit);
                 }
-
-                i++;
             }
         }
 
@@ -90,31 +85,24 @@ namespace DronePlacementSimulator
             this.demandList.Clear();
 
             double maxDemand = grid.GetMaxDemand();
-            int i = 0;
-            foreach (double[] temp in grid.cells)
+            for (int i = 0; i < grid.cells.Count; i++)
             {
-                this.demandList.Add(new Demand(temp[0] + 0.5 * grid.unit, temp[1] + 0.5 * grid.unit, grid.pdf[i] / maxDemand));
-                i++;
+                this.demandList.Add(new Demand(grid.cells[i][0] + 0.5 * grid.unit, grid.cells[i][1] + 0.5 * grid.unit, grid.pdf[i] / maxDemand));
             }
         }
 
         public void BoundByT(ref Grid grid, ref List<Station> stationList, double t)
         {
             Overlap overlap = new Overlap();
-            int i = 0;
-            foreach (Demand d in this.demandList)
+            for (int i = 0; i < demandList.Count; i++)
             {
-                int j = 0;
-                foreach (Station s in stationList)
+                for (int j = 0; j < stationList.Count; j++)
                 {
                     if (this.b[i][j] > 0)
                     {
                         this.N[i].Add(j);
                     }
-                    j++;
                 }
-
-                i++;
             }
         }
 
@@ -241,23 +229,21 @@ namespace DronePlacementSimulator
                     Console.WriteLine("Optimization was stopped with status = " + optimstatus);
                 }
                 
-                int l = 0;
-                foreach (Station s in stationList)
+                for (int l = 0; l < stationList.Count; l++)
                 {
                     int numDrone = (int) X[l].Get(GRB.DoubleAttr.X);
                     for (int k = 0; k < numDrone; k++)
                     {
-                        s.droneList.Add(new Drone(s.stationID));
+                        stationList[l].droneList.Add(new Drone(stationList[l].stationID));
                     }
-
-                    l++;
+                    
                     if (DEBUG && numDrone > 0)
                         Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + s.kiloX + ", " + s.kiloY + ")");
                 }
-                for (int ll = stationList.Count - 1; ll >= 0; ll--)
+                for (int l = stationList.Count - 1; l >= 0; l--)
                 {
-                    if (stationList[ll].droneList.Count == 0)
-                        stationList.RemoveAt(ll);
+                    if (stationList[l].droneList.Count == 0)
+                        stationList.RemoveAt(l);
                 }
 
                 model.Dispose();

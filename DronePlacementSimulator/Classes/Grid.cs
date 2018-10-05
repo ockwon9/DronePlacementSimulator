@@ -26,27 +26,20 @@ namespace DronePlacementSimulator
             this.unit = unit;
             this.idw = new IdwInterpolator(2);
             int numLon = (int) Math.Ceiling((maxLon - minLon) / unit);
-            int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
+            int numLat = (int) Math.Ceiling((maxLat - minLat) / unit);
 
             this.intCoords = new List<int[]>();
             for (int i = 0; i < numLat; i++)
             {
+                double lat = minLat + i * unit;
                 for (int j = 0; j < numLon; j++)
                 {
                     double lon = minLon + j * unit;
-                    double lat = minLat + i * unit;
-
                     if (Intersects(lon, lat, ref polyCoordList))
                     {
                         numCells++;
-                        double[] coord = new double[2];
-                        coord[0] = lon;
-                        coord[1] = lat;
-                        cells.Add(coord);
-                        int[] intCoord = new int[2];
-                        intCoord[0] = i;
-                        intCoord[1] = j;
-                        intCoords.Add(intCoord);
+                        cells.Add(new double[] { lon, lat });
+                        intCoords.Add(new int[] { i, j });
                     }
                 }
             }

@@ -13,15 +13,11 @@ namespace DronePlacementSimulator
         private double expectedSurvivalRate;
         private Del policy;
         public int missCount;
-        public int over3MinCount;
-        public int over5MinCount;
         
         public Test(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
         {
             this.policy = policy;
             this.missCount = 0;
-            this.over3MinCount = 0;
-            this.over5MinCount = 0;
             this.expectedSurvivalRate = ComputeSurvivalRate(ref stationList, ref eventList, policy);
         }
 
@@ -39,7 +35,7 @@ namespace DronePlacementSimulator
                 initialCount[i] = stationList[i].droneList.Count;
             }
 
-            Counter current = new Counter(n, ref initialCount);
+            Counter current = new Counter(ref initialCount);
             int numEvents = eventList.Count;
             List<OHCAEvent> sortedEventList = eventList.OrderBy(o => o.occurrenceTime).ToList();
             double sum = 0;
@@ -50,21 +46,9 @@ namespace DronePlacementSimulator
                 if (dispatchFrom >= 0)
                 {
                     double t = Utils.GetDistance(ohca.kiloX, ohca.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (t >= 3.0)
-                    {
-                        this.over3MinCount++;
-                    }
-                    if (t >= 5.0)
-                    {
-                        this.over5MinCount++;
-                    }
 
                     current.Dispatch(dispatchFrom, ohca.occurrenceTime);
                     sum += SurvivalRate(stationList[dispatchFrom], ohca);
-                }
-                else
-                {
-                    missCount++;
                 }
             }
             
