@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             ReadMapData();
             
             // Choose the test method
-            TestMethod testMethod = TestMethod.RUBIS;
+            TestMethod testMethod = TestMethod.KMeans;
             switch (testMethod)
             {
                 case TestMethod.KMeans:
@@ -71,7 +71,7 @@ namespace DronePlacementSimulator
         private void PerformKMeans()
         {
             stationList = new List<Station>();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 15, 100);
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 12, 100);
             foreach (double[] d in stations.Means)
             {
                 Station s = new Station(d[0], d[1]);
@@ -90,21 +90,29 @@ namespace DronePlacementSimulator
             Del defaultPolicy = Policy.NearestStation;
             Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(kMeansTest.GetExpectedSurvivalRate());
+            Console.WriteLine(kMeansTest.missCount);
+            Console.WriteLine(kMeansTest.over3MinCount);
+            Console.WriteLine(kMeansTest.over5MinCount);
         }
 
         private void PerformPulver()
         {
             Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            stationList = new List<Station>();
             foreach (double[] coord in gridEvent.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+
             }
 
             gridEvent.IdwInterpolate(ref eventList);
-            Pulver pulver = new Pulver(0.2, 30, 2, 5, ref stationList, ref gridEvent);
+            Pulver pulver = new Pulver(0.2, 20, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
             Del defaultPolicy = Policy.NearestStation;
             Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
             Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
+            Console.WriteLine(pulverTest.missCount);
+            Console.WriteLine(pulverTest.over3MinCount);
+            Console.WriteLine(pulverTest.over5MinCount);
         }
 
         private void PerformBoutilier()

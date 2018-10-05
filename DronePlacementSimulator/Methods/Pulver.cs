@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Gurobi;
 
 
@@ -24,18 +25,19 @@ namespace DronePlacementSimulator
 
     class Pulver
     {
+        private static bool DEBUG = false;
         private static double DRONE_VELOCITY = 1.0;
         private int n;
         private int m;
         private double w;
         private double h;
         private double[][] b;
-        private int t;
+        private double t;
         private double optimalCoverage;
         private List<Demand> demandList;
         private List<int>[] N;
 
-        public Pulver (double w, int p, double h, int t, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, double t, ref List<Station> stationList, ref Grid grid)
         {
             this.n = grid.numCells;
             this.m = stationList.Count();
@@ -57,11 +59,11 @@ namespace DronePlacementSimulator
             {
                 this.N[i] = new List<int>();
             }
-            BoundByT(ref grid, ref stationList, ref this.demandList, t);
+            BoundByT(ref grid, ref stationList, t);
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 
-        public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, int t)
+        public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, double t)
         {
             Overlap overlap = new Overlap();
 
@@ -80,33 +82,6 @@ namespace DronePlacementSimulator
 
                 i++;
             }
-            /*
-            int i = 0;
-            foreach (int[] coord in grid.intCoords)
-            {
-                int j = 0;
-                foreach(int[] coor in grid.intCoords)
-                {
-                    int x1 = coord[0];
-                    int y1 = coord[1];
-                    int x2 = coor[0];
-                    int y2 = coor[1];
-
-                    switch ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
-                    {
-                        case 0:
-                            this.b[i][j] = 1.0;
-                            break;
-                        case 1:
-                            this.b[i][j] = (Math.PI - 2.25);
-                            break;
-                        default:
-                            this.b[i][j] = 0.0;
-                            break;
-                    }
-                }
-            }
-            */
         }
 
         public void Demandify(Grid grid)
@@ -123,15 +98,16 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void BoundByT(ref Grid grid, ref List<Station> stationList, ref List<Demand> demandList, int t)
+        public void BoundByT(ref Grid grid, ref List<Station> stationList, double t)
         {
+            Overlap overlap = new Overlap();
             int i = 0;
-            foreach (Demand d in demandList)
+            foreach (Demand d in this.demandList)
             {
                 int j = 0;
                 foreach (Station s in stationList)
                 {
-                    if (Distance(s.kiloX + 0.5 * grid.unit, s.kiloY + 0.5 * grid.unit, d.lon, d.lat) <= DRONE_VELOCITY * t)
+                    if (this.b[i][j] > 0)
                     {
                         this.N[i].Add(j);
                     }
@@ -141,11 +117,6 @@ namespace DronePlacementSimulator
                 i++;
             }
         }
-        
-        public double Distance(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-        }
 
         public double OptimalCoverage(int n, int m, double w, int p, double h, ref double[][] b, ref List<int>[] N, ref List<Demand> demandList, ref List<Station> stationList)
         {
@@ -153,7 +124,7 @@ namespace DronePlacementSimulator
 
             try
             {
-                GRBEnv env = new GRBEnv();
+                GRBEnv env = new GRBEnv("Pulver.log");
                 GRBModel model = new GRBModel(env);
 
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
@@ -171,14 +142,26 @@ namespace DronePlacementSimulator
                 GRBVar[] Y = new GRBVar[n];         // amount of backup coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    Y[i] = model.AddVar(0.0, 10.0, w, GRB.CONTINUOUS, "Y_" + i);
+                    Y[i] = model.AddVar(0.0, 10.0, 0.0, GRB.CONTINUOUS, "Y_" + i);
                 }
 
                 GRBVar[] W = new GRBVar[n];         // amount of primary coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    W[i] = model.AddVar(0.0, 10.0, 1 - w, GRB.CONTINUOUS, "W_" + i);
+                    W[i] = model.AddVar(0.0, 10.0, 0.0, GRB.CONTINUOUS, "W_" + i);
                 }
+
+                GRBLinExpr obj_expr = 0.0;
+                for (int i = 0; i < n; i++)
+                {
+                    obj_expr.AddTerm(w, Y[i]);
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    obj_expr.AddTerm(1 - w, W[i]);
+                }
+
+                model.SetObjective(obj_expr, GRB.MAXIMIZE);
                 
                 for (int i = 0; i < n; i++)         // sum_{j} {b_i,j * X_j} >= Z_i for i = 0, ..., n - 1
                 {
@@ -268,6 +251,13 @@ namespace DronePlacementSimulator
                     }
 
                     l++;
+                    if (DEBUG && numDrone > 0)
+                        Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + s.kiloX + ", " + s.kiloY + ")");
+                }
+                for (int ll = stationList.Count - 1; ll >= 0; ll--)
+                {
+                    if (stationList[ll].droneList.Count == 0)
+                        stationList.RemoveAt(ll);
                 }
 
                 model.Dispose();

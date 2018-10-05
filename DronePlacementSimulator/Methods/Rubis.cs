@@ -71,7 +71,7 @@ namespace DronePlacementSimulator
                 stationList[i].droneList.Add(new Drone(stationList[i].stationID));
             }
             */
-
+            return stationList;
             // Step 3. Search the best station placement
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
