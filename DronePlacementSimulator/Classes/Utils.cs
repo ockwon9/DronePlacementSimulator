@@ -30,7 +30,7 @@ namespace DronePlacementSimulator
         public static int NUMBER_OF_NEIGHBORS = 1000;
 
         public static double ARRIVAL_RATE = 0.0079858844405054936f;
-        public static int SIMULATION_EVENTS = 100000;
+        public static int SIMULATION_EVENTS = 1000000;
 
         static Utils()
         {
