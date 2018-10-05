@@ -12,25 +12,16 @@ namespace DronePlacementSimulator
     {
         private double expectedSurvivalRate;
         private Del policy;
-        public int missCount;
-        public int over3MinCount;
-        public int over5MinCount;
-        
-        public Test(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
+        private int missCount;
+
+        public Test(ref List<Station> stationList, Grid eventGrid, Del policy)
         {
             this.policy = policy;
-            this.missCount = 0;
-            this.over3MinCount = 0;
-            this.over5MinCount = 0;
-            this.expectedSurvivalRate = ComputeSurvivalRate(ref stationList, ref eventList, policy);
+            missCount = 0;
+            expectedSurvivalRate = Simulate(ref stationList, eventGrid, policy);
         }
 
-        public double GetExpectedSurvivalRate()
-        {
-            return expectedSurvivalRate;
-        }
-
-        public double ComputeSurvivalRate(ref List<Station> stationList, ref List<OHCAEvent> eventList, Del policy)
+        private double Simulate(ref List<Station> stationList, Grid eventGrid, Del policy)
         {
             int n = stationList.Count;
             int[] initialCount = new int[n];
@@ -40,42 +31,70 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(n, ref initialCount);
-            int numEvents = eventList.Count;
-            List<OHCAEvent> sortedEventList = eventList.OrderBy(o => o.occurrenceTime).ToList();
             double sum = 0;
-            
-            foreach (var ohca in sortedEventList)
-            {
-                int dispatchFrom = policy(ref stationList, ref current, ohca);
-                if (dispatchFrom >= 0)
-                {
-                    double t = Utils.GetDistance(ohca.kiloX, ohca.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (t >= 3.0)
-                    {
-                        this.over3MinCount++;
-                    }
-                    if (t >= 5.0)
-                    {
-                        this.over5MinCount++;
-                    }
 
-                    current.Dispatch(dispatchFrom, ohca.occurrenceTime);
-                    sum += SurvivalRate(stationList[dispatchFrom], ohca);
-                }
-                else
+            DateTime currentTime = new DateTime(2018, 1, 1);
+            for(int i = 0; i<Utils.SIMULATION_EVENTS; i++)
+            {
+                OHCAEvent e = new OHCAEvent();
+                double min = nextEventTime(Utils.ARRIVAL_RATE);
+                e.occurrenceTime = currentTime.AddMinutes(min);
+                int selectedIndex = eventGrid.SelectCell();
+                e.kiloX = eventGrid.cells[selectedIndex][0];
+                e.kiloY = eventGrid.cells[selectedIndex][1];
+
+                int dispatchFrom = policy(ref stationList, ref current, e);
+                if (dispatchFrom == -1)
                 {
                     missCount++;
                 }
+                else
+                {
+                    double t = Utils.GetDistance(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                    if (t > 5.0f)
+                    {
+                        missCount++;
+                    }
+
+                    current.Dispatch(dispatchFrom, e.occurrenceTime);
+                    sum += SurvivalRate(stationList[dispatchFrom], e);
+                }
             }
             
-            return sum / numEvents;
+            return sum / Utils.SIMULATION_EVENTS;
         }
 
-        public double SurvivalRate(Station s, OHCAEvent e)
-        {
-            /* SurvivalRate is 0 when the time to arrival is greater than GOLDEN_TIME */
+        private double SurvivalRate(Station s, OHCAEvent e)
+        {            
             double d = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
-            return 0.7f - 0.1f * (d > Utils.GOLDEN_TIME ? 7 : d);
+
+            if (d > Utils.GOLDEN_TIME)
+            {
+                return 0;
+            }
+            else
+            {
+                return 0.7f - (0.1f * d);
+            }
+        }
+
+        double nextEventTime(double arrivalRate)
+        {
+            unchecked
+            {
+                double rand = ((double)new Random().Next(100) / 101.0f);
+                return -Math.Log(1.0f - rand) / arrivalRate;
+            }
+        }
+
+        public double GetExpectedSurvivalRate()
+        {
+            return expectedSurvivalRate;
+        }
+
+        public int GetMissCount()
+        {
+            return missCount;
         }
     }
 }

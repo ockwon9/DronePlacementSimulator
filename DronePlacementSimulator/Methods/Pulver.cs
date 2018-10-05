@@ -26,7 +26,6 @@ namespace DronePlacementSimulator
     class Pulver
     {
         private static bool DEBUG = false;
-        private static double DRONE_VELOCITY = 1.0;
         private int n;
         private int m;
         private double w;

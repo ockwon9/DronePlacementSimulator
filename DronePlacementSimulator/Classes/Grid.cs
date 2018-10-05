@@ -18,7 +18,8 @@ namespace DronePlacementSimulator
         public IdwInterpolator idw;
         
         public List<int[]> intCoords;
-        
+        public static Random rand = new Random();
+
         public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<List<double[]>> polyCoordList)
         {
             this.numCells = 0;
@@ -168,15 +169,13 @@ namespace DronePlacementSimulator
             }
             
             const int power = 1;
-            const int dimension = 2;
-            const int numberOfNeighbors = 500; // 10000
-            var interpolator = new IdwInterpolator(dimension, power, numberOfNeighbors);
+            const int dimension = 2;            
+            var interpolator = new IdwInterpolator(dimension, power, Utils.NUMBER_OF_NEIGHBORS);
             interpolator.AddPointRange(eventLocations);
 
             for (int i = 0; i < numCells; i++)
             {
                 this.pdf[i] = (Utils.UNIT * 10) * (Utils.UNIT * 10) * interpolator.Interpolate(this.cells[i]).Value;
-                // Console.WriteLine(pdf[i]);
             }
         }
 
@@ -192,6 +191,25 @@ namespace DronePlacementSimulator
             }
 
             return mD;
+        }
+
+        public int SelectCell()
+        {
+            double poolSize = 0;
+            for (int i = 0; i < pdf.Length; i++)
+            {
+                poolSize += pdf[i];
+            }
+
+            double randomNumber = rand.NextDouble() * poolSize;
+            double accumulatedProbability = 0.0f;
+            for (int i = 0; i < pdf.Length; i++)
+            {
+                accumulatedProbability += pdf[i];
+                if (randomNumber <= accumulatedProbability)
+                    return i;
+            }
+            return -1;
         }
     }
 }
