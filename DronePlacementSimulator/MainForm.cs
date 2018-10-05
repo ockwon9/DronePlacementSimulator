@@ -18,7 +18,7 @@ namespace DronePlacementSimulator
         List<List<double[]>> polyCoordList;
 
         private int coverRange;
-        //private Grid gridEvent;
+        private Grid gridEvent;
 
         private Bitmap _canvas;
         //private Point _anchor; //The start point for click-drag operations
@@ -50,7 +50,7 @@ namespace DronePlacementSimulator
 
             DateTime maxT = new DateTime(2000, 1, 1);
             DateTime minT = new DateTime(2020, 1, 1);
-            
+
             /*
             foreach (OHCAEvent e in eventList)
             {
@@ -65,6 +65,8 @@ namespace DronePlacementSimulator
             }
             double mean = eventList.Count / (maxT - minT).TotalMinutes;
             */
+
+            this.gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
 
             // Choose the test method
             TestMethod testMethod = TestMethod.Pulver;
@@ -107,14 +109,13 @@ namespace DronePlacementSimulator
                 }
             }
             Del defaultPolicy = Policy.NearestStation;
-            Test kMeansTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Test kMeansTest = new Test(ref stationList, gridEvent, defaultPolicy);
             Console.WriteLine(kMeansTest.GetExpectedSurvivalRate());
             Console.WriteLine("Total Miss Count = " + kMeansTest.GetMissCount());
         }
 
         private void PerformPulver()
         {
-            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             stationList = new List<Station>();
             foreach (double[] coord in gridEvent.cells)
             {
@@ -133,7 +134,7 @@ namespace DronePlacementSimulator
             
             Pulver pulver = new Pulver(0.2, 9, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
             Del defaultPolicy = Policy.NearestStation;
-            Test pulverTest = new Test(ref stationList, ref eventList, defaultPolicy);
+            Test pulverTest = new Test(ref stationList, gridEvent, defaultPolicy);
             Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
             Console.WriteLine(pulverTest.GetMissCount());
         }
@@ -152,7 +153,7 @@ namespace DronePlacementSimulator
         {
             stationList = Rubis.Calculate(eventList, polyCoordList);
             Del rubisPolicy = Policy.NearestStation;
-            Test rubisTest = new Test(ref stationList, ref eventList, rubisPolicy);
+            Test rubisTest = new Test(ref stationList, gridEvent, rubisPolicy);
             Console.WriteLine(rubisTest.GetExpectedSurvivalRate());
         }
 

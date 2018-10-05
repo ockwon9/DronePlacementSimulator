@@ -35,10 +35,11 @@ namespace DronePlacementSimulator
         private double optimalCoverage;
         private List<Demand> demandList;
         private List<int>[] N;
+        private static double DRONE_VELOCITY = 1.0;
 
         public Pulver (double w, int p, double h, double t, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = grid.numCells;
+            this.n = grid.cells.Count;
             this.m = stationList.Count();
             this.w = w;
             this.h = h;
@@ -66,12 +67,12 @@ namespace DronePlacementSimulator
         {
             Overlap overlap = new Overlap();
             
-            for (int i = 0; i < grid.cells.Count; i++)
+            for (int i = 0; i < n; i++)
             {
                 double x = grid.cells[i][0];
                 double y = grid.cells[i][1];
                 
-                for (int j = 0; j < stationList.Count; j++)
+                for (int j = 0; j < m; j++)
                 {
                     this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, stationList[j].kiloX, stationList[j].kiloY, DRONE_VELOCITY * t) / (grid.unit * grid.unit);
                 }
@@ -237,7 +238,7 @@ namespace DronePlacementSimulator
                     }
                     
                     if (DEBUG && numDrone > 0)
-                        Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + s.kiloX + ", " + s.kiloY + ")");
+                        Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + stationList[l].kiloX + ", " + stationList[l].kiloY + ")");
                 }
                 for (int l = stationList.Count - 1; l >= 0; l--)
                 {

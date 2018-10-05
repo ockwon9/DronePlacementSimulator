@@ -11,7 +11,6 @@ namespace DronePlacementSimulator
 {
     class Grid
     {
-        public int numCells;
         public List<double[]> cells;
         public double unit;
         public double[] pdf;
@@ -22,7 +21,6 @@ namespace DronePlacementSimulator
 
         public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<List<double[]>> polyCoordList)
         {
-            this.numCells = 0;
             this.cells = new List<double[]>();
             this.unit = unit;
             this.idw = new IdwInterpolator(2);
@@ -38,14 +36,13 @@ namespace DronePlacementSimulator
                     double lon = minLon + j * unit;
                     if (Intersects(lon, lat, ref polyCoordList))
                     {
-                        numCells++;
                         cells.Add(new double[] { lon, lat });
                         intCoords.Add(new int[] { i, j });
                     }
                 }
             }
 
-            this.pdf = new double[numCells];
+            this.pdf = new double[cells.Count];
         }
 
         public bool Intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
@@ -166,7 +163,7 @@ namespace DronePlacementSimulator
             var interpolator = new IdwInterpolator(dimension, power, Utils.NUMBER_OF_NEIGHBORS);
             interpolator.AddPointRange(eventLocations);
 
-            for (int i = 0; i < numCells; i++)
+            for (int i = 0; i < cells.Count; i++)
             {
                 this.pdf[i] = (Utils.UNIT * 10) * (Utils.UNIT * 10) * interpolator.Interpolate(this.cells[i]).Value;
             }
@@ -175,7 +172,7 @@ namespace DronePlacementSimulator
         public double GetMaxDemand()
         {
             double mD = 0;
-            for (int i = 0; i < numCells; i++)
+            for (int i = 0; i < cells.Count; i++)
             {
                 if (pdf[i] > mD)
                 {
