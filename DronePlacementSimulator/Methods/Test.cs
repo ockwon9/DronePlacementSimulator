@@ -89,15 +89,15 @@ namespace DronePlacementSimulator
 
         private double CalcauteSurvivalRate(double distance)
         {            
-            return 0.7f - (0.1f * distance);
+            return 0.7 - (0.1 * distance);
         }
 
         double nextEventTime(double arrivalRate)
         {
             unchecked
             {
-                double rand = new Random().NextDouble() / 1.0000000000000000001f;
-                return -Math.Log(1.0f - rand) / arrivalRate;
+                double rand = new Random().NextDouble() / 1.0000000000000000001;
+                return -Math.Log(1.0 - rand) / arrivalRate;
             }
         }
 

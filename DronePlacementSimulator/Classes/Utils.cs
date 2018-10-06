@@ -9,10 +9,10 @@ namespace DronePlacementSimulator
 {
     public static class Utils
     {
-        public static double MIN_LONGITUDE = 126.7645806f;
-        public static double MAX_LONGITUDE = 127.1831312f;
-        public static double MIN_LATITUDE = 37.42834757f;
-        public static double MAX_LATITUDE = 37.70130154f;
+        public static double MIN_LONGITUDE = 126.7645806;
+        public static double MAX_LONGITUDE = 127.1831312;
+        public static double MIN_LATITUDE = 37.42834757;
+        public static double MAX_LATITUDE = 37.70130154;
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
 
@@ -29,8 +29,8 @@ namespace DronePlacementSimulator
         public static int ITERATION_COUNT = 100;
         public static int NUMBER_OF_NEIGHBORS = 1000;
 
-        public static double ARRIVAL_RATE = 0.0079858844405054936f;
-        public static int SIMULATION_EVENTS = 100;
+        public static double ARRIVAL_RATE = 0.0079858844405054936;
+        public static int SIMULATION_EVENTS = 1000000000;
 
         static Utils()
         {

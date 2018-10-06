@@ -415,7 +415,7 @@ namespace DronePlacementSimulator
             Console.WriteLine(test.GetExpectedSurvivalRate());
             Console.WriteLine("Total Miss Count = " + test.GetMissCount());
             labelOverallSurvivalRateValue.Text = test.GetExpectedSurvivalRate() * 100 + "%";
-            double rate = (double)test.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0f;
+            double rate = (double)test.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
             labelDeliveryMissValue.Text = test.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
 
             this.Invalidate();
