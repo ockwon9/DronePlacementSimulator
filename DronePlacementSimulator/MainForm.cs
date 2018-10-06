@@ -134,7 +134,7 @@ namespace DronePlacementSimulator
             for (int x = 0; x <= numXCells; ++x)
             {
                 int xInt = (int)(x * Utils.UNIT / Utils.SEOUL_WIDTH * this.Width);
-                if ((x+1) % 5 == 0)
+                if ((x+5) % 5 == 0)
                 {
                     g.DrawLine(pDark, xInt, 0, xInt, this.Height);
                 }
@@ -147,7 +147,7 @@ namespace DronePlacementSimulator
             for (int y = 0; y <= numYCells; ++y)
             {
                 int yInt = this.Height - (int)(y * Utils.UNIT / Utils.SEOUL_HEIGHT * this.Height);
-                if ((y+1) % 5 == 0)
+                if ((y+5) % 5 == 0)
                 {
                     g.DrawLine(pDark, 0, yInt, this.Width, yInt);
                 }
@@ -411,9 +411,6 @@ namespace DronePlacementSimulator
 
             Test test = new Test(stationList, gridEvent, defaultPolicy);
             test.Simulate();
-
-            eventList.Clear();
-            eventList.AddRange(test.getEventList());
 
             Console.WriteLine(test.GetExpectedSurvivalRate());
             Console.WriteLine("Total Miss Count = " + test.GetMissCount());

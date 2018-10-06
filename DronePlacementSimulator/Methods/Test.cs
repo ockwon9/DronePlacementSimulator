@@ -58,20 +58,23 @@ namespace DronePlacementSimulator
                 eventList.Add(e);
 
                 int dispatchFrom = policy(stationList, ref current, e);
+                e.assignedStationId = dispatchFrom;
                 if (dispatchFrom == -1)
                 {
                     missCount++;
                 }
                 else
                 {
-                    double t = Utils.GetDistance(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (t > 5.0f)
+                    double distance = Utils.GetDistance(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                    if (distance > Utils.GOLDEN_TIME)
                     {
                         missCount++;
                     }
-
-                    current.Dispatch(dispatchFrom, e.occurrenceTime);
-                    sum += CalcauteSurvivalRate(stationList[dispatchFrom], e);
+                    else
+                    {
+                        current.Dispatch(dispatchFrom, e.occurrenceTime);
+                        sum += CalcauteSurvivalRate(distance);
+                    }
                 }
             }
 
@@ -83,14 +86,9 @@ namespace DronePlacementSimulator
             expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
         }
 
-        private double CalcauteSurvivalRate(Station s, OHCAEvent e)
+        private double CalcauteSurvivalRate(double distance)
         {            
-            double d = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
-            if (d <= Utils.GOLDEN_TIME)
-            {
-                return 0.7f - (0.1f * d);
-            }
-            return 0.0f;
+            return 0.7f - (0.1f * distance);
         }
 
         double nextEventTime(double arrivalRate)

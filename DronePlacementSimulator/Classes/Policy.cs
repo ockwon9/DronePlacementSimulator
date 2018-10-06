@@ -8,7 +8,7 @@ namespace DronePlacementSimulator
 {
     public static class Policy
     {
-        public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent ohca)
+        public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
             int n = stationList.Count;
             int[] index = new int[n];
@@ -18,7 +18,7 @@ namespace DronePlacementSimulator
             {
                 Station s = stationList[i];
                 index[i] = i;
-                distance[i] = Utils.GetDistance(s.kiloX, s.kiloY, ohca.kiloX, ohca.kiloY);
+                distance[i] = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
 
                 for (int j = i; j > 0; j--)
                 {
@@ -35,6 +35,7 @@ namespace DronePlacementSimulator
             }
 
             int k = 0;
+            counter.Flush(e.occurrenceTime);
             while (k < n && counter.whenReady[index[k]].Count == stationList[index[k]].droneList.Count)
             {
                 k++;
