@@ -55,14 +55,10 @@ namespace DronePlacementSimulator
             //Check whether the rectangle lies completely outside of the circle. 
             //Note: It is easier to check if a rectangle is outside another rectangle or
             //circle than to check whether it is inside.
-            if ((x > circleX && y > circleY)
-                 && (GetDistance(x, y, circleX, circleY) > r) ||
-               (x > circleX && y + height < circleY)
-                 && (GetDistance(x, y + height, circleX, circleY) > r) ||
-               (x + width < circleX && y > circleY)
-                 && (GetDistance(x + width, y, circleX, circleY) > r) ||
-               (x + width < circleX && y + height < circleY)
-                 && (GetDistance(x + width, y + height, circleX, circleY) > r))
+            if ((x > circleX && y > circleY) && (Utils.GetDistance(x, y, circleX, circleY) > r) ||
+                (x > circleX && y + height < circleY)  && (Utils.GetDistance(x, y + height, circleX, circleY) > r) ||
+                (x + width < circleX && y > circleY) && (Utils.GetDistance(x + width, y, circleX, circleY) > r) ||
+                (x + width < circleX && y + height < circleY) && (Utils.GetDistance(x + width, y + height, circleX, circleY) > r))
             {
                 return 0; //Terminate fast
             }
@@ -110,14 +106,6 @@ namespace DronePlacementSimulator
             }
             
             return (double)Math.Round((decimal)a, 4);
-        }
-
-        /// <summary>
-        /// Gets the distance between two points using trigonometry
-        /// </summary>
-        static double GetDistance(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt(Math.Pow(x1 -x2, 2) + Math.Pow(y1 - y2, 2));
         }
 
         /// <summary>

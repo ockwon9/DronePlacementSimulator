@@ -13,12 +13,6 @@ namespace DronePlacementSimulator
 
         public int          droneID;
         public int          stationID;
-        /*
-        public DateTime     lastDepartureTime;
-        public DateTime     readyTime;
-        public float        lastDestX;
-        public float        lastDestY;
-        */
 
         public Drone(int stationID)
         {
