@@ -6,22 +6,29 @@ using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
-    delegate int Del(ref List<Station> stationList, ref Counter counter, OHCAEvent ohca);
+    delegate int Del(List<Station> stationList, ref Counter counter, OHCAEvent ohca);
 
     class Test
     {
-        private double expectedSurvivalRate;
+        private List<Station> stationList;
+        private List<OHCAEvent> eventList;
+        private Grid eventGrid;
         private Del policy;
+
+        private double expectedSurvivalRate;
         private int missCount;
 
-        public Test(ref List<Station> stationList, Grid eventGrid, Del policy)
+        public Test(List<Station> stationList, Grid eventGrid, Del policy)
         {
+            this.stationList = new List<Station>(stationList);
+            this.eventGrid = new Grid(eventGrid);
             this.policy = policy;
+
+            expectedSurvivalRate = 0.0f;
             missCount = 0;
-            expectedSurvivalRate = Simulate(ref stationList, eventGrid, policy);
         }
 
-        private double Simulate(ref List<Station> stationList, Grid eventGrid, Del policy)
+        public void Simulate()
         {
             int n = stationList.Count;
             int[] initialCount = new int[n];
@@ -31,23 +38,26 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(n, ref initialCount);
-            double sum = 0;
+            double sum = 0.0f;
 
             DateTime currentTime = new DateTime(2018, 1, 1);
-            List<OHCAEvent> eventList = new List<OHCAEvent>();
+            eventList = new List<OHCAEvent>();
+
             for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
             {
                 OHCAEvent e = new OHCAEvent();
-                double min = nextEventTime(Utils.ARRIVAL_RATE);
-                currentTime = currentTime.AddMinutes(min);
+                double nextMin = nextEventTime(Utils.ARRIVAL_RATE);
+                currentTime = currentTime.AddMinutes(nextMin);
                 e.occurrenceTime = currentTime;
                 int selectedIndex = eventGrid.SelectCell();
-                e.kiloX = eventGrid.cells[selectedIndex][0];
-                e.kiloY = eventGrid.cells[selectedIndex][1];
 
+                double kiloX = eventGrid.cells[selectedIndex][0];
+                double kiloY = eventGrid.cells[selectedIndex][1];
+
+                e.SetLocation(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT);
                 eventList.Add(e);
 
-                int dispatchFrom = policy(ref stationList, ref current, e);
+                int dispatchFrom = policy(stationList, ref current, e);
                 if (dispatchFrom == -1)
                 {
                     missCount++;
@@ -61,34 +71,33 @@ namespace DronePlacementSimulator
                     }
 
                     current.Dispatch(dispatchFrom, e.occurrenceTime);
-                    sum += SurvivalRate(stationList[dispatchFrom], e);
+                    sum += CalcauteSurvivalRate(stationList[dispatchFrom], e);
                 }
             }
 
-            double rate = Utils.SIMULATION_EVENTS / (eventList[Utils.SIMULATION_EVENTS-1].occurrenceTime - eventList[0].occurrenceTime).TotalMinutes;
+            DateTime max = eventList[Utils.SIMULATION_EVENTS - 1].occurrenceTime;
+            DateTime min = eventList[0].occurrenceTime;
+            double rate = Utils.SIMULATION_EVENTS / (max - min).TotalMinutes;
+            Console.WriteLine("Arrival rate = " + rate);
 
-            return sum / Utils.SIMULATION_EVENTS;
+            expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
         }
 
-        private double SurvivalRate(Station s, OHCAEvent e)
+        private double CalcauteSurvivalRate(Station s, OHCAEvent e)
         {            
             double d = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
-
-            if (d > Utils.GOLDEN_TIME)
-            {
-                return 0;
-            }
-            else
+            if (d <= Utils.GOLDEN_TIME)
             {
                 return 0.7f - (0.1f * d);
             }
+            return 0.0f;
         }
 
         double nextEventTime(double arrivalRate)
         {
             unchecked
             {
-                double rand = new Random().NextDouble() / 1.000001f;
+                double rand = new Random().NextDouble() / 1.0000000000000000001f;
                 return -Math.Log(1.0f - rand) / arrivalRate;
             }
         }
@@ -101,6 +110,11 @@ namespace DronePlacementSimulator
         public int GetMissCount()
         {
             return missCount;
+        }
+
+        public List<OHCAEvent> getEventList()
+        {
+            return eventList;
         }
     }
 }

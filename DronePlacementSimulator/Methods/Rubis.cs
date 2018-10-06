@@ -24,7 +24,7 @@ namespace DronePlacementSimulator
             RightBottom
         }
 
-        public static List<Station> Calculate(List<OHCAEvent> eventList, List<List<double[]>> polyCoordList)
+        public static List<Station> Calculate(int num_of_stations, List<OHCAEvent> eventList, List<List<double[]>> polyCoordList)
         {
             Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             //gridEvent.IdwInterpolate(ref eventList);

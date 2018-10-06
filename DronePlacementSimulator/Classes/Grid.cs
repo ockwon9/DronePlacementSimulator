@@ -26,7 +26,7 @@ namespace DronePlacementSimulator
             this.cells = new List<double[]>();
             this.unit = unit;
             this.idw = new IdwInterpolator(2);
-            int numLon = (int) Math.Ceiling((maxLon - minLon) / unit);
+            int numLon = (int)Math.Ceiling((maxLon - minLon) / unit);
             int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
 
             this.intCoords = new List<int[]>();
@@ -53,6 +53,17 @@ namespace DronePlacementSimulator
             }
 
             this.pdf = new double[numCells];
+        }
+
+        public Grid(Grid temp)
+        {
+            this.numCells = temp.numCells;
+            this.cells = new List<double[]>(temp.cells);
+            this.unit = temp.unit;
+            this.idw = new IdwInterpolator(2);
+            this.intCoords = new List<int[]>(temp.intCoords);
+            this.pdf = new double[numCells];
+            Array.Copy(temp.pdf, this.pdf, this.numCells);
         }
 
         public bool Intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)

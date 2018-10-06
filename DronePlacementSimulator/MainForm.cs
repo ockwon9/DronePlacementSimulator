@@ -12,23 +12,16 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        List<Station> stationList;
-        List<OHCAEvent> eventList;
-        List<Polygon> polygonList;
-        List<List<double[]>> polyCoordList;
+        List<Station> stationList = null;
+        List<OHCAEvent> eventList = null;
+        List<Polygon> polygonList = null;
+        List<List<double[]>> polyCoordList = null;
 
-        private int coverRange;
-        private Grid gridEvent;
+        private Grid gridEvent = null;
+        private Bitmap _canvas = null;
+        private int num_of_stations;
 
-        private Bitmap _canvas;
-
-        public enum TestMethod
-        {
-            KMeans,
-            Pulver,
-            Boutilier,
-            RUBIS
-        }
+        public int coverRange = 0;
 
         public MainForm()
         {
@@ -42,18 +35,14 @@ namespace DronePlacementSimulator
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * Utils.SEOUL_WIDTH / Utils.SEOUL_HEIGHT);
             coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
-            
+            toolStripComboBoxStations.SelectedIndex = 0;
+            num_of_stations = 8;
+
             // Read OHCA events data
             ReadEventData();
             ReadMapData();
 
             gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
-            stationList = new List<Station>();
-            foreach (double[] coord in gridEvent.cells)
-            {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
-            }
-
             if (File.Exists("pdf.csv"))
             {
                 ReadPDF(ref gridEvent);
@@ -63,60 +52,28 @@ namespace DronePlacementSimulator
                 gridEvent.IdwInterpolate(ref eventList);
                 WritePDF(ref gridEvent);
             }
-
-            // Choose the test method
-            TestMethod testMethod = TestMethod.KMeans;
-            switch (testMethod)
-            {
-                case TestMethod.KMeans:
-                    PerformKMeans();
-                    break;
-                case TestMethod.Pulver:
-                    PerformPulver();
-                    break;
-                case TestMethod.Boutilier:
-                    PerformBoutilier();
-                    break;
-                case TestMethod.RUBIS:
-                    PerformRubis();
-                    break;
-                default:
-                    break;
-            }
         }
 
         private void PerformKMeans()
         {
             stationList = new List<Station>();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), 12, Utils.ITERATION_COUNT);
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), num_of_stations, Utils.ITERATION_COUNT);
             foreach (double[] d in stations.Means)
             {
                 Station s = new Station(d[0], d[1]);
-                s.pixelX = Utils.TransformKiloXToPixel(s.kiloX);
-                s.pixelY = Utils.TransformKiloYToPixel(s.kiloY);
-                for (int i = 0; i < 1; i++)
-                {
-                    Drone drone = new Drone(s.stationID);
-                    s.droneList.Add(drone);
-                }
-                if (!stationList.Contains(s))
-                {
-                    stationList.Add(s);
-                }
+                s.droneList.Add(new Drone(s.stationID));
+                stationList.Add(s);
             }
-            Del defaultPolicy = Policy.NearestStation;
-            Test kMeansTest = new Test(ref stationList, gridEvent, defaultPolicy);
-            Console.WriteLine(kMeansTest.GetExpectedSurvivalRate());
-            Console.WriteLine("Total Miss Count = " + kMeansTest.GetMissCount());
         }
 
         private void PerformPulver()
         {
-            Pulver pulver = new Pulver(0.2, 9, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
-            Del defaultPolicy = Policy.NearestStation;
-            Test pulverTest = new Test(ref stationList, gridEvent, defaultPolicy);
-            Console.WriteLine(pulverTest.GetExpectedSurvivalRate());
-            Console.WriteLine(pulverTest.GetMissCount());
+            stationList = new List<Station>();
+            foreach (double[] coord in gridEvent.cells)
+            {
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+            }
+            Pulver pulver = new Pulver(0.2, num_of_stations, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
         }
 
         private void PerformBoutilier()
@@ -124,17 +81,13 @@ namespace DronePlacementSimulator
             /*
             Boutilier boutilier = new Boutilier(ref eventList, ref stationList);
             Del defaultPolicy = NearestStation;
-            Test boutilierTest = new Test(ref stationList, gridEvent, defaultPolicy);
-            Console.WriteLine(boutilierTest.getExpectedSurvivalRate());
+            return new Test(ref stationList, gridEvent, defaultPolicy);
             */
         }
 
         private void PerformRubis()
         {
-            stationList = Rubis.Calculate(eventList, polyCoordList);
-            Del rubisPolicy = Policy.NearestStation;
-            Test rubisTest = new Test(ref stationList, gridEvent, rubisPolicy);
-            Console.WriteLine(rubisTest.GetExpectedSurvivalRate());
+            stationList = Rubis.Calculate(num_of_stations, eventList, polyCoordList);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -151,7 +104,6 @@ namespace DronePlacementSimulator
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 if (_canvas != null)
                 {
-                    
                     g.DrawImage(_canvas, 0, 0);
                     _canvas.Dispose();
                 }
@@ -163,6 +115,7 @@ namespace DronePlacementSimulator
         {
             using (Graphics g = Graphics.FromImage(_canvas))
             {
+                g.Clear(Color.White);
                 DrawGrid(g);
                 DrawMap(g);
                 DrawOHCAEvents(g);
@@ -176,17 +129,32 @@ namespace DronePlacementSimulator
             int numXCells = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
             int numYCells = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
 
-            Pen p = new Pen(Color.LightGray, 1);
+            Pen pLight = new Pen(Color.LightGray, 1);
+            Pen pDark = new Pen(Color.DimGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
                 int xInt = (int)(x * Utils.UNIT / Utils.SEOUL_WIDTH * this.Width);
-                g.DrawLine(p, xInt, 0, xInt, this.Height);
+                if ((x+1) % 5 == 0)
+                {
+                    g.DrawLine(pDark, xInt, 0, xInt, this.Height);
+                }
+                else
+                {
+                    g.DrawLine(pLight, xInt, 0, xInt, this.Height);
+                }
             }
 
             for (int y = 0; y <= numYCells; ++y)
             {
                 int yInt = this.Height - (int)(y * Utils.UNIT / Utils.SEOUL_HEIGHT * this.Height);
-                g.DrawLine(p, 0, yInt, this.Width, yInt);
+                if ((y+1) % 5 == 0)
+                {
+                    g.DrawLine(pDark, 0, yInt, this.Width, yInt);
+                }
+                else
+                {
+                    g.DrawLine(pLight, 0, yInt, this.Width, yInt);
+                }
             }
         }
 
@@ -211,11 +179,14 @@ namespace DronePlacementSimulator
 
         private void DrawStations(Graphics g)
         {
-            foreach (Station s in stationList)
+            if (stationList != null)
             {
-                g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
-                g.DrawEllipse(new Pen(Color.Red, 1), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
-                g.FillRectangle((Brush)Brushes.Red, s.pixelX, s.pixelY, 3, 3);
+                foreach (Station s in stationList)
+                {
+                    g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.DrawEllipse(new Pen(Color.Red, 1), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.FillRectangle((Brush)Brushes.Red, s.pixelX, s.pixelY, 3, 3);
+                }
             }
         }
 
@@ -384,6 +355,78 @@ namespace DronePlacementSimulator
             {
                 GC.Collect();
             }
+        }
+
+        private void ClickExit(object sender, EventArgs e)
+        {
+            if (Application.MessageLoop)
+            {
+                Application.Exit();
+            }
+            else
+            {
+                Environment.Exit(1);
+            }
+        }
+
+        private void ClickPlacementItems(object sender, EventArgs e)
+        {
+            stationList = null;
+            kMeansToolStripMenuItem.CheckState = CheckState.Unchecked;
+            pulverToolStripMenuItem.CheckState = CheckState.Unchecked;
+            boutilierToolStripMenuItem.CheckState = CheckState.Unchecked;
+            rubisToolStripMenuItem.CheckState = CheckState.Unchecked;
+
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            item.CheckState = CheckState.Checked;
+            item.Checked = true;
+            
+            switch (item.Text)
+            {
+                case "K-Means":
+                    PerformKMeans();
+                    break;
+                case "Pulver":
+                    PerformPulver();
+                    break;
+                case "Boutilier":
+                    PerformBoutilier();
+                    break;
+                case "RUBIS":
+                    PerformRubis();
+                    break;
+                default:
+                    break;
+            }
+            this.Invalidate();
+        }
+
+        private void ClickRunSimulation(object sender, EventArgs e)
+        {
+            Del defaultPolicy = Policy.NearestStation;
+            if (rubisToolStripMenuItem.Checked)
+            {
+                defaultPolicy = Policy.HighestSurvalRateStation;
+            }
+
+            Test test = new Test(stationList, gridEvent, defaultPolicy);
+            test.Simulate();
+
+            eventList.Clear();
+            eventList.AddRange(test.getEventList());
+
+            Console.WriteLine(test.GetExpectedSurvivalRate());
+            Console.WriteLine("Total Miss Count = " + test.GetMissCount());
+            labelOverallSurvivalRateValue.Text = test.GetExpectedSurvivalRate() * 100 + "%";
+            double rate = (double)test.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0f;
+            labelDeliveryMissValue.Text = test.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
+
+            this.Invalidate();
+        }
+
+        private void toolStripComboBoxStations_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            num_of_stations = Int32.Parse(((ToolStripComboBox)sender).Text);
         }
     }
 }

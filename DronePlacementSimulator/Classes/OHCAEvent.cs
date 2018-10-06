@@ -16,5 +16,13 @@ namespace DronePlacementSimulator
         {
             this.eventID = ID++;
         }
+
+        public void SetLocation(double kiloX, double kiloY)
+        {
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
+            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
+            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+        }
     }
 }

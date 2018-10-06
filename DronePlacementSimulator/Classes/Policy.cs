@@ -8,7 +8,7 @@ namespace DronePlacementSimulator
 {
     public static class Policy
     {
-        public static int NearestStation(ref List<Station> stationList, ref Counter counter, OHCAEvent ohca)
+        public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent ohca)
         {
             int n = stationList.Count;
             int[] index = new int[n];
@@ -49,7 +49,7 @@ namespace DronePlacementSimulator
         }
 
         //TODO: How to refer the Counter object?
-        public static int HighestSurvalRateStation(ref List<Station> stationList, ref Counter counter, OHCAEvent e)
+        public static int HighestSurvalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
             //counter.flush(ohca.occurrenceTime);
             int resultIndex = -1;
