@@ -31,20 +31,24 @@ namespace DronePlacementSimulator
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
             List<Station> stationList = new List<Station>();
-            Grid gridStation = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, 7, ref polyCoordList);
-            foreach (double[] cell in gridStation.cells)
-            {
-                double kiloX = cell[0] + 0.5 * 7;
-                double kiloY = cell[1] + 0.5 * 7;
-                Station s = new Station(kiloX, kiloY);
-                Drone drone = new Drone(s.stationID);
-                s.droneList.Add(drone);
-                stationList.Add(s);
-            }
+            //Grid gridStation = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, 7, ref polyCoordList);
 
-            // Remove two useless stations
-            stationList.Remove(stationList[23]);
-            stationList.Remove(stationList[21]);
+            AddStation(ref stationList, 4.5f, 15.0f);
+            AddStation(ref stationList, 8.5f, 7.7f);
+            AddStation(ref stationList, 14.5f, 5.0f);
+            AddStation(ref stationList, 12.0f, 16.3f);
+            AddStation(ref stationList, 16.5f, 13.0f);
+            AddStation(ref stationList, 17.0f, 22.6f);
+            AddStation(ref stationList, 21.0f, 7.5f);
+            AddStation(ref stationList, 22.0f, 19.0f);
+            AddStation(ref stationList, 24.7f, 27.0f);
+            AddStation(ref stationList, 25.0f, 13.0f);
+            AddStation(ref stationList, 27.0f, 4.5f);
+            AddStation(ref stationList, 27.0f, 20.5f);
+            AddStation(ref stationList, 30.5f, 8.5f);
+            AddStation(ref stationList, 33.0f, 13.5f);   
+
+            return stationList;
 
             // Add additional stations
             // 23번째 station부터는 제일 많은 이벤트가 포함되는 셀의 위치를 찾아서 포함시키자 (일단 22개만 돌려보자)
@@ -71,7 +75,7 @@ namespace DronePlacementSimulator
                 stationList[i].droneList.Add(new Drone(stationList[i].stationID));
             }
             */
-            return stationList;
+            
             // Step 3. Search the best station placement
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
@@ -130,6 +134,13 @@ namespace DronePlacementSimulator
             }
 
             return solutionList;
+        }
+
+        private static void AddStation(ref List<Station> stationList, double kiloX, double kiloY)
+        {
+            Station s = new Station(kiloX, kiloY);
+            s.droneList.Add(new Drone(s.stationID));
+            stationList.Add(s);
         }
 
         // Find the best station placement with only one-step movement

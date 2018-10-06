@@ -24,7 +24,7 @@ namespace DronePlacementSimulator
             this.eventGrid = new Grid(eventGrid);
             this.policy = policy;
 
-            expectedSurvivalRate = 0.0f;
+            expectedSurvivalRate = 0;
             missCount = 0;
         }
 
@@ -38,7 +38,7 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(ref initialCount);
-            double sum = 0.0f;
+            double sum = 0;
 
             DateTime currentTime = new DateTime(2018, 1, 1);
             eventList = new List<OHCAEvent>();
@@ -95,8 +95,8 @@ namespace DronePlacementSimulator
         {
             unchecked
             {
-                double rand = new Random().NextDouble() / 1.0000000000000000001f;
-                return -Math.Log(1.0f - rand) / arrivalRate;
+                double rand = new Random().NextDouble() / 1.0000000000000000001;
+                return -Math.Log(1.0 - rand) / arrivalRate;
             }
         }
 
