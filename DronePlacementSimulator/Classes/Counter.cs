@@ -35,7 +35,7 @@ namespace DronePlacementSimulator
 
         public void Dispatch(int i, DateTime now)
         {
-            this.whenReady[i].Enqueue(now + new TimeSpan(1, 0, 0));
+            this.whenReady[i].Enqueue(now.AddHours(1));
         }
     }
 }
