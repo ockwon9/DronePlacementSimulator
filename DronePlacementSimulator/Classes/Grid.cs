@@ -47,13 +47,12 @@ namespace DronePlacementSimulator
 
         public Grid(Grid temp)
         {
-            this.numCells = temp.numCells;
             this.cells = new List<double[]>(temp.cells);
             this.unit = temp.unit;
             this.idw = new IdwInterpolator(2);
             this.intCoords = new List<int[]>(temp.intCoords);
-            this.pdf = new double[numCells];
-            Array.Copy(temp.pdf, this.pdf, this.numCells);
+            this.pdf = new double[cells.Count];
+            Array.Copy(temp.pdf, this.pdf, this.cells.Count);
         }
 
         public bool Intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)

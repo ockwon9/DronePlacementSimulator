@@ -37,7 +37,7 @@ namespace DronePlacementSimulator
                 initialCount[i] = stationList[i].droneList.Count;
             }
 
-            Counter current = new Counter(n, ref initialCount);
+            Counter current = new Counter(ref initialCount);
             double sum = 0.0f;
 
             DateTime currentTime = new DateTime(2018, 1, 1);
