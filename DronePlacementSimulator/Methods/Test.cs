@@ -57,6 +57,7 @@ namespace DronePlacementSimulator
                 e.SetLocation(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT);
                 eventList.Add(e);
 
+                current.Flush(currentTime);
                 int dispatchFrom = policy(stationList, ref current, e);
                 if (dispatchFrom == -1)
                 {

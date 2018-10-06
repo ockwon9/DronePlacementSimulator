@@ -34,8 +34,8 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < numLon; j++)
                 {
                     double lon = minLon + j * unit;
-                    if (Intersects(lon, lat, ref polyCoordList))
-                    {
+                    if (IsInside(lon + 0.5 * unit, lat + 0.5 * unit, ref polyCoordList))
+                    {   
                         cells.Add(new double[] { lon, lat });
                         intCoords.Add(new int[] { i, j });
                     }
@@ -55,91 +55,52 @@ namespace DronePlacementSimulator
             Array.Copy(temp.pdf, this.pdf, this.cells.Count);
         }
 
-        public bool Intersects(double lon, double lat, ref List<List<double[]>> polyCoordList)
+        public bool IsInside(double lon, double lat, ref List<List<double[]>> polyCoordList)
         {
-            bool ans = false, intersectsTop = false, intersectsBottom = false, intersectsLeft = false, intersectsRight = false;
-
             foreach (List<double[]> pList in polyCoordList)
             {
                 int n = pList.Count;
                 double[] p1 = pList[n - 1];
                 double[] p2 = pList[0];
                 double temp;
+                int leftCount = 0;
+                bool onLine = false;
 
-                if (p1[1] != p2[1])
+                if (p1[1] == p2[1])
                 {
-                    if (!intersectsBottom)
-                    {
-                        temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                        intersectsBottom = ((temp - p1[0]) * (temp - p2[0]) < 0) && (lon <= temp) && (temp <= lon + unit);
-                    }
-
-                    if (!intersectsTop)
-                    {
-                        temp = ((p2[1] - lat - unit) * p1[0] + (lat + unit - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                        intersectsTop = ((temp - p1[0]) * (temp - p2[0]) < 0) && (lon <= temp) && (temp <= lon + unit);
-                    }
+                    onLine |= (p1[1] == lat && (p1[0] - lon) * (p2[0] - lon) <= 0);
                 }
-
-                if (p1[0] != p2[0])
+                else if ((p1[1] - lat) * (p2[1] - lat) <= 0)
                 {
-                    if (!intersectsLeft)
-                    {
-                        temp = ((p2[0] - lon) * p1[1] + (lon - p1[0]) * p2[1]) / (p2[0] - p1[0]);
-                        intersectsLeft = ((temp - p1[1]) * (temp - p2[1]) < 0) && (lat <= temp) && (temp <= lat + unit);
-                    }
-
-                    if (!intersectsRight)
-                    {
-                        temp = ((p2[0] - lon - unit) * p1[1] + (lon + unit - p1[0]) * p2[1]) / (p2[0] - p1[0]);
-                        intersectsRight = ((temp - p1[1]) * (temp - p2[1]) < 0) && (lat <= temp) && (temp <= lat + unit);
-                    }
+                    temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
+                    onLine |= (temp == lon);
+                    leftCount += (temp < lon) ? 1 : 0;
                 }
-
-                ans = intersectsBottom | intersectsTop | intersectsLeft | intersectsRight;
 
                 for (int i = 1; i < n; i++)
                 {
-                    if (ans)
-                        break;
-
                     p1 = p2;
                     p2 = pList[i];
 
-                    if (p1[1] != p2[1])
+                    if (p1[1] == p2[1])
                     {
-                        if (!intersectsBottom)
-                        {
-                            temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                            intersectsBottom = ((temp - p1[0]) * (temp - p2[0]) < 0) && (lon <= temp) && (temp <= lon + unit);
-                        }
-
-                        if (!intersectsTop)
-                        {
-                            temp = ((p2[1] - lat - unit) * p1[0] + (lat + unit - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                            intersectsTop = ((temp - p1[0]) * (temp - p2[0]) < 0) && (lon <= temp) && (temp <= lon + unit);
-                        }
+                        onLine |= (p1[1] == lat && (p1[0] - lon) * (p2[0] - lon) <= 0);
                     }
-
-                    if (p1[0] != p2[0])
+                    else if ((p1[1] - lat) * (p2[1] - lat) <= 0)
                     {
-                        if (!intersectsLeft)
-                        {
-                            temp = ((p2[0] - lon) * p1[1] + (lon - p1[0]) * p2[1]) / (p2[0] - p1[0]);
-                            intersectsLeft = ((temp - p1[1]) * (temp - p2[1]) < 0) && (lat <= temp) && (temp <= lat + unit);
-                        }
-
-                        if (!intersectsRight)
-                        {
-                            temp = ((p2[0] - lon - unit) * p1[1] + (lon + unit - p1[0]) * p2[1]) / (p2[0] - p1[0]);
-                            intersectsRight = ((temp - p1[1]) * (temp - p2[1]) < 0) && (lat <= temp) && (temp <= lat + unit);
-                        }
+                        temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
+                        onLine |= (temp == lon);
+                        leftCount += (temp < lon) ? 1 : 0;
                     }
-                    ans = intersectsBottom | intersectsTop | intersectsLeft | intersectsRight;
+                }
+
+                if (onLine || leftCount % 2 != 0)
+                {
+                    return true;
                 }
             }
 
-            return ans;
+            return false;
         }
 
         public void IdwInterpolate(ref List<OHCAEvent> eventList)
