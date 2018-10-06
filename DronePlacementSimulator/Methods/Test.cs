@@ -57,6 +57,7 @@ namespace DronePlacementSimulator
                 e.SetLocation(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT);
                 eventList.Add(e);
 
+                current.Flush(currentTime);
                 int dispatchFrom = policy(stationList, ref current, e);
                 e.assignedStationId = dispatchFrom;
                 if (dispatchFrom == -1)
@@ -88,7 +89,7 @@ namespace DronePlacementSimulator
 
         private double CalcauteSurvivalRate(double distance)
         {            
-            return 0.7f - (0.1f * distance);
+            return 0.7 - (0.1 * distance);
         }
 
         double nextEventTime(double arrivalRate)
