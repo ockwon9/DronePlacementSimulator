@@ -11,7 +11,6 @@ namespace DronePlacementSimulator
     class Test
     {
         private List<Station> stationList;
-        private List<OHCAEvent> eventList;
         private Grid eventGrid;
         private Del policy;
 
@@ -38,11 +37,8 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(ref initialCount);
-            double sum = 0;
-
             DateTime currentTime = new DateTime(2018, 1, 1);
-            eventList = new List<OHCAEvent>();
-
+            double sum = 0;
             for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
             {
                 OHCAEvent e = new OHCAEvent();
@@ -55,7 +51,6 @@ namespace DronePlacementSimulator
                 double kiloY = eventGrid.cells[selectedIndex][1];
 
                 e.SetLocation(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT);
-                eventList.Add(e);
 
                 current.Flush(currentTime);
                 int dispatchFrom = policy(stationList, ref current, e);
@@ -78,12 +73,6 @@ namespace DronePlacementSimulator
                     }
                 }
             }
-
-            DateTime max = eventList[Utils.SIMULATION_EVENTS - 1].occurrenceTime;
-            DateTime min = eventList[0].occurrenceTime;
-            double rate = Utils.SIMULATION_EVENTS / (max - min).TotalMinutes;
-            Console.WriteLine("Arrival rate = " + rate);
-
             expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
         }
 
@@ -109,11 +98,6 @@ namespace DronePlacementSimulator
         public int GetMissCount()
         {
             return missCount;
-        }
-
-        public List<OHCAEvent> getEventList()
-        {
-            return eventList;
         }
     }
 }
