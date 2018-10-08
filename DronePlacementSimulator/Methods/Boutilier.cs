@@ -22,6 +22,7 @@ namespace DronePlacementSimulator
             this.f = f;
 
             OptimalPlacement(ref stationList, ref eventList);
+            PlaceDrones(ref stationList);
         }
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
@@ -53,7 +54,7 @@ namespace DronePlacementSimulator
                     z[j] = new GRBVar[I];
                     for (int i = 0; i < I; i++)
                     {
-                        z[j][i] = model.AddVar(0.0, 1.0, 0, GRB.BINARY, "z_" + i + "," + j);
+                        z[j][i] = model.AddVar(0.0, 1.0, 0.0, GRB.BINARY, "z_" + i + "," + j);
                     }
                 }
 
@@ -129,6 +130,11 @@ namespace DronePlacementSimulator
             {
                 Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
             }
+        }
+
+        public void PlaceDrones(ref List<Station> stationList)
+        {
+            return;
         }
     }
 }
