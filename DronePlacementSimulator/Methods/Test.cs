@@ -37,10 +37,8 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(ref initialCount);
-            double sum = 0;
-
             DateTime currentTime = new DateTime(2018, 1, 1);
-
+            double sum = 0;
             for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
             {
                 OHCAEvent e = new OHCAEvent();
@@ -75,7 +73,6 @@ namespace DronePlacementSimulator
                     }
                 }
             }
-
             expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
         }
 
