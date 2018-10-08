@@ -25,6 +25,7 @@ namespace DronePlacementSimulator
             Console.WriteLine(J);
 
             OptimalPlacement(ref stationList, ref eventList);
+            PlaceDrones(ref stationList);
         }
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
@@ -131,6 +132,11 @@ namespace DronePlacementSimulator
             {
                 Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
             }
+        }
+
+        public void PlaceDrones(ref List<Station> stationList)
+        {
+            return;
         }
     }
 }
