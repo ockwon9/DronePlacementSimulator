@@ -83,7 +83,7 @@ namespace DronePlacementSimulator
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
             }
-            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 50);
+            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 90);
         }
 
         private void PerformRubis()

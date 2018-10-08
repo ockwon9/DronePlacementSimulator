@@ -21,6 +21,9 @@ namespace DronePlacementSimulator
             this.J = eventList.Count;
             this.f = f;
 
+            Console.WriteLine(I);
+            Console.WriteLine(J);
+
             OptimalPlacement(ref stationList, ref eventList);
         }
 
@@ -53,7 +56,7 @@ namespace DronePlacementSimulator
                     z[j] = new GRBVar[I];
                     for (int i = 0; i < I; i++)
                     {
-                        z[j][i] = model.AddVar(0.0, 1.0, 0, GRB.BINARY, "z_" + i + "," + j);
+                        z[j][i] = model.AddVar(0.0, 1.0, 0.0, GRB.BINARY, "z_" + i + "," + j);
                     }
                 }
 
@@ -64,7 +67,6 @@ namespace DronePlacementSimulator
                 }
 
                 model.SetObjective(obj_expr, GRB.MINIMIZE);
-
                 GRBLinExpr bigExpr = 0.0;
                 for (int j = 0; j < J; j++)
                 {
@@ -116,9 +118,9 @@ namespace DronePlacementSimulator
 
                 for (int l = I - 1; l >= 0; l--)
                 {
-                    if (y[I].Get(GRB.DoubleAttr.X) == 0)
+                    if (y[l].Get(GRB.DoubleAttr.X) == 0)
                     {
-                        stationList.RemoveAt(I);
+                        stationList.RemoveAt(l);
                     }
                 }
 

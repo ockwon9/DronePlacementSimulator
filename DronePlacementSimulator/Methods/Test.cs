@@ -73,7 +73,7 @@ namespace DronePlacementSimulator
                     }
                 }
             }
-            expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
+            expectedSurvivalRate = sum / (Utils.SIMULATION_EVENTS - missCount);
         }
 
         private double CalcauteSurvivalRate(double distance)
