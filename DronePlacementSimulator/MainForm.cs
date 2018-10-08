@@ -78,11 +78,12 @@ namespace DronePlacementSimulator
 
         private void PerformBoutilier()
         {
-            /*
-            Boutilier boutilier = new Boutilier(ref eventList, ref stationList);
-            Del defaultPolicy = NearestStation;
-            return new Test(ref stationList, gridEvent, defaultPolicy);
-            */
+            stationList = new List<Station>();
+            foreach (double[] coord in gridEvent.cells)
+            {
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+            }
+            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 50);
         }
 
         private void PerformRubis()
