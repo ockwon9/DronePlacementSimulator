@@ -46,10 +46,11 @@ namespace DronePlacementSimulator
             AddStation(ref stationList, 27.0f, 4.5f);
             AddStation(ref stationList, 27.0f, 20.5f);
             AddStation(ref stationList, 30.5f, 8.5f);
-            AddStation(ref stationList, 33.0f, 13.5f);   
+            AddStation(ref stationList, 33.0f, 13.5f);
 
-            return stationList;
-
+            if(stationList.Count < 20)
+                return stationList;
+            
             // Add additional stations
             // 23번째 station부터는 제일 많은 이벤트가 포함되는 셀의 위치를 찾아서 포함시키자 (일단 22개만 돌려보자)
             // Station s = new Station(0, 0);

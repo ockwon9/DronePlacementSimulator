@@ -38,38 +38,40 @@ namespace DronePlacementSimulator
 
             Counter current = new Counter(ref initialCount);
             DateTime currentTime = new DateTime(2018, 1, 1);
+            PathPlanner pathPlanner = new PathPlanner();
+
             double sum = 0;
             for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
             {
-                OHCAEvent e = new OHCAEvent();
-                double nextMin = nextEventTime(Utils.ARRIVAL_RATE);
-                currentTime = currentTime.AddMinutes(nextMin);
-                e.occurrenceTime = currentTime;
                 int selectedIndex = eventGrid.SelectCell();
-
                 double kiloX = eventGrid.cells[selectedIndex][0];
                 double kiloY = eventGrid.cells[selectedIndex][1];
 
-                e.SetLocation(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT);
+                double nextMin = nextEventTime(Utils.ARRIVAL_RATE);
+                currentTime = currentTime.AddMinutes(nextMin);
+                DateTime occurrenceTime = currentTime;
+
+                OHCAEvent e = new OHCAEvent(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT, occurrenceTime);
 
                 current.Flush(currentTime);
                 int dispatchFrom = policy(stationList, ref current, e);
                 e.assignedStationId = dispatchFrom;
+
                 if (dispatchFrom == -1)
                 {
                     missCount++;
                 }
                 else
                 {
-                    double distance = Utils.GetDistance(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (distance > Utils.GOLDEN_TIME)
+                    double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                    if (flightTime > Utils.GOLDEN_TIME)
                     {
                         missCount++;
                     }
                     else
                     {
                         current.Dispatch(dispatchFrom, e.occurrenceTime);
-                        sum += CalcauteSurvivalRate(distance);
+                        sum += CalcauteSurvivalRate(flightTime);
                     }
                 }
             }

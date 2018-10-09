@@ -218,12 +218,11 @@ namespace DronePlacementSimulator
                 {
                     try
                     {
-                        OHCAEvent e = new OHCAEvent();
-                        e.kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
-                        e.kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
-                        e.occurrenceTime = DateTime.Parse(data[r, 19].ToString());
-                        e.pixelX = Utils.TransformKiloXToPixel(e.kiloX);
-                        e.pixelY = Utils.TransformKiloYToPixel(e.kiloY);
+                        
+                        double kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
+                        double kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
+                        DateTime occurrenceTime = DateTime.Parse(data[r, 19].ToString());
+                        OHCAEvent e = new OHCAEvent(kiloX, kiloY, occurrenceTime);
                         eventList.Add(e);
                     }
                     catch (Exception ex)
