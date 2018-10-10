@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
@@ -18,12 +17,13 @@ namespace DronePlacementSimulator
         private List<Polygon> polygonList;
         private List<List<double[]>> polyCoordList;
 
-        private Grid gridEvent = null;
+        private Test test = null;
+        private Grid eventGrid = null;
         private Bitmap _canvas = null;
         private int num_of_stations;
 
         public int coverRange = 0;
-
+        
         public MainForm()
         {
             InitializeComponent();
@@ -44,15 +44,15 @@ namespace DronePlacementSimulator
             ReadEventData();
             ReadMapData();
 
-            gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            eventGrid = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
             if (File.Exists("pdf.csv"))
             {
-                ReadPDF(ref gridEvent);
+                ReadPDF(ref eventGrid);
             }
             else
             {
-                gridEvent.IdwInterpolate(ref eventList);
-                WritePDF(ref gridEvent);
+                eventGrid.IdwInterpolate(ref eventList);
+                WritePDF(ref eventGrid);
             }
         }
 
@@ -71,17 +71,17 @@ namespace DronePlacementSimulator
         private void PerformPulver()
         {
             stationList.Clear();
-            foreach (double[] coord in gridEvent.cells)
+            foreach (double[] coord in eventGrid.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
             }
-            Pulver pulver = new Pulver(0.2, num_of_stations, 2, Utils.GOLDEN_TIME, ref stationList, ref gridEvent);
+            Pulver pulver = new Pulver(0.2, num_of_stations, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
         }
 
         private void PerformBoutilier()
         {
             stationList.Clear();
-            foreach (double[] coord in gridEvent.cells)
+            foreach (double[] coord in eventGrid.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
             }
@@ -221,7 +221,6 @@ namespace DronePlacementSimulator
                 {
                     try
                     {
-
                         double kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
                         double kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
                         DateTime occurrenceTime = DateTime.Parse(data[r, 19].ToString());
@@ -405,17 +404,22 @@ namespace DronePlacementSimulator
 
         private void ClickRunSimulation(object sender, EventArgs e)
         {
-            Del defaultPolicy = Policy.NearestStation;
+            Del policy = Policy.NearestStation;
             if (rubisToolStripMenuItem.Checked)
             {
-                defaultPolicy = Policy.HighestSurvalRateStation;
+                policy = Policy.HighestSurvalRateStation;
             }
 
-            Test test = new Test(stationList, gridEvent, defaultPolicy);
-            test.Simulate();
+            if (test == null)
+            {
+                test = new Test();
+            }
+            test.SetPolicy(policy);
+            test.Simulate(stationList, eventGrid);
 
             Console.WriteLine(test.GetExpectedSurvivalRate());
             Console.WriteLine("Total Miss Count = " + test.GetMissCount());
+
             labelOverallSurvivalRateValue.Text = test.GetExpectedSurvivalRate() * 100 + "%";
             double rate = (double)test.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
             labelDeliveryMissValue.Text = test.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";

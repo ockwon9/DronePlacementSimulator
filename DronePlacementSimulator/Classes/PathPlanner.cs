@@ -1,57 +1,63 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using MySql.Data;
-using MySql.Data.MySqlClient;
+using System.IO;
 
 namespace DronePlacementSimulator
 {
     class PathPlanner
     {
-        private double DIST_LAT = Utils.MAX_LATITUDE - Utils.MIN_LATITUDE;
-        private double DIST_LNG = Utils.MAX_LONGITUDE - Utils.MIN_LONGITUDE;
-        private MySqlConnection conn;
+        private double[,] land_elevation;
+        private double[,] building_height;
 
         public PathPlanner()
         {
-            string connStr = "server=rubis.snu.ac.kr;user=ockwon;database=ockwon_drone;port=3306;password=koc383838";
-            conn = new MySqlConnection(connStr);
-            try
-            {                
-                conn.Open();
-            }
-            catch (Exception ex)
+            land_elevation = new double[20000, 20000];
+            building_height = new double[20000, 20000];
+
+            StreamReader objReader = new StreamReader("seoul.txt");
+            string line = "";
+            line = objReader.ReadLine();
+            line = objReader.ReadLine();
+
+            for (int i = 0; i < 20000; i++)
             {
-                Console.WriteLine(ex.ToString());
+                for (int j = 0; j < 20000; j++)
+                {
+                    try
+                    {
+                        line = objReader.ReadLine();
+                        if (line != null)
+                        {
+                            string[] data = line.Split(' ');
+                            building_height[i, j] = Double.Parse(data[4]);
+                            land_elevation[i, j] = Double.Parse(data[5]);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return;
+                    }
+                }
             }
-            conn.Close();
+            objReader.Close();
         }
 
         public double CalcuteFlightTime(double srcX, double srcY, double dstX, double dstY)
         {
             double distance = GetDistance(srcX, srcY, dstX, dstY);
-
-            return distance;
-            /*
+            
             int srcCol = ConvertKiloToCol(srcX);
             int srcRow = ConvertKiloToRow(srcY);
-            double srcHeight = getLandElevation(srcCol, srcRow);
+            double srcHeight = land_elevation[srcRow, srcCol];
 
             int dstCol = ConvertKiloToCol(dstX);
             int dstRow = ConvertKiloToRow(dstY);
-            double dstHeight = getLandElevation(dstCol, dstRow);
+            double dstHeight = land_elevation[dstRow, dstCol];
 
             double maxHeightOnRoute = getMaxHeight(srcX, srcY, dstX, dstY);
-            double maxHeight = Math.Max(srcHeight, Math.Max(dstHeight, maxHeightOnRoute));
-                
-            double takeOffHeight = (srcHeight > maxHeight) ? Utils.FLIGHT_HEIGHT : maxHeight - srcHeight + Utils.FLIGHT_HEIGHT;
-            double landdingHeight = (dstHeight > maxHeight) ? Utils.FLIGHT_HEIGHT : maxHeight - dstHeight + Utils.FLIGHT_HEIGHT;
+            double takeOffHeight = maxHeightOnRoute - srcHeight + Utils.FLIGHT_HEIGHT;
+            double landdingHeight = maxHeightOnRoute - dstHeight + Utils.FLIGHT_HEIGHT;
         
             return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + distance + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
-            */
         }
 
         private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
@@ -86,6 +92,11 @@ namespace DronePlacementSimulator
             return maxHeight;
         }
 
+        private double getHeight(int col, int row)
+        {
+            return land_elevation[row, col] + building_height[row, col];
+        }
+
         private int ConvertKiloToCol(double kiloX)
         {
             return (int)(20000 * kiloX / Utils.SEOUL_WIDTH);
@@ -96,48 +107,6 @@ namespace DronePlacementSimulator
             return (int)(20000 * (Utils.SEOUL_HEIGHT - kiloY) / Utils.SEOUL_HEIGHT);
         }
         
-        private double getHeight(int col, int row)
-        {
-            double land_elevation = 0.0;
-            double building_height = 0.0;
-            string sql = "SELECT land_elevation, building_height FROM db_seoul WHERE row='" + row + "' and col='" + col + "'";
-
-            try
-            {
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                land_elevation = rdr.GetDouble(0);
-                building_height = rdr.GetDouble(1);
-                rdr.Close();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-
-            return land_elevation + building_height;
-        }
-
-        private double getLandElevation(int col, int row)
-        {
-            double land_elevation = 0.0;
-            string sql = "SELECT land_elevation FROM db_seoul WHERE row='" + row + "' and col='" + col + "'";
-
-            try
-            {
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                land_elevation = rdr.GetDouble(0);
-                rdr.Close();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-
-            return land_elevation;
-        }
-
         private double GetDistance(double x1, double y1, double x2, double y2)
         {
             return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));

@@ -49,10 +49,8 @@ namespace DronePlacementSimulator
             return index[k];
         }
 
-        //TODO: How to refer the Counter object?
         public static int HighestSurvalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
-            //counter.flush(ohca.occurrenceTime);
             int resultIndex = -1;
             double maxSurvivalRate = Double.PositiveInfinity;
             foreach (Station s in stationList)

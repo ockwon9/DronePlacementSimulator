@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
@@ -10,24 +7,27 @@ namespace DronePlacementSimulator
 
     class Test
     {
-        private List<Station> stationList;
-        private Grid eventGrid;
         private Del policy;
 
         private double expectedSurvivalRate;
         private int missCount;
+        private PathPlanner pathPlanner;
 
-        public Test(List<Station> stationList, Grid eventGrid, Del policy)
+        public Test()
         {
-            this.stationList = new List<Station>(stationList);
-            this.eventGrid = new Grid(eventGrid);
-            this.policy = policy;
-
             expectedSurvivalRate = 0;
             missCount = 0;
+
+            // TODO: Heavy workload
+            pathPlanner = new PathPlanner();
         }
 
-        public void Simulate()
+        public void SetPolicy(Del policy)
+        {
+            this.policy = policy;
+        }
+
+        public void Simulate(List<Station> stationList, Grid eventGrid)
         {
             int n = stationList.Count;
             int[] initialCount = new int[n];
@@ -38,7 +38,6 @@ namespace DronePlacementSimulator
 
             Counter current = new Counter(ref initialCount);
             DateTime currentTime = new DateTime(2018, 1, 1);
-            PathPlanner pathPlanner = new PathPlanner();
 
             double sum = 0;
             for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
