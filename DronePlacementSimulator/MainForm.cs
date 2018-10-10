@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
@@ -12,10 +13,10 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        List<Station> stationList = null;
-        List<OHCAEvent> eventList = null;
-        List<Polygon> polygonList = null;
-        List<List<double[]>> polyCoordList = null;
+        private List<Station> stationList;
+        private List<OHCAEvent> eventList;
+        private List<Polygon> polygonList;
+        private List<List<double[]>> polyCoordList;
 
         private Grid gridEvent = null;
         private Bitmap _canvas = null;
@@ -27,6 +28,7 @@ namespace DronePlacementSimulator
         {
             InitializeComponent();
 
+            stationList = new List<Station>();
             eventList = new List<OHCAEvent>();
             polygonList = new List<Polygon>();
             polyCoordList = new List<List<double[]>>();
@@ -56,7 +58,7 @@ namespace DronePlacementSimulator
 
         private void PerformKMeans()
         {
-            stationList = new List<Station>();
+            stationList.Clear();
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), num_of_stations, Utils.ITERATION_COUNT);
             foreach (double[] d in stations.Means)
             {
@@ -68,7 +70,7 @@ namespace DronePlacementSimulator
 
         private void PerformPulver()
         {
-            stationList = new List<Station>();
+            stationList.Clear();
             foreach (double[] coord in gridEvent.cells)
             {
                 stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
@@ -112,6 +114,7 @@ namespace DronePlacementSimulator
 
         private void PerformRubis()
         {
+            stationList.Clear();
             stationList = Rubis.Calculate(num_of_stations, eventList, polyCoordList);
         }
 
@@ -148,18 +151,18 @@ namespace DronePlacementSimulator
                 e.Graphics.DrawImage(_canvas, 0, 0);
             }
         }
-       
+
         private void DrawGrid(Graphics g)
         {
-            int numXCells = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
-            int numYCells = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
+            int numXCells = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
+            int numYCells = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
 
             Pen pLight = new Pen(Color.LightGray, 1);
             Pen pDark = new Pen(Color.DimGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
                 int xInt = (int)(x * Utils.UNIT / Utils.SEOUL_WIDTH * this.Width);
-                if ((x+5) % 5 == 0)
+                if ((x + 5) % 5 == 0)
                 {
                     g.DrawLine(pDark, xInt, 0, xInt, this.Height);
                 }
@@ -172,7 +175,7 @@ namespace DronePlacementSimulator
             for (int y = 0; y <= numYCells; ++y)
             {
                 int yInt = this.Height - (int)(y * Utils.UNIT / Utils.SEOUL_HEIGHT * this.Height);
-                if ((y+5) % 5 == 0)
+                if ((y + 5) % 5 == 0)
                 {
                     g.DrawLine(pDark, 0, yInt, this.Width, yInt);
                 }
@@ -186,7 +189,7 @@ namespace DronePlacementSimulator
         private void DrawMap(Graphics g)
         {
             Pen p = new Pen(Color.Green, 1);
-            foreach(Polygon polygon in polygonList)
+            foreach (Polygon polygon in polygonList)
             {
                 for (int i = 0; i < polygon.Points.Count; i++)
                 {
@@ -242,12 +245,11 @@ namespace DronePlacementSimulator
                 {
                     try
                     {
-                        OHCAEvent e = new OHCAEvent();
-                        e.kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
-                        e.kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
-                        e.occurrenceTime = DateTime.Parse(data[r, 19].ToString());
-                        e.pixelX = Utils.TransformKiloXToPixel(e.kiloX);
-                        e.pixelY = Utils.TransformKiloYToPixel(e.kiloY);
+
+                        double kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
+                        double kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
+                        DateTime occurrenceTime = DateTime.Parse(data[r, 19].ToString());
+                        OHCAEvent e = new OHCAEvent(kiloX, kiloY, occurrenceTime);
                         eventList.Add(e);
                     }
                     catch (Exception ex)
@@ -340,7 +342,7 @@ namespace DronePlacementSimulator
             while (line != null)
             {
                 string[] cells = line.Split(',');
-                for(int i = 0; i < cells.Length - 1; i++)
+                for (int i = 0; i < cells.Length - 1; i++)
                 {
                     grid.pdf[i] = (double)Double.Parse(cells[i]);
                 }
@@ -396,7 +398,6 @@ namespace DronePlacementSimulator
 
         private void ClickPlacementItems(object sender, EventArgs e)
         {
-            stationList = null;
             kMeansToolStripMenuItem.CheckState = CheckState.Unchecked;
             pulverToolStripMenuItem.CheckState = CheckState.Unchecked;
             boutilierToolStripMenuItem.CheckState = CheckState.Unchecked;
@@ -405,7 +406,7 @@ namespace DronePlacementSimulator
             ToolStripMenuItem item = (ToolStripMenuItem)sender;
             item.CheckState = CheckState.Checked;
             item.Checked = true;
-            
+
             switch (item.Text)
             {
                 case "K-Means":
@@ -449,6 +450,87 @@ namespace DronePlacementSimulator
         private void toolStripComboBoxStations_SelectedIndexChanged(object sender, EventArgs e)
         {
             num_of_stations = Int32.Parse(((ToolStripComboBox)sender).Text);
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "Load a placement file";
+            ofd.FileName = "";
+            ofd.Filter = "Text File (*.txt) | *.txt; | All Files (*.*) | *.*";
+
+            DialogResult dr = ofd.ShowDialog();
+            string fileFullName = "";
+            if (dr == DialogResult.OK)
+            {
+                string fileName = ofd.SafeFileName;
+                fileFullName = ofd.FileName;
+                string filePath = fileFullName.Replace(fileName, "");
+            }
+            else if (dr == DialogResult.Cancel)
+            {
+                return;
+            }
+
+            List<Station> tempList = new List<Station>();
+            StreamReader objReader = new StreamReader(fileFullName);
+            string line = "";
+            try
+            {
+                while (line != null)
+                {
+                    line = objReader.ReadLine();
+                    if (line != null)
+                    {
+                        string[] data = line.Split('\t');
+                        double kiloX = Double.Parse(data[0]);
+                        double kiloY = Double.Parse(data[1]);
+                        int drones = int.Parse(data[2]);
+                        Station s = new Station(kiloX, kiloY);
+                        s.droneList.Add(new Drone(s.stationID));
+                        tempList.Add(s);
+                    }
+                }
+                objReader.Close();
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            stationList.Clear();
+            stationList.AddRange(tempList);
+
+            toolStripComboBoxStations.SelectedIndex = stationList.Count - 8;
+            num_of_stations = stationList.Count;
+
+            this.Invalidate();
+        }
+
+        private void savePlacementToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (stationList.Count == 0)
+            {
+                MessageBox.Show("There are no stations.", "Save File", MessageBoxButtons.OK);
+                return;
+            }
+
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "Text File (*.txt) | *.txt; | All Files (*.*) | *.*";
+            sfd.Title = "Save a placement";
+            sfd.ShowDialog();
+
+            // If the file name is not an empty string open it for saving.  
+            if (sfd.FileName != "")
+            {
+                using (StreamWriter file = new StreamWriter(sfd.FileName))
+                {
+                    foreach (Station s in stationList)
+                    {
+                        file.WriteLine(String.Format("{0}\t{1}\t{2}", s.kiloX, s.kiloY, s.droneList.Count));
+                    }
+                }
+            }
         }
     }
 }

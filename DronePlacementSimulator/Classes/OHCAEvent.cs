@@ -6,14 +6,19 @@ namespace DronePlacementSimulator
     {
         private static int ID = 10000;
         
-        public int          eventID;
-        public double       kiloX, kiloY;
-        public int          pixelX, pixelY;
-        public DateTime     occurrenceTime;
-        public int          assignedStationId;
+        public int eventID;
+        public double kiloX, kiloY;
+        public int pixelX, pixelY;
+        public DateTime occurrenceTime;
+        public int assignedStationId;
         
-        public OHCAEvent()
+        public OHCAEvent(double kiloX, double kiloY, DateTime occurrenceTime)
         {
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
+            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
+            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.occurrenceTime = occurrenceTime;
             this.eventID = ID++;
         }
 

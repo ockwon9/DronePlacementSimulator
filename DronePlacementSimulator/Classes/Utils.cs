@@ -33,6 +33,11 @@ namespace DronePlacementSimulator
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int SIMULATION_EVENTS = 10000000;
 
+        public static double FLIGHT_HEIGHT = 10; // meter
+        public static int DRONE_VELOCITY = 60; // km/h
+        public static int DRONE_TAKE_OFF_VELOCITY = 2; // m/s
+        public static int DRONE_LANDING_VELOCITY = 1; // m/s
+
         static Utils()
         {
             SCREEN_HEIGHT = Screen.PrimaryScreen.Bounds.Height;
