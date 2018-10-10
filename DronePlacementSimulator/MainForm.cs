@@ -80,12 +80,36 @@ namespace DronePlacementSimulator
 
         private void PerformBoutilier()
         {
-            stationList.Clear();
-            foreach (double[] coord in eventGrid.cells)
+            stationList = new List<Station>();
+            double[] param = new double[] { 0.9999999, 0.99999999, 0.999999999 };
+
+            for (int f = 98; f <= 100; f++)
             {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+                foreach (double r in param)
+                {
+                    stationList.Clear();
+                    foreach (double[] coord in gridEvent.cells)
+                    {
+                        stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+                    }
+                    Boutilier boutilier = new Boutilier(ref stationList, ref eventList, f, r);
+                    Test test = new Test(stationList, gridEvent, Policy.NearestStation);
+                    test.Simulate();
+
+                    double sr = test.GetExpectedSurvivalRate() * 100;
+                    int mc = test.GetMissCount();
+                    double rate = mc / (double)Utils.SIMULATION_EVENTS * 100.0;
+                    using (System.IO.StreamWriter file = new System.IO.StreamWriter("Boutilier_" + f + "_" + r + ".txt"))
+                    {
+                        for (int i = 0; i < stationList.Count; i++)
+                        {
+                            file.WriteLine("station_" + i + " : kiloX = " + stationList[i].kiloX + ", kiloY = " + stationList[i].kiloY + ", numDrones = " + stationList[i].droneList.Count + "\n");
+                        }
+                        file.WriteLine("Expected Survival Rate = " + sr + "%" + "\n");
+                        file.WriteLine("Miss Rate = " + rate + "%" + "\n");
+                    }
+                }
             }
-            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 90);
         }
 
         private void PerformRubis()

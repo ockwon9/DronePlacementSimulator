@@ -15,6 +15,7 @@ namespace DronePlacementSimulator
         public static double MAX_LATITUDE = 37.70130154;
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
+        public static int MINUTES_IN_4_YEARS = 2103840;
 
         public static double UNIT = 3.0;
         public static double GOLDEN_TIME = 4.949;

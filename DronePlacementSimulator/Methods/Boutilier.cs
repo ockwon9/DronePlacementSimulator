@@ -14,18 +14,20 @@ namespace DronePlacementSimulator
         private int J;
         private double f;
         private int numStations = 0;
+        private List<List<int>> realCoverList;
 
-        public Boutilier(ref List<Station> stationList, ref List<OHCAEvent> eventList, double f)
+        public Boutilier(ref List<Station> stationList, ref List<OHCAEvent> eventList, double f, double r)
         {
             this.I = stationList.Count;
             this.J = eventList.Count;
             this.f = f;
+            this.realCoverList = new List<List<int>>();
 
             Console.WriteLine(I);
             Console.WriteLine(J);
 
             OptimalPlacement(ref stationList, ref eventList);
-            PlaceDrones(ref stationList);
+            PlaceDrones(r, ref stationList);
         }
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
@@ -117,11 +119,37 @@ namespace DronePlacementSimulator
                     Console.WriteLine("Optimization was stopped with status = " + optimstatus);
                 }
 
-                for (int l = I - 1; l >= 0; l--)
+                bool[] boolY = new bool[I];
+                for (int i = 0; i < I; i++)
                 {
-                    if (y[l].Get(GRB.DoubleAttr.X) == 0)
+                    boolY[i] = (y[i].Get(GRB.DoubleAttr.X) == 1);
+                }
+
+                List<int>[] coverList = new List<int>[I];
+                for (int i = 0; i < I; i++)
+                {
+                    coverList[i] = new List<int>();
+                }
+                for (int j = 0; j < J; j++)
+                {
+                    for (int i = 0; i < I; i++)
                     {
-                        stationList.RemoveAt(l);
+                        if (boolY[i] && z[j][i].Get(GRB.DoubleAttr.X) == 1)
+                        {
+                            coverList[i].Add(j);
+                        }
+                    }
+                }
+
+                for (int i = I - 1; i >= 0; i--)
+                {
+                    if (boolY[i])
+                    {
+                        realCoverList.Insert(0, coverList[i]);
+                    }
+                    else
+                    {
+                        stationList.RemoveAt(i);
                     }
                 }
 
@@ -134,9 +162,49 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void PlaceDrones(ref List<Station> stationList)
+        public void PlaceDrones(double r, ref List<Station> stationList)
         {
-            return;
+            for (int i = 0;  i < stationList.Count; i++)
+            {
+                int m = 0;
+                List<int> list = realCoverList[i];
+
+                double lambda = list.Count / Utils.MINUTES_IN_4_YEARS;
+                double mu = 1.0 / 60.0;
+                double rho, mrho;
+
+                double sum = 0.0;
+                while (sum <= r)
+                {
+                    m++;
+                    mrho = lambda / mu;
+                    rho = mrho / m;
+
+                    sum = 0.0;
+                    double temp = 1.0;
+                    double pi = 1.0;
+                    for (int k = 1; k < m; k++)
+                    {
+                        temp *= (mrho / k);
+                        pi += temp;
+                    }
+                    temp *= (rho / (1 - rho));
+                    pi += temp;
+                    pi = 1 / pi;
+                    sum += pi;
+
+                    for (int k = 1; k < m; k++)
+                    {
+                        pi *= (mrho / k);
+                        sum += pi;
+                    }
+                }
+
+                for (int j = 0; j < m; j++)
+                {
+                    stationList[i].droneList.Add(new Drone(stationList[i].stationID));
+                }
+            }
         }
     }
 }
