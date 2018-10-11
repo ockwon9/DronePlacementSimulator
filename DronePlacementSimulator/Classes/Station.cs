@@ -12,14 +12,19 @@ namespace DronePlacementSimulator
         public List<Drone> droneList;
         public int eventCount;
 
-        public Station(double kiloX, double kiloY)
+        public Station(double kiloX, double kiloY, int drones)
         {
             this.stationID = ID++;
             this.kiloX = kiloX;
             this.kiloY = kiloY;
             this.pixelX = Utils.TransformKiloXToPixel(kiloX);
             this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+
             droneList = new List<Drone>();
+            for (int i = 0; i < drones; i++)
+            {
+                droneList.Add(new Drone(stationID));
+            }
         }
 
         public override bool Equals(object obj)

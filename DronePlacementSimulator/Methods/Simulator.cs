@@ -5,26 +5,21 @@ namespace DronePlacementSimulator
 {
     delegate int Del(List<Station> stationList, ref Counter counter, OHCAEvent ohca);
 
-    class Test
+    public class Simulator
     {
         private Del policy;
-
+        private PathPlanner pathPlanner;
+        
         private double expectedSurvivalRate;
         private int missCount;
-        private PathPlanner pathPlanner;
 
-        public Test()
+        public Simulator()
         {
             expectedSurvivalRate = 0;
             missCount = 0;
 
-            // TODO: Heavy workload
+            // TODO: It is too heavy workload. Anyway, we load all data on the memory (about 6.4 GB).
             pathPlanner = new PathPlanner();
-        }
-
-        public void SetPolicy(Del policy)
-        {
-            this.policy = policy;
         }
 
         public void Simulate(List<Station> stationList, Grid eventGrid)
@@ -89,6 +84,11 @@ namespace DronePlacementSimulator
                 double rand = new Random().NextDouble() / 1.0000000000000000001;
                 return -Math.Log(1.0 - rand) / arrivalRate;
             }
+        }
+
+        public void SetPolicy(Del policy)
+        {
+            this.policy = policy;
         }
 
         public double GetExpectedSurvivalRate()

@@ -17,10 +17,10 @@ namespace DronePlacementSimulator
         private List<Polygon> polygonList;
         private List<List<double[]>> polyCoordList;
 
-        private Test test = null;
+        private Simulator simulator = null;
         private Grid eventGrid = null;
         private Bitmap _canvas = null;
-        private int num_of_stations;
+        private int targetStationCount;
 
         public int coverRange = 0;
         
@@ -33,12 +33,12 @@ namespace DronePlacementSimulator
             polygonList = new List<Polygon>();
             polyCoordList = new List<List<double[]>>();
 
-            // Set ths simulator's window size
+            // Set the size of simulator's window
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * Utils.SEOUL_WIDTH / Utils.SEOUL_HEIGHT);
             coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 0;
-            num_of_stations = 8;
+            targetStationCount = 8;
 
             // Read OHCA events data
             ReadEventData();
@@ -59,12 +59,10 @@ namespace DronePlacementSimulator
         private void PerformKMeans()
         {
             stationList.Clear();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), num_of_stations, Utils.ITERATION_COUNT);
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.ITERATION_COUNT);
             foreach (double[] d in stations.Means)
             {
-                Station s = new Station(d[0], d[1]);
-                s.droneList.Add(new Drone(s.stationID));
-                stationList.Add(s);
+                stationList.Add(new Station(d[0], d[1], 1));
             }
         }
 
@@ -73,49 +71,30 @@ namespace DronePlacementSimulator
             stationList.Clear();
             foreach (double[] coord in eventGrid.cells)
             {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT, 0));
             }
-            Pulver pulver = new Pulver(0.2, num_of_stations, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
+            Pulver pulver = new Pulver(0.2, targetStationCount, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
         }
 
         private void PerformBoutilier()
         {
-            stationList = new List<Station>();
-            double[] param = new double[] { 0.9999999, 0.99999999, 0.999999999 };
-
-            for (int f = 98; f <= 100; f++)
+            stationList.Clear();
+            foreach (double[] coord in eventGrid.cells)
             {
-                foreach (double r in param)
-                {
-                    stationList.Clear();
-                    foreach (double[] coord in gridEvent.cells)
-                    {
-                        stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT));
-                    }
-                    Boutilier boutilier = new Boutilier(ref stationList, ref eventList, f, r);
-                    Test test = new Test(stationList, gridEvent, Policy.NearestStation);
-                    test.Simulate();
-
-                    double sr = test.GetExpectedSurvivalRate() * 100;
-                    int mc = test.GetMissCount();
-                    double rate = mc / (double)Utils.SIMULATION_EVENTS * 100.0;
-                    using (System.IO.StreamWriter file = new System.IO.StreamWriter("Boutilier_" + f + "_" + r + ".txt"))
-                    {
-                        for (int i = 0; i < stationList.Count; i++)
-                        {
-                            file.WriteLine("station_" + i + " : kiloX = " + stationList[i].kiloX + ", kiloY = " + stationList[i].kiloY + ", numDrones = " + stationList[i].droneList.Count + "\n");
-                        }
-                        file.WriteLine("Expected Survival Rate = " + sr + "%" + "\n");
-                        file.WriteLine("Miss Rate = " + rate + "%" + "\n");
-                    }
-                }
+                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT, 0));
             }
+            double[] param = new double[] {0.9999999, 0.99999999, 0.999999999};
+            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 98, 0.9999999);
         }
 
         private void PerformRubis()
         {
+            if (simulator == null)
+            {
+                simulator = new Simulator();
+            }
             stationList.Clear();
-            stationList = Rubis.Calculate(num_of_stations, eventList, polyCoordList);
+            stationList.AddRange(RUBIS.Calculate(eventGrid, eventList, ref simulator, targetStationCount, targetStationCount));
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -434,26 +413,26 @@ namespace DronePlacementSimulator
                 policy = Policy.HighestSurvalRateStation;
             }
 
-            if (test == null)
+            if (simulator == null)
             {
-                test = new Test();
+                simulator = new Simulator();
             }
-            test.SetPolicy(policy);
-            test.Simulate(stationList, eventGrid);
+            simulator.SetPolicy(policy);
+            simulator.Simulate(stationList, eventGrid);
 
-            Console.WriteLine(test.GetExpectedSurvivalRate());
-            Console.WriteLine("Total Miss Count = " + test.GetMissCount());
+            Console.WriteLine(simulator.GetExpectedSurvivalRate());
+            Console.WriteLine("Total Miss Count = " + simulator.GetMissCount());
 
-            labelOverallSurvivalRateValue.Text = test.GetExpectedSurvivalRate() * 100 + "%";
-            double rate = (double)test.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
-            labelDeliveryMissValue.Text = test.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
+            labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
+            double rate = (double)simulator.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
+            labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
 
             this.Invalidate();
         }
 
         private void toolStripComboBoxStations_SelectedIndexChanged(object sender, EventArgs e)
         {
-            num_of_stations = Int32.Parse(((ToolStripComboBox)sender).Text);
+            targetStationCount = Int32.Parse(((ToolStripComboBox)sender).Text);
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -490,9 +469,7 @@ namespace DronePlacementSimulator
                         double kiloX = Double.Parse(data[0]);
                         double kiloY = Double.Parse(data[1]);
                         int drones = int.Parse(data[2]);
-                        Station s = new Station(kiloX, kiloY);
-                        s.droneList.Add(new Drone(s.stationID));
-                        tempList.Add(s);
+                        tempList.Add(new Station(kiloX, kiloY, drones));
                     }
                 }
                 objReader.Close();
@@ -506,7 +483,7 @@ namespace DronePlacementSimulator
             stationList.AddRange(tempList);
 
             toolStripComboBoxStations.SelectedIndex = stationList.Count - 8;
-            num_of_stations = stationList.Count;
+            targetStationCount = stationList.Count;
 
             this.Invalidate();
         }

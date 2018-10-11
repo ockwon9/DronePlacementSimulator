@@ -55,7 +55,7 @@ namespace DronePlacementSimulator
             double maxSurvivalRate = Double.PositiveInfinity;
             foreach (Station s in stationList)
             {
-                double survivalRate = Rubis.GetSurvivalRate(stationList, s, e);
+                double survivalRate = RUBIS.GetSurvivalRate(stationList, s, e);
                 if (survivalRate > maxSurvivalRate)
                 {
                     maxSurvivalRate = survivalRate;

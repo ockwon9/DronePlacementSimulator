@@ -9,7 +9,7 @@ using CSharpIDW;
 
 namespace DronePlacementSimulator
 {
-    class Grid
+    public class Grid
     {
         public List<double[]> cells;
         public double unit;
