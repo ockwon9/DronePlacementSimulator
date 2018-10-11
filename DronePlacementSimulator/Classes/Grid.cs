@@ -5,57 +5,81 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Shapes;
-using CSharpIDW;
 
 namespace DronePlacementSimulator
 {
+    class Cell
+    {
+        public double kiloX;
+        public double kiloY;
+        public int intX;
+        public int intY;
+        public int eventCount;
+
+        public Cell()
+        {
+        }
+
+        public Cell(double kiloX, double kiloY, int j, int i)
+        {
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
+            this.intX = j;
+            this.intY = i;
+            this.eventCount = 0;
+        }
+
+        public void addEvent()
+        {
+            this.eventCount++;
+        }
+    }
+
     class Grid
     {
-        public List<double[]> cells;
-        public double unit;
-        public double[] pdf;
-        public IdwInterpolator idw;
-        
-        public List<int[]> intCoords;
-        public static Random rand = new Random();
+        public List<Cell> cells;
+        private int lambda_width;
+        private int lambda_height;
+        public double[][] lambda;
 
-        public Grid (double minLon, double minLat, double maxLon, double maxLat, double unit, ref List<List<double[]>> polyCoordList)
+        public Grid (ref List<List<double[]>> polyCoordList)
         {
-            this.cells = new List<double[]>();
-            this.unit = unit;
-            this.idw = new IdwInterpolator(2);
-            int numLon = (int)Math.Ceiling((maxLon - minLon) / unit);
-            int numLat = (int)Math.Ceiling((maxLat - minLat) / unit);
-
-            this.intCoords = new List<int[]>();
+            this.cells = new List<Cell>();
+            int numLon = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
+            int numLat = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
+            
             for (int i = 0; i < numLat; i++)
             {
-                double lat = minLat + i * unit;
+                double kiloY = (i + 0.5) * Utils.UNIT;
                 for (int j = 0; j < numLon; j++)
                 {
-                    double lon = minLon + j * unit;
-                    if (IsInside(lon + 0.5 * unit, lat + 0.5 * unit, ref polyCoordList))
+                    double kiloX = (j + 0.5) * Utils.UNIT;
+                    if (IsInside(kiloY, kiloX, ref polyCoordList))
                     {   
-                        cells.Add(new double[] { lon, lat });
-                        intCoords.Add(new int[] { i, j });
+                        cells.Add(new Cell(kiloY, kiloX, j, i));
                     }
                 }
             }
 
-            this.pdf = new double[cells.Count];
+            this.lambda_width = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
+            this.lambda_height = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
+            this.lambda = new double[lambda_height][];
+            for (int i = 0; i < lambda_height; i++)
+            {
+                this.lambda[i] = new double[lambda_width];
+                for (int j = 0; j < lambda_width; j++)
+                {
+                    this.lambda[i][j] = 0;
+                }
+            }
         }
 
         public Grid(Grid temp)
         {
-            this.cells = new List<double[]>(temp.cells);
-            this.unit = temp.unit;
-            this.idw = new IdwInterpolator(2);
-            this.intCoords = new List<int[]>(temp.intCoords);
-            this.pdf = new double[cells.Count];
-            Array.Copy(temp.pdf, this.pdf, this.cells.Count);
+            this.cells = new List<Cell>(temp.cells);
         }
 
-        public bool IsInside(double lon, double lat, ref List<List<double[]>> polyCoordList)
+        public bool IsInside(double kiloX, double kiloY, ref List<List<double[]>> polyCoordList)
         {
             foreach (List<double[]> pList in polyCoordList)
             {
@@ -68,13 +92,13 @@ namespace DronePlacementSimulator
 
                 if (p1[1] == p2[1])
                 {
-                    onLine |= (p1[1] == lat && (p1[0] - lon) * (p2[0] - lon) <= 0);
+                    onLine |= (p1[1] == kiloY && (p1[0] - kiloX) * (p2[0] - kiloX) <= 0);
                 }
-                else if ((p1[1] - lat) * (p2[1] - lat) <= 0)
+                else if ((p1[1] - kiloY) * (p2[1] - kiloY) <= 0)
                 {
-                    temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                    onLine |= (temp == lon);
-                    leftCount += (temp < lon) ? 1 : 0;
+                    temp = ((p2[1] - kiloY) * p1[0] + (kiloY - p1[1]) * p2[0]) / (p2[1] - p1[1]);
+                    onLine |= (temp == kiloX);
+                    leftCount += (temp < kiloX) ? 1 : 0;
                 }
 
                 for (int i = 1; i < n; i++)
@@ -84,13 +108,13 @@ namespace DronePlacementSimulator
 
                     if (p1[1] == p2[1])
                     {
-                        onLine |= (p1[1] == lat && (p1[0] - lon) * (p2[0] - lon) <= 0);
+                        onLine |= (p1[1] == kiloY && (p1[0] - kiloX) * (p2[0] - kiloX) <= 0);
                     }
-                    else if ((p1[1] - lat) * (p2[1] - lat) <= 0)
+                    else if ((p1[1] - kiloY) * (p2[1] - kiloY) <= 0)
                     {
-                        temp = ((p2[1] - lat) * p1[0] + (lat - p1[1]) * p2[0]) / (p2[1] - p1[1]);
-                        onLine |= (temp == lon);
-                        leftCount += (temp < lon) ? 1 : 0;
+                        temp = ((p2[1] - kiloY) * p1[0] + (kiloY - p1[1]) * p2[0]) / (p2[1] - p1[1]);
+                        onLine |= (temp == kiloX);
+                        leftCount += (temp < kiloX) ? 1 : 0;
                     }
                 }
 
@@ -103,74 +127,50 @@ namespace DronePlacementSimulator
             return false;
         }
 
-        public void IdwInterpolate(ref List<OHCAEvent> eventList)
+        public void Interpolate(ref List<OHCAEvent> eventList)
         {
-            List<CSharpIDW.Point> eventLocations = new List<CSharpIDW.Point>();
-            int[][] count = new int[370][];
-            for (int i = 0; i < 370; i++)
+            for (int i = 0; i < eventList.Count; i++)
             {
-                count[i] = new int[305];
-                for (int j = 0; j < 305; j++)
+                OHCAEvent e = eventList[i];
+                int intX = (int) Math.Round(e.kiloX / Utils.LAMBDA_PRECISION - 0.5);
+                int intY = (int) Math.Round(e.kiloY / Utils.LAMBDA_PRECISION - 0.5);
+
+                for (int j = 0; j < this.lambda_height; j++)
                 {
-                    count[i][j] = 0;
+                    for (int k = 0; k < this.lambda_width; k++)
+                    {
+                        double x = (k - intX) * Utils.LAMBDA_PRECISION;
+                        double y = (j - intY) * Utils.LAMBDA_PRECISION;
+                        double temp = 1 + x * x + y * y;
+                        this.lambda[j][k] += 1 / temp / temp;
+                    }
                 }
             }
 
-            foreach (OHCAEvent e in eventList)
+            for (int j =  0; j < this.lambda_height; j++)
             {
-                count[(int)Math.Round(10 * e.kiloX + 0.5)][(int)Math.Round(10 * e.kiloY + 0.5)]++;
-            }
-
-            for (int i = 0; i < 370; i++)
-            {
-                for (int j = 0; j < 305; j++)
+                for (int k = 0; k < this.lambda_width; k++)
                 {
-                    eventLocations.Add(new CSharpIDW.Point((double)count[i][j], i / 10.0 + 0.05, j / 10.0 + 0.05));
+                    this.lambda[j][k] /= (Math.PI * Utils.MINUTES_IN_4_YEARS);
                 }
-            }
-            
-            const int power = 1;
-            const int dimension = 2;            
-            var interpolator = new IdwInterpolator(dimension, power, Utils.NUMBER_OF_NEIGHBORS);
-            interpolator.AddPointRange(eventLocations);
-
-            for (int i = 0; i < cells.Count; i++)
-            {
-                this.pdf[i] = (Utils.UNIT * 10) * (Utils.UNIT * 10) * interpolator.Interpolate(this.cells[i]).Value;
             }
         }
 
         public double GetMaxDemand()
         {
-            double mD = 0;
-            for (int i = 0; i < cells.Count; i++)
+            double maxDemand = Double.NegativeInfinity;
+            for (int i = 0; i < this.lambda.Length; i++)
             {
-                if (pdf[i] > mD)
+                for (int j = 0; j < this.lambda[i].Length; j++)
                 {
-                    mD = pdf[i];
+                    if (maxDemand < lambda[i][j])
+                    {
+                        maxDemand = lambda[i][j];
+                    }
                 }
             }
 
-            return mD;
-        }
-
-        public int SelectCell()
-        {
-            double poolSize = 0;
-            for (int i = 0; i < pdf.Length; i++)
-            {
-                poolSize += pdf[i];
-            }
-
-            double randomNumber = rand.NextDouble() * poolSize;
-            double accumulatedProbability = 0.0f;
-            for (int i = 0; i < pdf.Length; i++)
-            {
-                accumulatedProbability += pdf[i];
-                if (randomNumber <= accumulatedProbability)
-                    return i;
-            }
-            return -1;
+            return maxDemand;
         }
     }
 }

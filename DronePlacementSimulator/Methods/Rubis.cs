@@ -5,7 +5,6 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Shapes;
-using CSharpIDW;
 
 namespace DronePlacementSimulator
 {
@@ -26,7 +25,7 @@ namespace DronePlacementSimulator
 
         public static List<Station> Calculate(int num_of_stations, List<OHCAEvent> eventList, List<List<double[]>> polyCoordList)
         {
-            Grid gridEvent = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            Grid gridEvent = new Grid(ref polyCoordList);
             //gridEvent.IdwInterpolate(ref eventList);
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
@@ -339,9 +338,14 @@ namespace DronePlacementSimulator
         }
 
         //TODO: How to calculate the survival rate when the Station s dispatches a drone to the Event e
-        public static double GetSurvivalRate(List<Station> stationList, Station s, OHCAEvent e)
+        public static double GetSurvivalRate(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e)
         {
             return new Random().NextDouble();
+        }
+
+        public static double GetPotential(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e)
+        {
+            return 0.0;
         }
     }
 }
