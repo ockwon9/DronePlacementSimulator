@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 
 namespace DronePlacementSimulator
 {
-    public static class RUBIS
+    static class RUBIS
     {
         enum Direction
         {
@@ -23,86 +25,74 @@ namespace DronePlacementSimulator
             RightBottom
         }
 
-        public static List<Station> Calculate(Grid eventGrid, List<OHCAEvent> eventList, ref Simulator simulator, int stations, int drones)
+        public static void Calculate(Grid eventGrid, List<OHCAEvent> eventList, ref List<Station> stationList, ref Simulator simulator, int stations, int drones)
         {
-            // Step 1. Find an initial station placement that covers the whole of Seoul
-            List<Station> stationList = new List<Station>();
-            stationList.Add(new Station(4.5, 15.0, 1));
-            stationList.Add(new Station(8.5, 7.7, 1));
-            stationList.Add(new Station(14.5, 5.0, 1));
-            stationList.Add(new Station(12.0, 16.3, 1));
-            stationList.Add(new Station(16.5, 13.0, 1));
-            stationList.Add(new Station(17.0, 22.6, 1));
-            stationList.Add(new Station(21.0, 7.5, 1));
-            stationList.Add(new Station(22.0, 19.0, 1));
-            stationList.Add(new Station(24.7, 27.0, 1));
-            stationList.Add(new Station(25.0, 13.0, 1));
-            stationList.Add(new Station(27.0, 4.5, 1));
-            stationList.Add(new Station(27.0, 20.5, 1));
-            stationList.Add(new Station(30.5, 8.5, 1));
-            stationList.Add(new Station(33.0, 13.5, 1));
+            List<Station> prevStationList = new List<Station>();
+            List<Station> nextStationList;
+            CloneList(stationList, prevStationList);
 
-            // Add additional stations in crowded cells
-            int remainingStations = stations - stationList.Count;
+            // Step 1. Find an initial station placement that covers the whole of Seoul
+            prevStationList.Add(new Station(4.5, 15.0, 1));
+            prevStationList.Add(new Station(8.5, 7.7, 1));
+            prevStationList.Add(new Station(14.5, 5.0, 1));
+            prevStationList.Add(new Station(12.0, 16.3, 1));
+            prevStationList.Add(new Station(16.5, 13.0, 1));
+            prevStationList.Add(new Station(17.0, 22.6, 1));
+            prevStationList.Add(new Station(21.0, 7.5, 1));
+            prevStationList.Add(new Station(22.0, 19.0, 1));
+            prevStationList.Add(new Station(24.7, 27.0, 1));
+            prevStationList.Add(new Station(25.0, 13.0, 1));
+            prevStationList.Add(new Station(27.0, 4.5, 1));
+            prevStationList.Add(new Station(27.0, 20.5, 1));
+            prevStationList.Add(new Station(30.5, 8.5, 1));
+            prevStationList.Add(new Station(33.0, 13.5, 1));
+
+            // Step 2. Add remaining stations in crowded cells
+            int remainingStations = stations - prevStationList.Count;
             for (int i = 0; i < remainingStations; i++)
             {
                 double kiloX = eventGrid.cells[i].kiloX;
                 double kiloY = eventGrid.cells[i].kiloY;
-                stationList.Add(new Station(kiloX, kiloY, 1));
+                prevStationList.Add(new Station(kiloX, kiloY, 1));
             }
 
-            int remainingDrones = drones - stationList.Count;
+            // Step 3. Check whether the initial placement covers the whole of Seoul and count how many events each station contains
+            if (!IsAllCovered(eventGrid, prevStationList, ref simulator))
+            {
+                return;
+            }
+
+            // Step 4. Add remaining drones in busy stations
+            CalculateCoveredEvents(eventList, ref prevStationList, ref simulator);
+            int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
             {
-                double kiloX = eventGrid.cells[i].kiloX;
-                double kiloY = eventGrid.cells[i].kiloY;
-                
+                prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));
             }
 
-            // Check whether the initial placement covers the whole of Seoul and count how many events each station contains
-            if (!IsAllCovered(eventGrid, ref stationList))
-            {
-                return null;
-            }
-
-            // Step 2. Assign remaining drones to crowded stations
-            /*
-            stationList.Sort((a, b) => a.eventCount < b.eventCount ? 1 : -1);
-            int remainingDrones = (int)(remainingBudget / Utils.DRONE_PRICE);
-            for (int i = 0; i < remainingDrones; i++)
-            {
-                stationList[i].droneList.Add(new Drone(stationList[i].stationID));
-            }
-            */
-            
-            // Step 3. Search the best station placement
+            // Step 2. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
             double alpha = 0.99;
             int iteration = 0;
 
-            List<Station> nextStationList;
-            List<Station> currentStationList = stationList;
-            List<Station> solutionList = new List<Station>();
-
-            double currentSurvivalRate = GetOverallSurvivalRate(eventList, stationList);
+            double currentSurvivalRate = GetOverallSurvivalRate(eventList, prevStationList, ref simulator);
             double bestSurvivalRate = 0.0;
 
-            // Step 4. Simulated Annealing
             while (currentTemp > epsilonTemp)
             {
                 iteration++;
 
-                // Find random, but feasible station placement
-                nextStationList = MoveOneStepToBestDirection(eventGrid, eventList, currentStationList, remainingBudget);
-                double nextSurvivalRate = GetOverallSurvivalRate(eventList, currentStationList);
+                // Near search using local optimization
+                nextStationList = MoveOneStepToBestDirection(eventGrid, eventList, prevStationList, ref simulator);
+                double nextSurvivalRate = GetOverallSurvivalRate(eventList, nextStationList, ref simulator);
                 double delta = nextSurvivalRate - currentSurvivalRate;
 
                 if (delta > 0)
                 {
                     // If better, choose it
+                    CloneList(nextStationList, prevStationList);
                     currentSurvivalRate = nextSurvivalRate;
-                    currentStationList = nextStationList;
                 }
                 else
                 {
@@ -110,17 +100,18 @@ namespace DronePlacementSimulator
                     double probility = new Random().NextDouble();
                     if (probility < Math.Exp(-delta / currentTemp))
                     {
-                        nextStationList = FindRandomStationPlacement(eventList, currentStationList, remainingBudget);
-                        currentSurvivalRate = nextSurvivalRate;
-                        currentStationList = nextStationList;
+                        // Far search using random placement
+                        nextStationList = FindRandomStationPlacement(eventGrid, eventList, prevStationList, ref simulator, remainingDrones);
+                        CloneList(nextStationList, prevStationList);
+                        currentSurvivalRate = GetOverallSurvivalRate(eventList, prevStationList, ref simulator);
                     }
                 }
 
                 // Keep the best solution
                 if (currentSurvivalRate > bestSurvivalRate)
                 {
+                    CloneList(prevStationList, stationList);
                     bestSurvivalRate = currentSurvivalRate;
-                    solutionList = currentStationList;
                 }
 
                 // Cool-down
@@ -129,21 +120,19 @@ namespace DronePlacementSimulator
 
                 if (iteration % 10 == 0)
                 {
-                    Console.WriteLine("Iteration [" + iteration + "] CurrentTemperature: " + currentTemp + "℃, CurrentSurvivalRate = " + (currentSurvivalRate*100) + "%");
+                    Console.WriteLine("Iteration [" + iteration + "] CurrentTemperature: " + currentTemp + "℃, BestSurvivalRate = " + (bestSurvivalRate * 100) + "%");
                 }
             }
-
-            return solutionList;
         }
 
         // Find the best station placement with only one-step movement
-        private static List<Station> MoveOneStepToBestDirection(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList)
+        private static List<Station> MoveOneStepToBestDirection(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList, ref Simulator simulator)
         {
             List<Station> tempList = new List<Station>();
-            tempList.AddRange(currentStationList);
+            CloneList(currentStationList, tempList);
 
             List<Station> solutionList = new List<Station>();
-            double maxSurvivalRate = GetOverallSurvivalRate(eventList, currentStationList);
+            double maxSurvivalRate = GetOverallSurvivalRate(eventList, currentStationList, ref simulator);
 
             // Find the best one-step movement for all directions of all stations
             foreach (Station s in tempList)
@@ -182,14 +171,13 @@ namespace DronePlacementSimulator
                     }
 
                     // Check the all-coverage constraint
-                    if(IsAllCovered(eventGrid, ref tempList))
+                    if(IsAllCovered(eventGrid, tempList, ref simulator))
                     {
-                        double survivalRate = GetOverallSurvivalRate(eventList, tempList);
+                        double survivalRate = GetOverallSurvivalRate(eventList, tempList, ref simulator);
                         if (survivalRate > maxSurvivalRate)
                         {
                             maxSurvivalRate = survivalRate;
-                            solutionList.Clear();
-                            solutionList.AddRange(tempList);
+                            CloneList(tempList, solutionList);
                         }
                     }
 
@@ -198,10 +186,11 @@ namespace DronePlacementSimulator
                 }
             }
 
+            double sr = GetOverallSurvivalRate(eventList, solutionList, ref simulator);
             return solutionList;
         }
 
-        private static List<Station> FindRandomStationPlacement(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList, int drones)
+        private static List<Station> FindRandomStationPlacement(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList, ref Simulator simulator, int remainingDrones)
         {
             List<Station> tempList = new List<Station>();
             List<Station> feasibleList = new List<Station>();
@@ -209,15 +198,7 @@ namespace DronePlacementSimulator
 
             while (true)
             {
-                tempList.Clear();
-                tempList.AddRange(currentStationList);
-
-                // Assign drones to randomly-selected stations
-                for (int i = 0; i < drones; i++)
-                {
-                    int randomIndex = new Random().Next(0, currentStationList.Count - 1);
-                    currentStationList[randomIndex].droneList.Add(new Drone(currentStationList[randomIndex].stationID));
-                }
+                CloneList(currentStationList, tempList);
 
                 // Move each station a random distance in a random direction
                 foreach (Station s in tempList)
@@ -254,10 +235,9 @@ namespace DronePlacementSimulator
                 }
 
                 // Check the all-coverage constraint
-                if (IsAllCovered(eventGrid, ref tempList))
+                if (IsAllCovered(eventGrid, tempList, ref simulator))
                 {
-                    feasibleList.Clear();
-                    feasibleList.AddRange(tempList);
+                    CloneList(tempList, feasibleList);
                     break;
                 }
 
@@ -268,11 +248,24 @@ namespace DronePlacementSimulator
                 }
             }
 
+            // Assign drones to randomly-selected stations
+            CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
+            foreach (Station s in feasibleList)
+            {
+                s.droneList.Clear();
+                s.droneList.Add(new Drone(s.stationID));
+            }
+            for (int i = 0; i < remainingDrones; i++)
+            {
+                Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
+                s.droneList.Add(new Drone(s.stationID));
+            }
+
             return feasibleList;
         }
 
         // Check whether all events is reachable
-        public static bool IsAllCovered(Grid eventGrid, ref List<Station> stationList)
+        public static bool IsAllCovered(Grid eventGrid, List<Station> stationList, ref Simulator simulator)
         {
             foreach (Station s in stationList)
             {
@@ -284,10 +277,10 @@ namespace DronePlacementSimulator
                 bool isCovered = false;
                 foreach (Station s in stationList)
                 {
-                    if(Utils.GetDistance(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
+                    if(simulator.GetPathPlanner().CalcuteFlightTime(c.kiloX, c.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
-                        s.eventCount++;
+                        break;
                     }
                 }
                 if(isCovered == false)
@@ -295,11 +288,12 @@ namespace DronePlacementSimulator
                     return false;
                 }
             }
+
             return true;
         }
 
         // Check whether all events is reachable
-        private static void CalculateCoveredEvents(List<OHCAEvent> eventList, ref List<Station> stationList)
+        private static void CalculateCoveredEvents(List<OHCAEvent> eventList, ref List<Station> stationList, ref Simulator simulator)
         {
             foreach (Station s in stationList)
             {
@@ -308,27 +302,36 @@ namespace DronePlacementSimulator
 
             foreach (OHCAEvent e in eventList)
             {
-                bool isCovered = false;
                 foreach (Station s in stationList)
                 {
-                    if (Utils.GetDistance(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
+                    if (simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
                     {
-                        isCovered = true;
                         s.eventCount++;
                     }
                 }
-                if (isCovered == false)
-                {
-                    return false;
-                }
             }
-            return true;
+            stationList.Sort((a, b) => a.eventCount <= b.eventCount ? 1 : -1);
         }
 
         //TODO: How to calculate the survival rate for the given event list and station list
-        private static double GetOverallSurvivalRate(List<OHCAEvent> eventList, List<Station> stationList)
+        private static double GetOverallSurvivalRate(List<OHCAEvent> eventList, List<Station> stationList, ref Simulator simulator)
         {
-            return new Random().NextDouble();
+            double sum = 0.0;
+            foreach (OHCAEvent e in eventList)
+            {
+                double minTime = Double.MaxValue;
+                foreach (Station s in stationList)
+                {
+                    double time = simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY);
+                    if (time < minTime)
+                    {
+                        minTime = time;
+                    }
+                }
+                sum += (minTime > Utils.GOLDEN_TIME) ? 0 : CalculateSurvivalRate(minTime);
+            }
+
+            return sum / eventList.Count;
         }
 
         //TODO: How to calculate the survival rate when the Station s dispatches a drone to the Event e
@@ -337,9 +340,23 @@ namespace DronePlacementSimulator
             return new Random().NextDouble();
         }
 
+        private static double CalculateSurvivalRate(double time)
+        {
+            return 0.7 - (0.1 * time);
+        }
+
         public static double GetPotential(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e)
         {
             return 0.0;
+        }
+
+        private static void CloneList(List<Station> srcList, List<Station> dstList)
+        {
+            dstList.Clear();
+            srcList.ForEach((item) =>
+            {
+                dstList.Add(new Station(item));
+            });
         }
     }
 }

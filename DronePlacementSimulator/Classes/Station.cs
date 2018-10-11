@@ -2,7 +2,7 @@
 
 namespace DronePlacementSimulator
 {
-    public class Station
+    class Station
     {
         private static int ID = 100;
 
@@ -24,6 +24,21 @@ namespace DronePlacementSimulator
             for (int i = 0; i < drones; i++)
             {
                 droneList.Add(new Drone(stationID));
+            }
+        }
+
+        public Station(Station copy)
+        {
+            this.stationID = copy.stationID;
+            this.kiloX = copy.kiloX;
+            this.kiloY = copy.kiloY;
+            this.pixelX = copy.pixelX;
+            this.pixelY = copy.pixelY;
+
+            droneList = new List<Drone>();
+            for (int i = 0; i < copy.droneList.Count; i++)
+            {
+                droneList.Add(new Drone(copy.stationID));
             }
         }
 

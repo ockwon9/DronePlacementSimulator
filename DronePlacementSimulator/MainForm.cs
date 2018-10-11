@@ -37,8 +37,8 @@ namespace DronePlacementSimulator
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * Utils.SEOUL_WIDTH / Utils.SEOUL_HEIGHT);
             coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
-            toolStripComboBoxStations.SelectedIndex = 0;
-            targetStationCount = 8;
+            toolStripComboBoxStations.SelectedIndex = 12;
+            targetStationCount = 20;
 
             // Read OHCA events data
             ReadEventData();
@@ -71,7 +71,7 @@ namespace DronePlacementSimulator
             stationList.Clear();
             for (int i = 0; i < eventGrid.cells.Count; i++)
             {
-                stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY));
+                stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
             }
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
         }
@@ -79,22 +79,22 @@ namespace DronePlacementSimulator
         private void PerformBoutilier()
         {
             stationList.Clear();
-            foreach (double[] coord in eventGrid.cells)
+            foreach (Cell c in eventGrid.cells)
             {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT, 0));
+                stationList.Add(new Station(c.kiloX, c.kiloY, 0));
             }
             double[] param = new double[] {0.9999999, 0.99999999, 0.999999999};
             Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 98, 0.9999999);
         }
 
-        private void PerformRubis()
+        private void PerformRUBIS()
         {
             if (simulator == null)
             {
                 simulator = new Simulator();
             }
             stationList.Clear();
-            stationList.AddRange(RUBIS.Calculate(eventGrid, eventList, ref simulator, targetStationCount, targetStationCount));
+            RUBIS.Calculate(eventGrid, eventList, ref stationList, ref simulator, targetStationCount, targetStationCount);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -401,7 +401,7 @@ namespace DronePlacementSimulator
                     PerformBoutilier();
                     break;
                 case "RUBIS":
-                    PerformRubis();
+                    PerformRUBIS();
                     break;
                 default:
                     break;

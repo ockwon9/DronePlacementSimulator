@@ -1,40 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Windows.Shapes;
 
 namespace DronePlacementSimulator
 {
-    class Cell
-    {
-        public double kiloX;
-        public double kiloY;
-        public int intX;
-        public int intY;
-        public int eventCount;
-
-        public Cell()
-        {
-        }
-
-        public Cell(double kiloX, double kiloY, int j, int i)
-        {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.intX = j;
-            this.intY = i;
-            this.eventCount = 0;
-        }
-
-        public void addEvent()
-        {
-            this.eventCount++;
-        }
-    }
-
     class Grid
     {
         public List<Cell> cells;

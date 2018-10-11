@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
-    public static class Policy
+    static class Policy
     {
         public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
@@ -55,7 +55,7 @@ namespace DronePlacementSimulator
             double maxSurvivalRate = Double.PositiveInfinity;
             foreach (Station s in stationList)
             {
-                double survivalRate = Rubis.GetSurvivalRate(stationList, ref counter, s, e) - Rubis.GetPotential(stationList, ref counter, s, e);
+                double survivalRate = RUBIS.GetSurvivalRate(stationList, ref counter, s, e) - RUBIS.GetPotential(stationList, ref counter, s, e);
                 if (survivalRate > maxSurvivalRate)
                 {
                     maxSurvivalRate = survivalRate;
