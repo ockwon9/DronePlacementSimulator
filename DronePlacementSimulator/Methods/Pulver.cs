@@ -39,7 +39,7 @@ namespace DronePlacementSimulator
 
         public Pulver (double w, int p, double h, double t, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = grid.cells.Count;
+            this.n = grid.lambda.Length * grid.lambda[0].Length;
             this.m = stationList.Count();
             this.w = w;
             this.h = h;
@@ -66,16 +66,22 @@ namespace DronePlacementSimulator
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, double t)
         {
             Overlap overlap = new Overlap();
-            
-            for (int i = 0; i < n; i++)
+
+            int k;
+            for (int i = 0; i < grid.lambda.Length; i++)
             {
-                double x = grid.cells[i][0];
-                double y = grid.cells[i][1];
-                
-                for (int j = 0; j < m; j++)
+                k = i * grid.lambda[i].Length;
+                int lim = k + grid.lambda[i].Length;
+                for (; k < lim; k++)
                 {
-                    this.b[i][j] = overlap.Area(x, y, grid.unit, grid.unit, stationList[j].kiloX, stationList[j].kiloY, DRONE_VELOCITY * t) / (grid.unit * grid.unit);
+                    double y = k * Utils.LAMBDA_PRECISION;
+
+                    for (int j = 0; j < m; j++)
+                    {
+                        this.b[i][j] = overlap.Area(j * Utils.LAMBDA_PRECISION, y, Utils.LAMBDA_PRECISION, Utils.LAMBDA_PRECISION, stationList[j].kiloX, stationList[j].kiloY, DRONE_VELOCITY * t) / (Utils.UNIT * Utils.UNIT);
+                    }
                 }
+                
             }
         }
 
@@ -85,18 +91,21 @@ namespace DronePlacementSimulator
             this.demandList.Clear();
 
             double maxDemand = grid.GetMaxDemand();
-            for (int i = 0; i < grid.cells.Count; i++)
+            for (int i = 0; i < grid.lambda.Length; i++)
             {
-                this.demandList.Add(new Demand(grid.cells[i][0] + 0.5 * grid.unit, grid.cells[i][1] + 0.5 * grid.unit, grid.pdf[i] / maxDemand));
+                for (int j = 0; j < grid.lambda[i].Length; j++)
+                {
+                    this.demandList.Add(new Demand((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, grid.lambda[i][j] / maxDemand));
+                }
             }
         }
 
         public void BoundByT(ref Grid grid, ref List<Station> stationList, double t)
         {
             Overlap overlap = new Overlap();
-            for (int i = 0; i < demandList.Count; i++)
+            for (int i = 0; i < this.n; i++)
             {
-                for (int j = 0; j < stationList.Count; j++)
+                for (int j = 0; j < this.m; j++)
                 {
                     if (this.b[i][j] > 0)
                     {

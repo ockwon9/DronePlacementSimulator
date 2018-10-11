@@ -49,9 +49,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CSharpIDW, Version=1.0.11.14, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\CSharpIDW.1.0.11.14\lib\net45\CSharpIDW.dll</HintPath>
-    </Reference>
     <Reference Include="FParsec, Version=1.0.0.0, Culture=neutral, PublicKeyToken=40ccfc0a09edbb5d, processorArchitecture=MSIL">
       <HintPath>..\packages\FParsec.1.0.3\lib\net40-client\FParsec.dll</HintPath>
     </Reference>

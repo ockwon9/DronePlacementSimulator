@@ -18,6 +18,7 @@ namespace DronePlacementSimulator
         public static int MINUTES_IN_4_YEARS = 2103840;
 
         public static double UNIT = 3.0;
+        public static double LAMBDA_PRECISION = 0.1;
         public static double GOLDEN_TIME = 4.949;
 
         public static int SCREEN_WIDTH;

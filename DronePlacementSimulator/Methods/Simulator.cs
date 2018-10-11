@@ -22,6 +22,11 @@ namespace DronePlacementSimulator
             pathPlanner = new PathPlanner();
         }
 
+        public void SetPolicy(Del policy)
+        {
+            this.policy = policy;
+        }
+
         public void Simulate(List<Station> stationList, Grid eventGrid)
         {
             int n = stationList.Count;
@@ -33,62 +38,55 @@ namespace DronePlacementSimulator
 
             Counter current = new Counter(ref initialCount);
             DateTime currentTime = new DateTime(2018, 1, 1);
-
+            
+            int eventCount = 0;
             double sum = 0;
-            for (int i = 0; i<Utils.SIMULATION_EVENTS; i++)
+            Random rand = new Random();
+            while (eventCount < Utils.SIMULATION_EVENTS)
             {
-                int selectedIndex = eventGrid.SelectCell();
-                double kiloX = eventGrid.cells[selectedIndex][0];
-                double kiloY = eventGrid.cells[selectedIndex][1];
-
-                double nextMin = nextEventTime(Utils.ARRIVAL_RATE);
-                currentTime = currentTime.AddMinutes(nextMin);
-                DateTime occurrenceTime = currentTime;
-
-                OHCAEvent e = new OHCAEvent(kiloX + 0.5 * Utils.UNIT, kiloY + 0.5 * Utils.UNIT, occurrenceTime);
-
-                current.Flush(currentTime);
-                int dispatchFrom = policy(stationList, ref current, e);
-                e.assignedStationId = dispatchFrom;
-
-                if (dispatchFrom == -1)
+                Console.WriteLine("???");
+                currentTime.AddMinutes(1.0);
+                double randVal = rand.NextDouble();
+                for (int i = 0; i < eventGrid.lambda.Length; i++)
                 {
-                    missCount++;
-                }
-                else
-                {
-                    double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (flightTime > Utils.GOLDEN_TIME)
+                    for (int j = 0; j < eventGrid.lambda[i].Length; j++)
                     {
-                        missCount++;
-                    }
-                    else
-                    {
-                        current.Dispatch(dispatchFrom, e.occurrenceTime);
-                        sum += CalcauteSurvivalRate(flightTime);
+                        if (randVal < eventGrid.lambda[i][j])
+                        {
+                            OHCAEvent e = new OHCAEvent((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, currentTime);
+
+                            current.Flush(currentTime);
+                            int dispatchFrom = policy(stationList, ref current, e);
+                            e.assignedStationId = dispatchFrom;
+
+                            if (dispatchFrom == -1)
+                            {
+                                missCount++;
+                            }
+                            else
+                            {
+                                double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                                if (flightTime > Utils.GOLDEN_TIME)
+                                {
+                                    missCount++;
+                                }
+                                else
+                                {
+                                    current.Dispatch(dispatchFrom, e.occurrenceTime);
+                                    sum += CalculateSurvivalRate(flightTime);
+                                }
+                            }
+                        }
                     }
                 }
             }
-            expectedSurvivalRate = sum / (Utils.SIMULATION_EVENTS - missCount);
+
+            expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
         }
 
-        private double CalcauteSurvivalRate(double distance)
+        private double CalculateSurvivalRate(double distance)
         {            
             return 0.7 - (0.1 * distance);
-        }
-
-        double nextEventTime(double arrivalRate)
-        {
-            unchecked
-            {
-                double rand = new Random().NextDouble() / 1.0000000000000000001;
-                return -Math.Log(1.0 - rand) / arrivalRate;
-            }
-        }
-
-        public void SetPolicy(Del policy)
-        {
-            this.policy = policy;
         }
 
         public double GetExpectedSurvivalRate()

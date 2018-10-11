@@ -44,14 +44,14 @@ namespace DronePlacementSimulator
             ReadEventData();
             ReadMapData();
 
-            eventGrid = new Grid(0.0, 0.0, Utils.SEOUL_WIDTH, Utils.SEOUL_HEIGHT, Utils.UNIT, ref polyCoordList);
+            eventGrid = new Grid(ref polyCoordList);
             if (File.Exists("pdf.csv"))
             {
                 ReadPDF(ref eventGrid);
             }
             else
             {
-                eventGrid.IdwInterpolate(ref eventList);
+                eventGrid.Interpolate(ref eventList);
                 WritePDF(ref eventGrid);
             }
         }
@@ -69,9 +69,9 @@ namespace DronePlacementSimulator
         private void PerformPulver()
         {
             stationList.Clear();
-            foreach (double[] coord in eventGrid.cells)
+            for (int i = 0; i < eventGrid.cells.Count; i++)
             {
-                stationList.Add(new Station(coord[0] + 0.5 * Utils.UNIT, coord[1] + 0.5 * Utils.UNIT, 0));
+                stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY));
             }
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
         }
@@ -320,9 +320,10 @@ namespace DronePlacementSimulator
             while (line != null)
             {
                 string[] cells = line.Split(',');
+                int n = grid.lambda[0].Length;
                 for (int i = 0; i < cells.Length - 1; i++)
                 {
-                    grid.pdf[i] = (double)Double.Parse(cells[i]);
+                    grid.lambda[i / n][i % n] = (double) Double.Parse(cells[i]);
                 }
                 line = sr.ReadLine();
             }
@@ -332,10 +333,13 @@ namespace DronePlacementSimulator
         private void WritePDF(ref Grid grid)
         {
             StreamWriter file = new StreamWriter("pdf.csv");
-            for (int i = 0; i < grid.pdf.GetLength(0); i++)
+            for (int i = 0; i < grid.lambda.Length; i++)
             {
-                file.Write(grid.pdf[i]);
-                file.Write(",");
+                for (int j = 0; j < grid.lambda[i].Length; j++)
+                {
+                    file.Write(grid.lambda[i][j]);
+                    file.Write(",");
+                }
             }
             file.Write("\n");
             file.Close();

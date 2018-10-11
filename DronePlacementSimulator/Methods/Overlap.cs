@@ -30,16 +30,14 @@ namespace DronePlacementSimulator
         /// <param name="r">The radius of the circle</param>
         public double Area(double x, double y, double width, double height, double circleX, double circleY, double r)
         {
-            // Console.WriteLine("x = " + x + ", y = " + y + ", width = " + width + ", height = " + height + ", cX = " + circleX + ", cY = " + circleY + ", r = " + r);
             double a = IntersectionArea(x, y, width, height, circleX, circleY, r);
-            // Console.WriteLine("a = " + a);
             return a;
         }
 
         /// <summary>
         /// The resolution to use for approximation.
         /// </summary>
-        const double Resolution = 0.0001;
+        const double Resolution = 0.00001;
 
         /// <summary>
         /// Calculates the intersection area between a rectangle and a circle
