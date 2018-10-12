@@ -10,6 +10,7 @@ namespace DronePlacementSimulator
 
         public PathPlanner()
         {
+            /* 
             land_elevation = new double[20000, 20000];
             building_height = new double[20000, 20000];
 
@@ -17,14 +18,13 @@ namespace DronePlacementSimulator
             string line = "";
             line = objReader.ReadLine();
             line = objReader.ReadLine();
-
+            
             for (int i = 0; i < 20000; i++)
             {
                 for (int j = 0; j < 20000; j++)
                 {
                     building_height[i, j] = 10.0;
                     land_elevation[i, j] = 10.0;
-                    /*
                     try
                     {
                         line = objReader.ReadLine();
@@ -39,10 +39,10 @@ namespace DronePlacementSimulator
                     {
                         return;
                     }
-                    */
                 }
             }
             objReader.Close();
+            */
         }
 
         public double CalcuteFlightTime(double srcX, double srcY, double dstX, double dstY)
