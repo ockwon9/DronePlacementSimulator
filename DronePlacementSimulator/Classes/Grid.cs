@@ -22,15 +22,15 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < numLon; j++)
                 {
                     double kiloX = (j + 0.5) * Utils.UNIT;
-                    if (IsInside(kiloY, kiloX, ref polyCoordList))
+                    if (IsInside(kiloX, kiloY, ref polyCoordList))
                     {   
-                        cells.Add(new Cell(kiloY, kiloX, j, i));
+                        cells.Add(new Cell(kiloX, kiloY, j, i));
                     }
                 }
             }
 
-            this.lambda_width = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
-            this.lambda_height = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
+            this.lambda_width = (int )Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
+            this.lambda_height = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
             this.lambda = new double[lambda_height][];
             for (int i = 0; i < lambda_height; i++)
             {
@@ -120,6 +120,7 @@ namespace DronePlacementSimulator
                 for (int k = 0; k < this.lambda_width; k++)
                 {
                     this.lambda[j][k] /= (Math.PI * Utils.MINUTES_IN_4_YEARS);
+                    this.lambda[j][k] = this.lambda[j][k] * Utils.LAMBDA_PRECISION * Utils.LAMBDA_PRECISION;
                 }
             }
         }
