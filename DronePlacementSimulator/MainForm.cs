@@ -436,7 +436,6 @@ namespace DronePlacementSimulator
 
         private void ClickRunSimulation(object sender, EventArgs e)
         {
-            Console.WriteLine("???");
             Del policy = Policy.NearestStation;
             if (rubisToolStripMenuItem.Checked)
             {

@@ -29,7 +29,6 @@ namespace DronePlacementSimulator
 
         public void Simulate(List<Station> stationList, Grid eventGrid)
         {
-            Console.WriteLine("???");
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
@@ -45,16 +44,18 @@ namespace DronePlacementSimulator
             Random rand = new Random();
             while (eventCount < Utils.SIMULATION_EVENTS)
             {
-                Console.WriteLine("???");
-                currentTime.AddMinutes(1.0);
-                double randVal = rand.NextDouble();
+                // Console.WriteLine("time = " + currentTime);
+                // Console.WriteLine("\tevents so far = " + eventCount);
+                currentTime = currentTime.AddMinutes(1.0);
                 for (int i = 0; i < eventGrid.lambda.Length; i++)
                 {
                     for (int j = 0; j < eventGrid.lambda[i].Length; j++)
                     {
+                        double randVal = rand.NextDouble();
                         if (randVal < eventGrid.lambda[i][j])
                         {
                             OHCAEvent e = new OHCAEvent((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, currentTime);
+                            eventCount++;
 
                             current.Flush(currentTime);
                             int dispatchFrom = policy(stationList, ref current, e);
