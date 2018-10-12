@@ -571,31 +571,38 @@ namespace DronePlacementSimulator
             System.Console.WriteLine(workObject.index);
 
             DateTime currentTime = new DateTime(2018, 1, 1);
-            int eventCount = 0;
             Random rand = new Random();
 
             StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
 
-            while (eventCount < workObject.SIMULATION_EVENTS)
+            int eventCount = 0;
+            while (eventCount < workObject.SIMULATION_EVENTS / 10000)
             {
-                currentTime = currentTime.AddMinutes(1.0);
-                for (int i = 0; i < workObject.lambda.Length; i++)
+                int numEvents = 10000 + ((eventCount == workObject.SIMULATION_EVENTS / 10000 - 1) ? (workObject.SIMULATION_EVENTS % 10000) : 0);
+                int events = 0;
+                while (events < numEvents)
                 {
-                    for (int j = 0; j < workObject.lambda[i].Length; j++)
+                    currentTime = currentTime.AddMinutes(1.0);
+                    for (int i = 0; i < workObject.lambda.Length; i++)
                     {
-                        double randVal = rand.NextDouble();
-                        if (randVal < workObject.lambda[i][j])
+                        for (int j = 0; j < workObject.lambda[i].Length; j++)
                         {
-                            eventCount++;
-                            file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
-                            file.Write(",");
-                            file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
-                            file.Write(",");
-                            file.Write(currentTime);
-                            file.Write("\n");
+                            double randVal = rand.NextDouble();
+                            if (randVal < workObject.lambda[i][j])
+                            {
+                                events++;
+                                file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
+                                file.Write(",");
+                                file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
+                                file.Write(",");
+                                file.Write(currentTime);
+                                file.Write("\n");
+                            }
                         }
                     }
                 }
+                Console.WriteLine("thread " + workObject.index + " done with " + (eventCount * 10000 + numEvents) + " events.");
+                eventCount++;
             }
             file.Close();
         }
