@@ -22,6 +22,9 @@ namespace DronePlacementSimulator
             {
                 for (int j = 0; j < 20000; j++)
                 {
+                    building_height[i, j] = 10.0;
+                    land_elevation[i, j] = 10.0;
+                    /*
                     try
                     {
                         line = objReader.ReadLine();
@@ -36,6 +39,7 @@ namespace DronePlacementSimulator
                     {
                         return;
                     }
+                    */
                 }
             }
             objReader.Close();
@@ -44,7 +48,8 @@ namespace DronePlacementSimulator
         public double CalcuteFlightTime(double srcX, double srcY, double dstX, double dstY)
         {
             double distance = GetDistance(srcX, srcY, dstX, dstY);
-            
+            return distance;
+            /*
             int srcCol = ConvertKiloToCol(srcX);
             int srcRow = ConvertKiloToRow(srcY);
             double srcHeight = land_elevation[srcRow, srcCol];
@@ -56,8 +61,9 @@ namespace DronePlacementSimulator
             double maxHeightOnRoute = getMaxHeight(srcX, srcY, dstX, dstY);
             double takeOffHeight = maxHeightOnRoute - srcHeight + Utils.FLIGHT_HEIGHT;
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.FLIGHT_HEIGHT;
-        
+            
             return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + distance + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
+            */
         }
 
         private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
@@ -76,23 +82,43 @@ namespace DronePlacementSimulator
 
             int diffCol = dstCol - srcCol;
             int diffRow = dstRow - srcRow;
+            int rowIncrement = (diffRow < 0) ? -1 : 1;
 
             double maxHeight = 0.0;
-            for (int i = 0; i <= diffCol; i++)
+
+            if (diffCol == 0) // Vertical movement
             {
-                int midCol = srcCol + i; // The mid index between srcCol and dstCol
-                int midRow = srcRow + (int)(diffRow * i / diffCol); // The mid index between srcRow and dstRow
-                double height = getHeight(midCol, midRow);
-                if (height > maxHeight)
+                for (int i = 0; i <= diffRow; i = i + 100)
                 {
-                    maxHeight = height;
+                    double height = getHeight(srcRow + (i * rowIncrement), srcCol);
+                    if (height > maxHeight)
+                    {
+                        maxHeight = height;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i <= diffCol; i = i + 100)
+                {
+                    int midCol = srcCol + i; // The mid index between srcCol and dstCol
+                    int midRow = srcRow + (int)(diffRow * i / diffCol); // The mid index between srcRow and dstRow
+
+                    if (midRow > 20000)
+                        Console.WriteLine("!!!");
+
+                    double height = getHeight(midRow, midCol);
+                    if (height > maxHeight)
+                    {
+                        maxHeight = height;
+                    }
                 }
             }
 
             return maxHeight;
         }
 
-        private double getHeight(int col, int row)
+        private double getHeight(int row, int col)
         {
             return land_elevation[row, col] + building_height[row, col];
         }
