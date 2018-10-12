@@ -72,6 +72,10 @@ namespace DronePlacementSimulator
                             }
 
                             eventCount++;
+                            if (eventCount % 100000 == 0)
+                            {
+                                Console.WriteLine("Simulation progress: {0:F1}%", (double)eventCount / (double)Utils.SIMULATION_EVENTS * 100);
+                            }
                         }
                     }
                 }

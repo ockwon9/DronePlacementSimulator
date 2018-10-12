@@ -194,7 +194,7 @@ namespace DronePlacementSimulator
         {
             List<Station> tempList = new List<Station>();
             List<Station> feasibleList = new List<Station>();
-            int iteration = Utils.ITERATION_COUNT;
+            int iteration = 1000;
 
             while (true)
             {
@@ -204,7 +204,8 @@ namespace DronePlacementSimulator
                 foreach (Station s in tempList)
                 {
                     int randomDirection = new Random().Next(0, 8);
-                    int randomDistance = new Random().Next(0, 3);
+                    int randomDistance = new Random().Next(0, 4);
+
                     switch ((Direction)randomDirection)
                     {
                         case Direction.LeftTop:
@@ -218,6 +219,9 @@ namespace DronePlacementSimulator
                             break;
                         case Direction.Left:
                             s.SetLocation(s.kiloX - Utils.UNIT * randomDistance, s.kiloY);
+                            break;
+                        case Direction.Center:
+                            s.SetLocation(s.kiloX, s.kiloY);
                             break;
                         case Direction.Right:
                             s.SetLocation(s.kiloX + Utils.UNIT * randomDistance, s.kiloY);
@@ -244,7 +248,7 @@ namespace DronePlacementSimulator
                 iteration--;
                 if (iteration < 0)
                 {
-                    return currentStationList;
+                    return tempList;
                 }
             }
 
@@ -267,11 +271,6 @@ namespace DronePlacementSimulator
         // Check whether all events is reachable
         public static bool IsAllCovered(Grid eventGrid, List<Station> stationList, ref Simulator simulator)
         {
-            foreach (Station s in stationList)
-            {
-                s.eventCount = 0;
-            }
-
             foreach (Cell c in eventGrid.cells)
             {
                 bool isCovered = false;
