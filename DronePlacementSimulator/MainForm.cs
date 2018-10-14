@@ -539,6 +539,7 @@ namespace DronePlacementSimulator
             workersRemaining = coreCount;
             int len = eventGrid.lambda[0].Length;
 
+            int row = 0;
             for (int i = 0; i < workers.Length; i++)
             {
                 int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
@@ -549,13 +550,14 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < actualLoad; j++)
                 {
                     workLoad[j] = new double[len];
-                    Array.Copy(eventGrid.lambda[j], workLoad[j], len);
+                    Array.Copy(eventGrid.lambda[row + j], workLoad[j], len);
                 }
 
-                WorkObject work = new WorkObject(workLoad, numEvents, i);
+                WorkObject work = new WorkObject(workLoad, numEvents, i, row);
 
                 workers[i].DoWork += eventList_DoWork;
                 workers[i].RunWorkerCompleted += eventList_RunWorkerCompleted;
+                row += actualLoad;
                 workers[i].RunWorkerAsync(work);
             }
 
@@ -571,7 +573,7 @@ namespace DronePlacementSimulator
             System.Console.WriteLine(workObject.index);
 
             DateTime currentTime = new DateTime(2018, 1, 1);
-            Random rand = new Random();
+            Random rand = new Random((int) DateTime.Now.ToBinary() + workObject.index);
 
             StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
 
@@ -593,8 +595,9 @@ namespace DronePlacementSimulator
                                 events++;
                                 file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
                                 file.Write(",");
-                                file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
+                                file.Write((workObject.row + i + 0.5) * Utils.LAMBDA_PRECISION);
                                 file.Write(",");
+                                String s = string.Format("{0 : yyyy MM dd HH mm ss}", currentTime);
                                 file.Write(currentTime);
                                 file.Write("\n");
                             }
@@ -618,11 +621,13 @@ namespace DronePlacementSimulator
             public double[][] lambda;
             public int SIMULATION_EVENTS;
             public int index;
-            public WorkObject(double[][] lambda, int simulation_events, int index)
+            public int row;
+            public WorkObject(double[][] lambda, int simulation_events, int index, int row)
             {
                 this.lambda = lambda.Clone() as double[][];
                 this.SIMULATION_EVENTS = simulation_events;
                 this.index = index;
+                this.row = row;
             }
         }
     }   
