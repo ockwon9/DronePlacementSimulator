@@ -1,5 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Windows.Shapes;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace DronePlacementSimulator
 {
@@ -32,53 +37,73 @@ namespace DronePlacementSimulator
             }
 
             Counter current = new Counter(ref initialCount);
-            DateTime currentTime = new DateTime(2018, 1, 1);
-            
-            int eventCount = 0;
             double sum = 0;
             Random rand = new Random();
-            while (eventCount < Utils.SIMULATION_EVENTS)
+
+            StreamReader reader = new StreamReader(File.OpenRead("\\simulationEventList.csv"));
+            List<OHCAEvent> eventList = new List<OHCAEvent>();
+            for (int k = 0; k < Utils.SIMULATION_EVENTS / Utils.EVENTS_IN_ONE_READ; k++)
             {
-                // Console.WriteLine("time = " + currentTime);
-                // Console.WriteLine("\tevents so far = " + eventCount);
-                currentTime = currentTime.AddMinutes(1.0);
-                for (int i = 0; i < eventGrid.lambda.Length; i++)
+                for (int r = 0; r < Utils.EVENTS_IN_ONE_READ; r++)
                 {
-                    for (int j = 0; j < eventGrid.lambda[i].Length; j++)
+                    string line = reader.ReadLine();
+                    string[] values = line.Split(',');
+                    double kiloX = double.Parse(values[0]);
+                    double kiloY = double.Parse(values[1]);
+                    DateTime occurenceTime = DateTime.Parse(values[2]);
+                    eventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
+                }
+
+                for (int i = 0; i < eventList.Count; i++)
+                {
+                    OHCAEvent e = eventList[i];
+
+                    current.Flush(e.occurrenceTime);
+                    int dispatchFrom = policy(stationList, ref current, e);
+                    e.assignedStationId = dispatchFrom;
+
+                    if (dispatchFrom == -1)
                     {
-                        double randVal = rand.NextDouble();
-                        if (randVal < eventGrid.lambda[i][j])
+                        missCount++;
+                    }
+                    else
+                    {
+                        double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                        if (flightTime > Utils.GOLDEN_TIME)
                         {
-                            OHCAEvent e = new OHCAEvent((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, currentTime);
-                            eventCount++;
-
-                            current.Flush(currentTime);
-                            int dispatchFrom = policy(stationList, ref current, e);
-                            e.assignedStationId = dispatchFrom;
-
-                            if (dispatchFrom == -1)
-                            {
-                                missCount++;
-                            }
-                            else
-                            {
-                                double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                                if (flightTime > Utils.GOLDEN_TIME)
-                                {
-                                    missCount++;
-                                }
-                                else
-                                {
-                                    current.Dispatch(dispatchFrom, e.occurrenceTime);
-                                    sum += CalculateSurvivalRate(flightTime);
-                                }
-                            }
+                            missCount++;
+                        }
+                        else
+                        {
+                            current.Dispatch(dispatchFrom, e.occurrenceTime);
+                            sum += CalculateSurvivalRate(flightTime);
                         }
                     }
                 }
+                eventList.Clear();
             }
 
             expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
+        }
+        private static void ReleaseExcelObject(object obj)
+        {
+            try
+            {
+                if (obj != null)
+                {
+                    Marshal.ReleaseComObject(obj);
+                    obj = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                obj = null;
+                throw ex;
+            }
+            finally
+            {
+                GC.Collect();
+            }
         }
 
         public void SetPolicy(Del policy)

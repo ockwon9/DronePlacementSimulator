@@ -7,11 +7,16 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.ComponentModel;
+
 
 namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
+        private bool writeSimulation = true;
+        private int coreCount = 6;
+
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
@@ -21,6 +26,7 @@ namespace DronePlacementSimulator
         private Grid eventGrid = null;
         private Bitmap _canvas = null;
         private int targetStationCount;
+        int workersRemaining;
 
         public int coverRange = 0;
         
@@ -417,21 +423,28 @@ namespace DronePlacementSimulator
                 policy = Policy.HighestSurvalRateStation;
             }
 
-            if (simulator == null)
+            if (writeSimulation)
             {
-                simulator = new Simulator();
+                WriteSimulationEventList(eventGrid);
             }
-            simulator.SetPolicy(policy);
-            simulator.Simulate(stationList, eventGrid);
+            else
+            {
+                if (simulator == null)
+                {
+                    simulator = new Simulator();
+                }
+                simulator.SetPolicy(policy);
+                simulator.Simulate(stationList, eventGrid);
 
-            Console.WriteLine(simulator.GetExpectedSurvivalRate());
-            Console.WriteLine("Total Miss Count = " + simulator.GetMissCount());
+                Console.WriteLine(simulator.GetExpectedSurvivalRate());
+                Console.WriteLine("Total Miss Count = " + simulator.GetMissCount());
 
-            labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
-            double rate = (double)simulator.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
-            labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
+                labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
+                double rate = (double)simulator.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
+                labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
 
-            this.Invalidate();
+                this.Invalidate();
+            }
         }
 
         private void toolStripComboBoxStations_SelectedIndexChanged(object sender, EventArgs e)
@@ -517,5 +530,100 @@ namespace DronePlacementSimulator
                 }
             }
         }
-    }
+
+        private void WriteSimulationEventList(Grid eventGrid)
+        {
+            BackgroundWorker[] workers = new BackgroundWorker[coreCount];
+            int dividedLoad = eventGrid.lambda.Length / coreCount;
+            int rem = eventGrid.lambda.Length % coreCount;
+            workersRemaining = coreCount;
+            int len = eventGrid.lambda[0].Length;
+
+            for (int i = 0; i < workers.Length; i++)
+            {
+                int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
+                int numEvents = Utils.SIMULATION_EVENTS / coreCount + ((i < (Utils.SIMULATION_EVENTS % coreCount)) ? 1 : 0);
+                workers[i] = new BackgroundWorker();
+                double[][] workLoad = new double[actualLoad][];
+
+                for (int j = 0; j < actualLoad; j++)
+                {
+                    workLoad[j] = new double[len];
+                    Array.Copy(eventGrid.lambda[j], workLoad[j], len);
+                }
+
+                WorkObject work = new WorkObject(workLoad, numEvents, i);
+
+                workers[i].DoWork += eventList_DoWork;
+                workers[i].RunWorkerCompleted += eventList_RunWorkerCompleted;
+                workers[i].RunWorkerAsync(work);
+            }
+
+            while (workersRemaining > 0)
+            {
+            }
+        }
+
+        private void eventList_DoWork(object sender, DoWorkEventArgs e)
+        {
+            
+            WorkObject workObject = e.Argument as WorkObject;
+            System.Console.WriteLine(workObject.index);
+
+            DateTime currentTime = new DateTime(2018, 1, 1);
+            Random rand = new Random();
+
+            StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
+
+            int eventCount = 0;
+            while (eventCount < workObject.SIMULATION_EVENTS / 10000)
+            {
+                int numEvents = 10000 + ((eventCount == workObject.SIMULATION_EVENTS / 10000 - 1) ? (workObject.SIMULATION_EVENTS % 10000) : 0);
+                int events = 0;
+                while (events < numEvents)
+                {
+                    currentTime = currentTime.AddMinutes(1.0);
+                    for (int i = 0; i < workObject.lambda.Length; i++)
+                    {
+                        for (int j = 0; j < workObject.lambda[i].Length; j++)
+                        {
+                            double randVal = rand.NextDouble();
+                            if (randVal < workObject.lambda[i][j])
+                            {
+                                events++;
+                                file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
+                                file.Write(",");
+                                file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
+                                file.Write(",");
+                                file.Write(currentTime);
+                                file.Write("\n");
+                            }
+                        }
+                    }
+                }
+                Console.WriteLine("thread " + workObject.index + " done with " + (eventCount * 10000 + numEvents) + " events.");
+                eventCount++;
+            }
+            file.Close();
+        }
+
+        private void eventList_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            System.Console.WriteLine((string)e.Result);
+            --workersRemaining;
+        }
+
+        public class WorkObject
+        {
+            public double[][] lambda;
+            public int SIMULATION_EVENTS;
+            public int index;
+            public WorkObject(double[][] lambda, int simulation_events, int index)
+            {
+                this.lambda = lambda.Clone() as double[][];
+                this.SIMULATION_EVENTS = simulation_events;
+                this.index = index;
+            }
+        }
+    }   
 }

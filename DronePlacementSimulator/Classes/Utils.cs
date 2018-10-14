@@ -35,6 +35,7 @@ namespace DronePlacementSimulator
 
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int SIMULATION_EVENTS = 100000;
+        public static int EVENTS_IN_ONE_READ = 100000;
 
         public static double FLIGHT_HEIGHT = 10; // meter
         public static int DRONE_VELOCITY = 60; // km/h
