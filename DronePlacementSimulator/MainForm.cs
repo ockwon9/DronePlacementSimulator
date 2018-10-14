@@ -14,7 +14,7 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private bool writeSimulation = true;
+        private bool writeSimulation = false;
         private int coreCount = 6;
 
         private List<Station> stationList;
