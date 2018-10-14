@@ -24,6 +24,9 @@ namespace DronePlacementSimulator
         public static int SCREEN_WIDTH;
         public static int SCREEN_HEIGHT;
 
+        public static int ROW_NUM = 305;
+        public static int COL_NUM = 370;
+
         public static int BUDGET = 600000;
         public static int STATION_PRICE = 10000;
         public static int DRONE_PRICE = 10000;

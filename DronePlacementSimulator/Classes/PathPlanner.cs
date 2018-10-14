@@ -10,46 +10,37 @@ namespace DronePlacementSimulator
 
         public PathPlanner()
         {
-            /* 
-            land_elevation = new double[20000, 20000];
-            building_height = new double[20000, 20000];
+            land_elevation = new double[Utils.ROW_NUM, Utils.COL_NUM];
+            building_height = new double[Utils.ROW_NUM, Utils.COL_NUM];
 
-            StreamReader objReader = new StreamReader("seoul.txt");
-            string line = "";
-            line = objReader.ReadLine();
-            line = objReader.ReadLine();
-            
-            for (int i = 0; i < 20000; i++)
+            for (int i = 0; i < Utils.ROW_NUM; i++)
             {
-                for (int j = 0; j < 20000; j++)
+                for (int j = 0; j < Utils.COL_NUM; j++)
                 {
-                    building_height[i, j] = 10.0;
-                    land_elevation[i, j] = 10.0;
-                    try
-                    {
-                        line = objReader.ReadLine();
-                        if (line != null)
-                        {
-                            string[] data = line.Split(' ');
-                            building_height[i, j] = Double.Parse(data[4]);
-                            land_elevation[i, j] = Double.Parse(data[5]);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        return;
-                    }
+                    land_elevation[i, j] = 0.0;
+                    building_height[i, j] = 0.0;
                 }
             }
-            objReader.Close();
-            */
+
+            if (File.Exists("land_elevation.txt") && File.Exists("building_height.txt"))
+            {
+                ReadHeight();
+            }
+            else
+            {
+                WriteHeight();
+            }
         }
 
         public double CalcuteFlightTime(double srcX, double srcY, double dstX, double dstY)
         {
+            if (srcX < 0 || srcY < 0 || dstX < 0 || dstY < 0)
+            {
+                return Double.PositiveInfinity;
+            }
+
             double distance = GetDistance(srcX, srcY, dstX, dstY);
-            return distance;
-            /*
+
             int srcCol = ConvertKiloToCol(srcX);
             int srcRow = ConvertKiloToRow(srcY);
             double srcHeight = land_elevation[srcRow, srcCol];
@@ -63,7 +54,6 @@ namespace DronePlacementSimulator
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.FLIGHT_HEIGHT;
             
             return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + distance + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
-            */
         }
 
         private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
@@ -104,9 +94,6 @@ namespace DronePlacementSimulator
                     int midCol = srcCol + i; // The mid index between srcCol and dstCol
                     int midRow = srcRow + (int)(diffRow * i / diffCol); // The mid index between srcRow and dstRow
 
-                    if (midRow > 20000)
-                        Console.WriteLine("!!!");
-
                     double height = getHeight(midRow, midCol);
                     if (height > maxHeight)
                     {
@@ -125,17 +112,90 @@ namespace DronePlacementSimulator
 
         private int ConvertKiloToCol(double kiloX)
         {
-            return (int)(20000 * kiloX / Utils.SEOUL_WIDTH);
+            return (int)(Utils.COL_NUM * kiloX / Utils.SEOUL_WIDTH);
         }
 
         private int ConvertKiloToRow(double kiloY)
         {
-            return (int)(20000 * (Utils.SEOUL_HEIGHT - kiloY) / Utils.SEOUL_HEIGHT);
+            return (int)(Utils.ROW_NUM * (Utils.SEOUL_HEIGHT - kiloY) / Utils.SEOUL_HEIGHT);
         }
         
         private double GetDistance(double x1, double y1, double x2, double y2)
         {
             return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        }
+
+        private void ReadHeight()
+        {
+            StreamReader sr1 = new StreamReader("land_elevation.txt");
+            StreamReader sr2 = new StreamReader("building_height.txt");
+            for (int i = 0; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    land_elevation[i, j] = Double.Parse(sr1.ReadLine().Split('\t')[2]);
+                    building_height[i, j] = Double.Parse(sr2.ReadLine().Split('\t')[2]);
+                }
+            }
+            sr1.Close();
+            sr2.Close();
+        }
+
+        private void WriteHeight()
+        {
+            double[,] le = new double[20000, 20000];
+            double[,] bh = new double[20000, 20000];
+
+            StreamReader objReader = new StreamReader("seoul.txt");
+            string line = "";
+            line = objReader.ReadLine();
+            line = objReader.ReadLine();
+
+            for (int i = 0; i < 20000; i++)
+            {
+                for (int j = 0; j < 20000; j++)
+                {
+                    try
+                    {
+                        line = objReader.ReadLine();
+                        if (line != null)
+                        {
+                            string[] data = line.Split(' ');
+                            bh[i, j] = Double.Parse(data[4]);
+                            le[i, j] = Double.Parse(data[5]);
+
+                            int m = i / Utils.ROW_NUM;
+                            int n = j / Utils.COL_NUM;
+                            if (le[i, j] > land_elevation[m, n])
+                            {
+                                land_elevation[m, n] = le[i, j];
+                            }
+                            if (bh[i, j] > building_height[m, n])
+                            {
+                                building_height[m, n] = bh[i, j];
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return;
+                    }
+                }
+            }
+            objReader.Close();
+
+            StreamWriter file1 = new StreamWriter("land_elevation.txt");
+            StreamWriter file2 = new StreamWriter("building_height.txt");
+            for (int i = 0; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    file1.WriteLine(String.Format("{0}\t{1}\t{2}", i, j, land_elevation[i, j]));
+                    file2.WriteLine(String.Format("{0}\t{1}\t{2}", i, j, building_height[i, j]));
+                }
+            }
+            file1.Close();
+            file2.Close();
         }
 
         private static void Swap<T>(ref T lhs, ref T rhs)
