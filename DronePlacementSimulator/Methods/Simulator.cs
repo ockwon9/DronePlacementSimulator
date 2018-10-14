@@ -50,7 +50,14 @@ namespace DronePlacementSimulator
                     string[] values = line.Split(',');
                     double kiloX = double.Parse(values[0]);
                     double kiloY = double.Parse(values[1]);
-                    DateTime occurenceTime = DateTime.Parse(values[2]);
+                    string[] dateComponents = values[2].Split(' ');
+                    int year = int.Parse(dateComponents[0]);
+                    int month = int.Parse(dateComponents[1]);
+                    int day = int.Parse(dateComponents[2]);
+                    int hour = int.Parse(dateComponents[3]);
+                    int minute = int.Parse(dateComponents[4]);
+                    int second = int.Parse(dateComponents[5]);
+                    DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
                     eventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
                 }
 
