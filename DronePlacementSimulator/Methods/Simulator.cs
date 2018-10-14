@@ -29,6 +29,7 @@ namespace DronePlacementSimulator
 
         public void Simulate(List<Station> stationList, Grid eventGrid)
         {
+            missCount = 0;
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
@@ -40,7 +41,7 @@ namespace DronePlacementSimulator
             double sum = 0;
             Random rand = new Random();
 
-            StreamReader reader = new StreamReader(File.OpenRead("\\simulationEventList.csv"));
+            StreamReader reader = new StreamReader(File.OpenRead(Environment.CurrentDirectory.ToString() + "\\simulationEventList.csv"));
             List<OHCAEvent> eventList = new List<OHCAEvent>();
             for (int k = 0; k < Utils.SIMULATION_EVENTS / Utils.EVENTS_IN_ONE_READ; k++)
             {
