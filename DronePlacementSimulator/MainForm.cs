@@ -139,15 +139,15 @@ namespace DronePlacementSimulator
 
         private void DrawGrid(Graphics g)
         {
-            int numXCells = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
-            int numYCells = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
+            int numXCells = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT) * 10;
+            int numYCells = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT) * 10;
 
             Pen pLight = new Pen(Color.LightGray, 1);
             Pen pDark = new Pen(Color.DimGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
-                int xInt = (int)(x * Utils.UNIT / Utils.SEOUL_WIDTH * this.Width);
-                if ((x + 5) % 5 == 0)
+                int xInt = (int)(x * Utils.UNIT / 10 / Utils.SEOUL_WIDTH * this.Width);
+                if ((x + 5) % 50 == 0)
                 {
                     g.DrawLine(pDark, xInt, 0, xInt, this.Height);
                 }
@@ -159,8 +159,8 @@ namespace DronePlacementSimulator
 
             for (int y = 0; y <= numYCells; ++y)
             {
-                int yInt = this.Height - (int)(y * Utils.UNIT / Utils.SEOUL_HEIGHT * this.Height);
-                if ((y + 5) % 5 == 0)
+                int yInt = this.Height - (int)(y * Utils.UNIT / 10 / Utils.SEOUL_HEIGHT * this.Height);
+                if ((y + 5) % 50 == 0)
                 {
                     g.DrawLine(pDark, 0, yInt, this.Width, yInt);
                 }

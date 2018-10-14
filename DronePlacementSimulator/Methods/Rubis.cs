@@ -57,10 +57,10 @@ namespace DronePlacementSimulator
             }
 
             // Step 3. Check whether the initial placement covers the whole of Seoul and count how many events each station contains
-            if (!IsAllCovered(eventGrid, prevStationList, ref simulator))
+            /*if (!IsAllCovered(eventGrid, prevStationList, ref simulator))
             {
                 return;
-            }
+            }*/
 
             // Step 4. Add remaining drones in busy stations
             CalculateCoveredEvents(eventList, ref prevStationList, ref simulator);
@@ -118,7 +118,7 @@ namespace DronePlacementSimulator
                 // TODO: When do we have to heat up?
                 currentTemp *= alpha;
 
-                if (iteration % 10 == 0)
+                if (iteration % 1 == 0)
                 {
                     Console.WriteLine("Iteration [" + iteration + "] CurrentTemperature: " + currentTemp + "℃, BestSurvivalRate = " + (bestSurvivalRate * 100) + "%");
                 }
@@ -171,7 +171,7 @@ namespace DronePlacementSimulator
                     }
 
                     // Check the all-coverage constraint
-                    if(IsAllCovered(eventGrid, tempList, ref simulator))
+                    //if(IsAllCovered(eventGrid, tempList, ref simulator))
                     {
                         double survivalRate = GetOverallSurvivalRate(eventList, tempList, ref simulator);
                         if (survivalRate > maxSurvivalRate)
@@ -239,17 +239,22 @@ namespace DronePlacementSimulator
                 }
 
                 // Check the all-coverage constraint
-                if (IsAllCovered(eventGrid, tempList, ref simulator))
+                /*if (IsAllCovered(eventGrid, tempList, ref simulator))
                 {
                     CloneList(tempList, feasibleList);
                     break;
-                }
+                }*/
 
+                CloneList(tempList, feasibleList);
+                break;
+
+                /*
                 iteration--;
                 if (iteration < 0)
                 {
                     return tempList;
                 }
+                */
             }
 
             // Assign drones to randomly-selected stations
