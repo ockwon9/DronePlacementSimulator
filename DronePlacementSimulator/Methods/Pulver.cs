@@ -37,13 +37,12 @@ namespace DronePlacementSimulator
         private List<int>[] N;
         private static double DRONE_VELOCITY = 1.0;
 
-        public Pulver (double w, int p, double h, double t, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = grid.lambda.Length * grid.lambda[0].Length;
+            this.n = grid.inSeoul.Count();
             this.m = stationList.Count();
             this.w = w;
             this.h = h;
-            this.t = t;
 
             this.b = new double[n][];
             for (int i = 0; i < n; i++)
@@ -66,22 +65,14 @@ namespace DronePlacementSimulator
         public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, double t)
         {
             Overlap overlap = new Overlap();
-
-            int k;
-            for (int i = 0; i < grid.lambda.Length; i++)
+            int c = grid.lambda[0].Length;
+            
+            for (int i = 0; i < n; i++)
             {
-                k = i * grid.lambda[i].Length;
-                int lim = k + grid.lambda[i].Length;
-                for (; k < lim; k++)
+                for (int j = 0; j < m; j++)
                 {
-                    double y = k * Utils.LAMBDA_PRECISION;
-
-                    for (int j = 0; j < m; j++)
-                    {
-                        this.b[i][j] = overlap.Area(j * Utils.LAMBDA_PRECISION, y, Utils.LAMBDA_PRECISION, Utils.LAMBDA_PRECISION, stationList[j].kiloX, stationList[j].kiloY, DRONE_VELOCITY * t) / (Utils.UNIT * Utils.UNIT);
-                    }
+                    this.b[i][j] = overlap.Area(grid.inSeoul[i].kiloX, grid.inSeoul[i].kiloY, Utils.LAMBDA_PRECISION, Utils.LAMBDA_PRECISION, stationList[j].kiloX, stationList[j].kiloY, Utils.GOLDEN_TIME);
                 }
-                
             }
         }
 
