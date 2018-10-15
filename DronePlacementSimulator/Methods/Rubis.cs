@@ -56,13 +56,7 @@ namespace DronePlacementSimulator
                 prevStationList.Add(new Station(kiloX, kiloY, 1));
             }
 
-            // Step 3. Check whether the initial placement covers the whole of Seoul and count how many events each station contains
-            /*if (!IsAllCovered(eventGrid, prevStationList, ref simulator))
-            {
-                return;
-            }*/
-
-            // Step 4. Add remaining drones in busy stations
+            // Step 3. Add remaining drones in busy stations
             CalculateCoveredEvents(eventList, ref prevStationList, ref simulator);
             int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
@@ -70,7 +64,7 @@ namespace DronePlacementSimulator
                 prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));
             }
 
-            // Step 2. Simulated Annealing
+            // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
             double alpha = 0.99;
@@ -117,11 +111,7 @@ namespace DronePlacementSimulator
                 // Cool-down
                 // TODO: When do we have to heat up?
                 currentTemp *= alpha;
-
-                if (iteration % 1 == 0)
-                {
-                    Console.WriteLine("Iteration [" + iteration + "] CurrentTemperature: " + currentTemp + "℃, BestSurvivalRate = " + (bestSurvivalRate * 100) + "%");
-                }
+                Console.WriteLine("[" + iteration + "] CurrentTemperature: " + currentTemp + "℃, BestSurvivalRate = " + (bestSurvivalRate * 100) + "%");
             }
         }
 
@@ -170,15 +160,11 @@ namespace DronePlacementSimulator
                             break;
                     }
 
-                    // Check the all-coverage constraint
-                    //if(IsAllCovered(eventGrid, tempList, ref simulator))
+                    double survivalRate = GetOverallSurvivalRate(eventList, tempList, ref simulator);
+                    if (survivalRate > maxSurvivalRate)
                     {
-                        double survivalRate = GetOverallSurvivalRate(eventList, tempList, ref simulator);
-                        if (survivalRate > maxSurvivalRate)
-                        {
-                            maxSurvivalRate = survivalRate;
-                            CloneList(tempList, solutionList);
-                        }
+                        maxSurvivalRate = survivalRate;
+                        CloneList(tempList, solutionList);
                     }
 
                     // Go back to the status of current station list
@@ -194,7 +180,6 @@ namespace DronePlacementSimulator
         {
             List<Station> tempList = new List<Station>();
             List<Station> feasibleList = new List<Station>();
-            int iteration = 1000;
 
             while (true)
             {
@@ -238,23 +223,8 @@ namespace DronePlacementSimulator
                     }
                 }
 
-                // Check the all-coverage constraint
-                /*if (IsAllCovered(eventGrid, tempList, ref simulator))
-                {
-                    CloneList(tempList, feasibleList);
-                    break;
-                }*/
-
                 CloneList(tempList, feasibleList);
                 break;
-
-                /*
-                iteration--;
-                if (iteration < 0)
-                {
-                    return tempList;
-                }
-                */
             }
 
             // Assign drones to randomly-selected stations

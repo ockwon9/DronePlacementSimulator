@@ -65,7 +65,7 @@ namespace DronePlacementSimulator
         private void PerformKMeans()
         {
             stationList.Clear();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.ITERATION_COUNT);
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
             foreach (double[] d in stations.Means)
             {
                 stationList.Add(new Station(d[0], d[1], 1));
@@ -440,8 +440,8 @@ namespace DronePlacementSimulator
                 Console.WriteLine("Total Miss Count = " + simulator.GetMissCount());
 
                 labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
-                double rate = (double)simulator.GetMissCount() / (double)Utils.SIMULATION_EVENTS * 100.0;
-                labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + Utils.SIMULATION_EVENTS + " (" + rate + "%)";
+                double rate = (double)simulator.GetMissCount() / (double)simulator.GetSimulatedEventsCount() * 100.0;
+                labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + simulator.GetSimulatedEventsCount() + " (" + rate + "%)";
 
                 this.Invalidate();
             }

@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using System.Windows.Shapes;
-using Excel = Microsoft.Office.Interop.Excel;
 
 namespace DronePlacementSimulator
 {
@@ -18,17 +15,28 @@ namespace DronePlacementSimulator
         private double expectedSurvivalRate;
         private int missCount;
 
+        private List<OHCAEvent> simulatedEventList;
+
         public Simulator()
         {
             expectedSurvivalRate = 0;
             missCount = 0;
-
-            // TODO: It is too heavy workload. Anyway, we load all data on the memory (about 6.4 GB).
             pathPlanner = new PathPlanner();
+            simulatedEventList = new List<OHCAEvent>();
         }
 
         public void Simulate(List<Station> stationList, Grid eventGrid)
         {
+            if (File.Exists("simulation_events.csv"))
+            {
+                ReadSimulatedEvents();
+            }
+            else
+            {
+                MessageBox.Show("There is no simulated events file.", "Simulation", MessageBoxButtons.OK);
+                return;
+            }
+
             missCount = 0;
             int n = stationList.Count;
             int[] initialCount = new int[n];
@@ -39,79 +47,32 @@ namespace DronePlacementSimulator
 
             Counter current = new Counter(ref initialCount);
             double sum = 0;
-            Random rand = new Random();
 
-            StreamReader reader = new StreamReader(File.OpenRead(Environment.CurrentDirectory.ToString() + "\\simulationEventList.csv"));
-            List<OHCAEvent> eventList = new List<OHCAEvent>();
-            for (int k = 0; k < Utils.SIMULATION_EVENTS / Utils.EVENTS_IN_ONE_READ; k++)
+            foreach(OHCAEvent e in simulatedEventList)
             {
-                for (int r = 0; r < Utils.EVENTS_IN_ONE_READ; r++)
+                current.Flush(e.occurrenceTime);
+                int dispatchFrom = policy(stationList, ref current, e);
+                e.assignedStationId = dispatchFrom;
+
+                if (dispatchFrom == -1)
                 {
-                    string line = reader.ReadLine();
-                    string[] values = line.Split(',');
-                    double kiloX = double.Parse(values[0]);
-                    double kiloY = double.Parse(values[1]);
-                    string[] dateComponents = values[2].Split(' ');
-                    int year = int.Parse(dateComponents[0]);
-                    int month = int.Parse(dateComponents[1]);
-                    int day = int.Parse(dateComponents[2]);
-                    int hour = int.Parse(dateComponents[3]);
-                    int minute = int.Parse(dateComponents[4]);
-                    int second = int.Parse(dateComponents[5]);
-                    DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
-                    eventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
+                    missCount++;
                 }
-
-                for (int i = 0; i < eventList.Count; i++)
+                else
                 {
-                    OHCAEvent e = eventList[i];
-
-                    current.Flush(e.occurrenceTime);
-                    int dispatchFrom = policy(stationList, ref current, e);
-                    e.assignedStationId = dispatchFrom;
-
-                    if (dispatchFrom == -1)
+                    double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                    if (flightTime > Utils.GOLDEN_TIME)
                     {
                         missCount++;
                     }
                     else
                     {
-                        double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                        if (flightTime > Utils.GOLDEN_TIME)
-                        {
-                            missCount++;
-                        }
-                        else
-                        {
-                            current.Dispatch(dispatchFrom, e.occurrenceTime);
-                            sum += CalculateSurvivalRate(flightTime);
-                        }
+                        current.Dispatch(dispatchFrom, e.occurrenceTime);
+                        sum += CalculateSurvivalRate(flightTime);
                     }
                 }
-                eventList.Clear();
             }
-
-            expectedSurvivalRate = sum / Utils.SIMULATION_EVENTS;
-        }
-        private static void ReleaseExcelObject(object obj)
-        {
-            try
-            {
-                if (obj != null)
-                {
-                    Marshal.ReleaseComObject(obj);
-                    obj = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                obj = null;
-                throw ex;
-            }
-            finally
-            {
-                GC.Collect();
-            }
+            expectedSurvivalRate = sum / simulatedEventList.Count;
         }
 
         public void SetPolicy(Del policy)
@@ -137,6 +98,34 @@ namespace DronePlacementSimulator
         public ref PathPlanner GetPathPlanner()
         {
             return ref pathPlanner;
+        }
+
+        private void ReadSimulatedEvents()
+        {
+            StreamReader reader = new StreamReader("simulation_events.csv");
+            string line = reader.ReadLine();
+            while (line != null)
+            {
+                string[] values = line.Split(',');
+                double kiloX = double.Parse(values[0]);
+                double kiloY = double.Parse(values[1]);
+                string[] dateComponents = values[2].Split(' ');
+                int year = int.Parse(dateComponents[0]);
+                int month = int.Parse(dateComponents[1]);
+                int day = int.Parse(dateComponents[2]);
+                int hour = int.Parse(dateComponents[3]);
+                int minute = int.Parse(dateComponents[4]);
+                int second = int.Parse(dateComponents[5]);
+                DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
+                simulatedEventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
+                line = reader.ReadLine();
+            }
+            reader.Close();
+        }
+
+        public int GetSimulatedEventsCount()
+        {
+            return simulatedEventList.Count;
         }
     }
 }

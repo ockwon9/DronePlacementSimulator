@@ -9,38 +9,36 @@ namespace DronePlacementSimulator
 {
     public static class Utils
     {
+        public static int SCREEN_WIDTH;
+        public static int SCREEN_HEIGHT;
+
         public static double MIN_LONGITUDE = 126.7645806;
         public static double MAX_LONGITUDE = 127.1831312;
         public static double MIN_LATITUDE = 37.42834757;
         public static double MAX_LATITUDE = 37.70130154;
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
-        public static int MINUTES_IN_4_YEARS = 2103840;
+        
+        public static int ROW_NUM = 305;
+        public static int COL_NUM = 370;
 
         public static double UNIT = 1.0;
         public static double LAMBDA_PRECISION = 0.1;
         public static double GOLDEN_TIME = 4.949;
 
-        public static int SCREEN_WIDTH;
-        public static int SCREEN_HEIGHT;
+        public static int KMEANS_ITERATION_COUNT = 100;
 
-        public static int ROW_NUM = 305;
-        public static int COL_NUM = 370;
+        public static int SIMULATION_EVENTS = 1000000;
+        public static double ARRIVAL_RATE = 0.0079858844405054936;
+        public static int MINUTES_IN_4_YEARS = 2103840;
+
+        public static double BASE_FLIGHT_HEIGHT = 10.0; // meter
+        public static double DRONE_TAKE_OFF_VELOCITY = 2.0; // m/s
+        public static double DRONE_LANDING_VELOCITY = 1.0; // m/s
 
         public static int BUDGET = 600000;
         public static int STATION_PRICE = 10000;
         public static int DRONE_PRICE = 10000;
-
-        public static int ITERATION_COUNT = 100;
-
-        public static double ARRIVAL_RATE = 0.0079858844405054936;
-        public static int SIMULATION_EVENTS = 1000000;
-        public static int EVENTS_IN_ONE_READ = 100000;
-
-        public static double FLIGHT_HEIGHT = 10; // meter
-        public static int DRONE_VELOCITY = 60; // km/h
-        public static int DRONE_TAKE_OFF_VELOCITY = 2; // m/s
-        public static int DRONE_LANDING_VELOCITY = 1; // m/s
 
         static Utils()
         {
