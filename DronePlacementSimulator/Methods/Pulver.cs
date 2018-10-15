@@ -39,8 +39,8 @@ namespace DronePlacementSimulator
 
         public Pulver (double w, int p, double h, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = grid.inSeoul.Count();
-            this.m = stationList.Count();
+            this.n = grid.inSeoul.Count;
+            this.m = stationList.Count;
             this.w = w;
             this.h = h;
 

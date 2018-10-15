@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.ComponentModel;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace DronePlacementSimulator
@@ -26,7 +28,10 @@ namespace DronePlacementSimulator
         private Grid eventGrid = null;
         private Bitmap _canvas = null;
         private int targetStationCount;
-        int workersRemaining;
+        private int workersRemaining;
+        private SpinLock workersLock;
+        private int numEvents;
+        private SpinLock numEventLock;
 
         public int coverRange = 0;
         
@@ -45,6 +50,8 @@ namespace DronePlacementSimulator
             coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 12;
             targetStationCount = 20;
+            this.numEventLock = new SpinLock();
+            this.workersLock = new SpinLock();
 
             // Read OHCA events data
             ReadEventData();
@@ -85,12 +92,42 @@ namespace DronePlacementSimulator
         private void PerformBoutilier()
         {
             stationList.Clear();
-            foreach (Cell c in eventGrid.cells)
+            bool stationsSet = !File.Exists("Boutilier_stations.csv");
+
+            if (stationsSet)
             {
-                stationList.Add(new Station(c.kiloX, c.kiloY, 0));
+                StreamReader file = new StreamReader("Boutilier_stations.csv");
+                string line;
+                while ((line = file.ReadLine()) != null)
+                {
+                    string[] parts = line.Split(',');
+                    stationList.Add(new Station(double.Parse(parts[0]), double.Parse(parts[1]), int.Parse(parts[2])));
+                }
+                file.Close();
             }
-            double[] param = new double[] {0.9999999, 0.99999999, 0.999999999};
-            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 98, 0.9999999);
+            else
+            {
+                for (int i = 0; i < eventGrid.cells.Count; i++)
+                {
+                    stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
+                }
+            }
+            Boutilier boutilier = new Boutilier(stationsSet, ref stationList, ref eventList, 100, 0.9999999);
+
+            if (!stationsSet)
+            {
+                StreamWriter file = new StreamWriter("Boutilier_stations.csv");
+                for (int i = 0; i < stationList.Count; i++)
+                {
+                    file.Write(stationList[i].kiloX);
+                    file.Write(",");
+                    file.Write(stationList[i].kiloY);
+                    file.Write(",");
+                    file.Write(stationList[i].droneList.Count);
+                    file.Write("\n");
+                }
+                file.Close();
+            }
         }
 
         private void PerformRUBIS()
@@ -536,14 +573,14 @@ namespace DronePlacementSimulator
             BackgroundWorker[] workers = new BackgroundWorker[coreCount];
             int dividedLoad = eventGrid.lambda.Length / coreCount;
             int rem = eventGrid.lambda.Length % coreCount;
-            workersRemaining = coreCount;
+            this.workersRemaining = coreCount;
             int len = eventGrid.lambda[0].Length;
 
+            this.numEvents = 0;
             int row = 0;
             for (int i = 0; i < workers.Length; i++)
             {
                 int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
-                int numEvents = Utils.SIMULATION_EVENTS / coreCount + ((i < (Utils.SIMULATION_EVENTS % coreCount)) ? 1 : 0);
                 workers[i] = new BackgroundWorker();
                 double[][] workLoad = new double[actualLoad][];
 
@@ -553,7 +590,7 @@ namespace DronePlacementSimulator
                     Array.Copy(eventGrid.lambda[row + j], workLoad[j], len);
                 }
 
-                WorkObject work = new WorkObject(workLoad, numEvents, i, row);
+                WorkObject work = new WorkObject(workLoad, i, row);
 
                 workers[i].DoWork += eventList_DoWork;
                 workers[i].RunWorkerCompleted += eventList_RunWorkerCompleted;
@@ -577,55 +614,77 @@ namespace DronePlacementSimulator
 
             StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
 
-            int eventCount = 0;
-            while (eventCount < workObject.SIMULATION_EVENTS / 10000)
+            bool keepWorking = true;
+            while (keepWorking)
             {
-                int numEvents = 10000 + ((eventCount == workObject.SIMULATION_EVENTS / 10000 - 1) ? (workObject.SIMULATION_EVENTS % 10000) : 0);
-                int events = 0;
-                while (events < numEvents)
+                currentTime = currentTime.AddMinutes(1.0);
+                for (int i = 0; i < workObject.lambda.Length; i++)
                 {
-                    currentTime = currentTime.AddMinutes(1.0);
-                    for (int i = 0; i < workObject.lambda.Length; i++)
+                    for (int j = 0; j < workObject.lambda[i].Length; j++)
                     {
-                        for (int j = 0; j < workObject.lambda[i].Length; j++)
+                        double randVal = rand.NextDouble();
+                        if (randVal < workObject.lambda[i][j])
                         {
-                            double randVal = rand.NextDouble();
-                            if (randVal < workObject.lambda[i][j])
+                            bool lockTaken = false;
+                            while (!lockTaken)
                             {
-                                events++;
-                                file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
-                                file.Write(",");
-                                file.Write((workObject.row + i + 0.5) * Utils.LAMBDA_PRECISION);
-                                file.Write(",");
-                                String s = string.Format("{0 : yyyy MM dd HH mm ss}", currentTime);
-                                file.Write(currentTime);
-                                file.Write("\n");
+                                this.numEventLock.TryEnter(ref lockTaken);
                             }
+
+                            if (this.numEvents >= Utils.SIMULATION_EVENTS)
+                            {
+                                keepWorking = false;
+                                this.numEventLock.Exit();
+                                break;
+                            }
+
+                            this.numEvents++;
+                            if (this.numEvents % 10000 == 0)
+                            {
+                                Console.WriteLine(this.numEvents);
+                            }
+                            this.numEventLock.Exit();
+
+                            file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
+                            file.Write(",");
+                            file.Write((workObject.row + i + 0.5) * Utils.LAMBDA_PRECISION);
+                            file.Write(",");
+                            String s = string.Format("{0 : yyyy MM dd HH mm ss}", currentTime);
+                            file.Write(currentTime);
+                            file.Write("\n");
                         }
                     }
+
+                    if (!keepWorking)
+                    {
+                        break;
+                    }
                 }
-                Console.WriteLine("thread " + workObject.index + " done with " + (eventCount * 10000 + numEvents) + " events.");
-                eventCount++;
             }
+            Console.WriteLine("thread " + workObject.index + " done.");
             file.Close();
         }
 
         private void eventList_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             System.Console.WriteLine((string)e.Result);
+            bool lockTaken = false;
+            while (!lockTaken)
+            {
+                workersLock.TryEnter(ref lockTaken);
+            }
             --workersRemaining;
+            workersLock.Exit();
         }
 
         public class WorkObject
         {
             public double[][] lambda;
-            public int SIMULATION_EVENTS;
             public int index;
             public int row;
-            public WorkObject(double[][] lambda, int simulation_events, int index, int row)
+            public WorkObject(double[][] lambda, int index, int row)
             {
                 this.lambda = lambda.Clone() as double[][];
-                this.SIMULATION_EVENTS = simulation_events;
                 this.index = index;
                 this.row = row;
             }
