@@ -3,12 +3,29 @@ using System.Collections.Generic;
 
 namespace DronePlacementSimulator
 {
+    class Pair
+    {
+        public int xIndex;
+        public int yIndex;
+        public double kiloX;
+        public double kiloY;
+
+        public Pair(int xIndex, int yIndex, double kiloX, double kiloY)
+        {
+            this.xIndex = xIndex;
+            this.yIndex = yIndex;
+            this.kiloX = kiloX;
+            this.kiloY = kiloY;
+        }
+    }
+
     class Grid
     {
         public List<Cell> cells;
         private int lambda_width;
         private int lambda_height;
         public double[][] lambda;
+        public List<Pair> inSeoul;
 
         public Grid (ref List<List<double[]>> polyCoordList)
         {
@@ -29,15 +46,20 @@ namespace DronePlacementSimulator
                 }
             }
 
-            this.lambda_width = (int )Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
+            this.lambda_width = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
             this.lambda_height = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
             this.lambda = new double[lambda_height][];
+            this.inSeoul = new List<Pair>();
             for (int i = 0; i < lambda_height; i++)
             {
                 this.lambda[i] = new double[lambda_width];
                 for (int j = 0; j < lambda_width; j++)
                 {
                     this.lambda[i][j] = 0;
+                    if (IsInside((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, ref polyCoordList))
+                    {
+                        inSeoul.Add(new Pair(j, i, j * Utils.LAMBDA_PRECISION, i * Utils.LAMBDA_PRECISION));
+                    }
                 }
             }
         }

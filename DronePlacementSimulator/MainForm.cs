@@ -79,7 +79,7 @@ namespace DronePlacementSimulator
             {
                 stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
             }
-            Pulver pulver = new Pulver(0.2, targetStationCount, 2, Utils.GOLDEN_TIME, ref stationList, ref eventGrid);
+            Pulver pulver = new Pulver(0.2, targetStationCount, 2, ref stationList, ref eventGrid);
         }
 
         private void PerformBoutilier()
