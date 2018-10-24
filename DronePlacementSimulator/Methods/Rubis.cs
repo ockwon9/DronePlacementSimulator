@@ -41,7 +41,7 @@ namespace DronePlacementSimulator
             this.drones = drones;
 
             this.stationList = new List<RubisStation>();
-            foreach (Station s in stationList)
+            foreach (RubisStation s in stationList)
             {
                 this.stationList.Add(new RubisStation(s));
             }
@@ -273,7 +273,7 @@ namespace DronePlacementSimulator
 
         // Check whether all events is reachable
         /*
-        public static bool IsAllCovered(Grid eventGrid, List<Station> stationList, ref Simulator simulator)
+        public static bool IsAllCovered(Grid eventGrid, List<RubisStation> stationList, ref Simulator simulator)
         {
             foreach (Cell c in eventGrid.cells)
             {
@@ -299,15 +299,14 @@ namespace DronePlacementSimulator
         // Check whether all events is reachable
         private void CalculateCoveredEvents(List<RubisStation> stationList)
         {
-            foreach (Station s in stationList)
+            foreach (RubisStation s in stationList)
             {
                 s.eventCount = 0;
             }
 
-            /*
-            foreach (OHCAEvent e in eventList)
+            foreach (RubisCell e in cellList)
             {
-                foreach (Station s in stationList)
+                foreach (RubisStation s in stationList)
                 {
                     if (simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
                     {
@@ -315,7 +314,6 @@ namespace DronePlacementSimulator
                     }
                 }
             }
-            */
 
             stationList.Sort((a, b) => a.eventCount <= b.eventCount ? 1 : -1);
         }
