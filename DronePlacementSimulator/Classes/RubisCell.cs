@@ -30,5 +30,16 @@ namespace DronePlacementSimulator
             survivalRate = 0.0;
             stations = new List<StationDistancePair>();
         }
+
+        public RubisCell(RubisCell cell)
+        {
+            this.kiloX = cell.kiloX;
+            this.kiloY = cell.kiloY;
+            this.intX = cell.intX;
+            this.intY = cell.intY;
+            this.pdf = cell.pdf;
+            survivalRate = 0.0;
+            stations = new List<StationDistancePair>();
+        }
     }
 }

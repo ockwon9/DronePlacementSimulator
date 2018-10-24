@@ -9,7 +9,7 @@ namespace DronePlacementSimulator
     class RubisStation : Station
     {
         public List<RubisCell> cellList;
-        public double averagePDF;
+        public double pdfSum;
 
         public RubisStation(double kiloX, double kiloY, int drones) : base (kiloX, kiloY, drones)
         {
@@ -26,7 +26,7 @@ namespace DronePlacementSimulator
             }
 
             cellList = new List<RubisCell>();
-            averagePDF = 0.0;
+            pdfSum = 0.0;
         }
 
         public RubisStation(Station s)
@@ -44,7 +44,7 @@ namespace DronePlacementSimulator
             }
 
             cellList = new List<RubisCell>();
-            averagePDF = 0.0;
+            pdfSum = 0.0;
         }
     }
 }
