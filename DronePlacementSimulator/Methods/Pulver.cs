@@ -31,16 +31,14 @@ namespace DronePlacementSimulator
         private double w;
         private double h;
         private double[][] b;
-        private double t;
         private double optimalCoverage;
         private List<Demand> demandList;
         private List<int>[] N;
-        private static double DRONE_VELOCITY = 1.0;
 
         public Pulver (double w, int p, double h, ref List<Station> stationList, ref Grid grid)
         {
-            this.n = grid.inSeoul.Count();
-            this.m = stationList.Count();
+            this.n = grid.inSeoul.Count;
+            this.m = stationList.Count;
             this.w = w;
             this.h = h;
 
@@ -49,7 +47,7 @@ namespace DronePlacementSimulator
             {
                 b[i] = new double[m];
             }
-            QuantifyService(n, m, ref stationList, ref grid, t);
+            QuantifyService(n, m, ref stationList, ref grid);
 
             this.demandList = new List<Demand>();
             Demandify(grid);
@@ -58,11 +56,11 @@ namespace DronePlacementSimulator
             {
                 this.N[i] = new List<int>();
             }
-            BoundByT(ref grid, ref stationList, t);
+            BoundByT(ref grid, ref stationList);
             this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
         }
 
-        public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid, double t)
+        public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid)
         {
             Overlap overlap = new Overlap();
             int c = grid.lambda[0].Length;
@@ -91,7 +89,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void BoundByT(ref Grid grid, ref List<Station> stationList, double t)
+        public void BoundByT(ref Grid grid, ref List<Station> stationList)
         {
             Overlap overlap = new Overlap();
             for (int i = 0; i < this.n; i++)

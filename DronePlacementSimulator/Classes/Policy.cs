@@ -52,7 +52,7 @@ namespace DronePlacementSimulator
         public static int HighestSurvalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
             int resultIndex = -1;
-            double maxSurvivalRate = Double.PositiveInfinity;
+            double maxSurvivalRate = Double.NegativeInfinity;
             foreach (Station s in stationList)
             {
                 double survivalRate = RUBIS.GetSurvivalRate(stationList, ref counter, s, e) - RUBIS.GetPotential(stationList, ref counter, s, e);
