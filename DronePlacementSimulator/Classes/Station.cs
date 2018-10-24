@@ -12,6 +12,17 @@ namespace DronePlacementSimulator
         public List<Drone> droneList;
         public int eventCount;
 
+        public Station()
+        {
+            this.kiloX = 0.0;
+            this.kiloY = 0.0;
+            this.pixelX = 0;
+            this.pixelY = 0;
+            this.eventCount = 0;
+
+            droneList = new List<Drone>();
+        }
+
         public Station(double kiloX, double kiloY, int drones)
         {
             this.stationID = ID++;
@@ -19,6 +30,7 @@ namespace DronePlacementSimulator
             this.kiloY = kiloY;
             this.pixelX = Utils.TransformKiloXToPixel(kiloX);
             this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.eventCount = 0;
 
             droneList = new List<Drone>();
             for (int i = 0; i < drones; i++)
@@ -34,6 +46,7 @@ namespace DronePlacementSimulator
             this.kiloY = copy.kiloY;
             this.pixelX = copy.pixelX;
             this.pixelY = copy.pixelY;
+            this.eventCount = 0;
 
             droneList = new List<Drone>();
             for (int i = 0; i < copy.droneList.Count; i++)

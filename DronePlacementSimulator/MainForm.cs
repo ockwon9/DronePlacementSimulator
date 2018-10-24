@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
     {
         private bool writeSimulation = false;
         private int coreCount = 6;
-
+        
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
@@ -100,7 +100,9 @@ namespace DronePlacementSimulator
                 simulator = new Simulator();
             }
             stationList.Clear();
-            RUBIS.Calculate(eventGrid, eventList, ref stationList, ref simulator, targetStationCount, targetStationCount);
+
+            RUBIS rubis = new RUBIS(eventGrid, stationList, targetStationCount, targetStationCount);
+            RUBIS.Calculate();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
