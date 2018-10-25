@@ -58,7 +58,7 @@ namespace DronePlacementSimulator
 
         private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
         {
-            if(srcX > dstX)
+            if (srcX > dstX)
             {
                 Swap<double>(ref srcX, ref dstX);
                 Swap<double>(ref srcY, ref dstY);

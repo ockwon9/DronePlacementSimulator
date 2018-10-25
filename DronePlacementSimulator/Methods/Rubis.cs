@@ -33,7 +33,7 @@ namespace DronePlacementSimulator
         private List<RubisStation> stationList;
         private List<RubisCell> cellList;
 
-        public RUBIS(Grid eventGrid, List<Station> stationList, Simulator simulator, int stations, int drones)
+        public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones)
         {
             this.eventGrid = eventGrid;
             this.simulator = simulator;
@@ -41,10 +41,6 @@ namespace DronePlacementSimulator
             this.drones = drones;
 
             this.stationList = new List<RubisStation>();
-            foreach (RubisStation s in stationList)
-            {
-                this.stationList.Add(new RubisStation(s));
-            }
 
             cellList = new List<RubisCell>();
             foreach (Cell c in eventGrid.cells)
@@ -53,11 +49,10 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void Calculate()
+        public List<RubisStation> Calculate()
         {
             List<RubisStation> prevStationList = new List<RubisStation>();
             List<RubisStation> nextStationList;
-            CloneList(stationList, prevStationList);
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
             prevStationList.Add(new RubisStation(4.5, 15.0, 1));
@@ -91,7 +86,7 @@ namespace DronePlacementSimulator
             {
                 prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));
             }
-
+            
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
@@ -101,20 +96,25 @@ namespace DronePlacementSimulator
             double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
             double bestSurvivalRate = 0.0;
 
+            double delta = 0.0;
+            double nextSurvivalRate = 0.0;
+
             while (currentTemp > epsilonTemp)
             {
                 iteration++;
 
                 // Near search using local optimization
                 nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate);
-                double nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
-                double delta = nextSurvivalRate - prevSurvivalRate;
+                nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
+                delta = nextSurvivalRate - prevSurvivalRate;
 
                 if (delta > 0)
                 {
-                    // If better, choose it
                     CloneList(nextStationList, prevStationList);
                     prevSurvivalRate = nextSurvivalRate;
+
+                    // Heat-up
+                    currentTemp += currentTemp * 0.001;
                 }
                 else
                 {
@@ -137,10 +137,13 @@ namespace DronePlacementSimulator
                 }
 
                 // Cool-down
-                // TODO: When do we have to heat up?
                 currentTemp *= alpha;
-                Console.WriteLine("[" + iteration + "] Temp.: " + currentTemp + "℃, Best = " + (bestSurvivalRate * 100) + "%, Current = " + (prevSurvivalRate * 100) + "%");
+                Console.WriteLine("[" + iteration + "] Temp.: " + String.Format("{0:0.000000000000}", currentTemp) + "℃    " +
+                    "Best = " + String.Format("{0:0.000000}", (bestSurvivalRate * 100)) + "%    " +
+                    "Current = " + String.Format("{0:0.000000}", (prevSurvivalRate * 100)) + "%");
             }
+
+            return stationList;
         }
 
         // Find the best station placement with only one-step movement
@@ -162,46 +165,47 @@ namespace DronePlacementSimulator
             {
                 double tempKiloX = s.kiloX;
                 double tempKiloY = s.kiloY;
+                int step = 10;
 
                 foreach (Direction direction in Enum.GetValues(typeof(Direction)))
                 {
                     switch (direction)
                     {
                         case Direction.LeftTop:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * 5;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Top:
                             kiloX = s.kiloX;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * 5;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.RightTop:
-                            kiloX = s.kiloX = Utils.LAMBDA_PRECISION * 5;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Left:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
                             kiloY = s.kiloY;
                             break;
                         case Direction.Right:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
                             kiloY = s.kiloY;
                             break;
                         case Direction.LeftBottom:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * 5;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Bottom:
                             kiloX = s.kiloX;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * 5;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.RightBottom:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * 5;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * 5;
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                     }
 
-                    if (kiloX > 0.1 && kiloX < Utils.SEOUL_WIDTH - 0.1 && kiloY > 0.1 && kiloY < Utils.SEOUL_HEIGHT - 0.1)
+                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
                     {
                         s.SetLocation(kiloX, kiloY);
                     }
@@ -284,26 +288,27 @@ namespace DronePlacementSimulator
                             break;
                     }
 
-                    if (kiloX > 0.1 && kiloX < Utils.SEOUL_WIDTH - 0.1 && kiloY > 0.1 && kiloY < Utils.SEOUL_HEIGHT - 0.1)
+                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
                     {
                         s.SetLocation(kiloX, kiloY);
                     }
                 }
 
-                if(IsAllCovered(tempList))
+                if (IsAllCovered(tempList))
                 {
                     CloneList(tempList, feasibleList);
                     break;
                 }
 
-                if (iteration++ > 1000)
+                if (iteration++ > 5000)
                 {
                     return feasibleList;
                 }
             }
-
+            
             // Assign drones to randomly-selected stations
             // CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
+            /*
             foreach (RubisStation s in feasibleList)
             {
                 s.droneList.Clear();
@@ -314,6 +319,7 @@ namespace DronePlacementSimulator
                 Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
                 s.droneList.Add(new Drone(s.stationID));
             }
+            */
 
             return feasibleList;
         }
@@ -333,7 +339,7 @@ namespace DronePlacementSimulator
                         break;
                     }
                 }
-                if(isCovered == false)
+                if (isCovered == false)
                 {
                     return false;
                 }
@@ -363,7 +369,7 @@ namespace DronePlacementSimulator
             stationList.Sort((a, b) => a.eventCount <= b.eventCount ? 1 : -1);
         }
 
-        private double GetOverallSurvivalRate(List<RubisStation> stationList)
+        public double GetOverallSurvivalRate(List<RubisStation> stationList)
         {
             List<RubisCell> tempCellList = new List<RubisCell>();
             CloneList(cellList, tempCellList);
@@ -395,7 +401,7 @@ namespace DronePlacementSimulator
             // Calculates the average probabilty of including cells for each station
             foreach (RubisStation s in stationList)
             {
-                foreach(RubisCell cell in s.cellList)
+                foreach (RubisCell cell in s.cellList)
                 {
                     s.pdfSum += cell.pdf;
                 }
@@ -422,9 +428,17 @@ namespace DronePlacementSimulator
 
         private double ProbabilityMassFunction(int k, double lambda)
         {
-            int kFactorial = Factorial(k);
-            double numerator = Math.Pow(Math.E, -(double)lambda) * Math.Pow((double)lambda, (double)k);
-            return numerator / kFactorial;
+            double e = Math.Pow(Math.E, -lambda);
+            int i = 0;
+            double sum = 0.0;
+            while (i <= k)
+            {
+                double n = Math.Pow(lambda, i) / Factorial(i);
+                sum += n;
+                i++;
+            }
+            double cdf = e * sum;
+            return cdf;
         }
 
         private int Factorial(int k)

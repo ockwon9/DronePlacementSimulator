@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             Counter current = new Counter(ref initialCount);
             double sum = 0;
 
-            foreach(OHCAEvent e in simulatedEventList)
+            foreach (OHCAEvent e in simulatedEventList)
             {
                 current.Flush(e.occurrenceTime);
                 int dispatchFrom = policy(stationList, ref current, e);
@@ -109,15 +109,8 @@ namespace DronePlacementSimulator
                 string[] values = line.Split(',');
                 double kiloX = double.Parse(values[0]);
                 double kiloY = double.Parse(values[1]);
-                string[] dateComponents = values[2].Split(' ');
-                int year = int.Parse(dateComponents[0]);
-                int month = int.Parse(dateComponents[1]);
-                int day = int.Parse(dateComponents[2]);
-                int hour = int.Parse(dateComponents[3]);
-                int minute = int.Parse(dateComponents[4]);
-                int second = int.Parse(dateComponents[5]);
-                DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
-                simulatedEventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
+                DateTime date = DateTime.Parse(values[2]);
+                simulatedEventList.Add(new OHCAEvent(kiloX, kiloY, date));
                 line = reader.ReadLine();
             }
             reader.Close();
