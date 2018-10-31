@@ -8,6 +8,15 @@
         public int intY;
         public int eventCount;
 
+        public Cell()
+        {
+            this.kiloX = 0.0;
+            this.kiloY = 0.0;
+            this.intX = 0;
+            this.intY = 0;
+            this.eventCount = 0;
+        }
+
         public Cell(double kiloX, double kiloY, int j, int i)
         {
             this.kiloX = kiloX;

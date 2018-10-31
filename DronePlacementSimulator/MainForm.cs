@@ -18,7 +18,7 @@ namespace DronePlacementSimulator
     {
         private bool writeSimulation = false;
         private int coreCount = 6;
-
+        
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
@@ -75,7 +75,7 @@ namespace DronePlacementSimulator
             KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
             foreach (double[] d in stations.Means)
             {
-                stationList.Add(new Station(d[0], d[1], 1));
+                stationList.Add(new Station(d[0], d[1], 2));
             }
         }
 
@@ -137,8 +137,15 @@ namespace DronePlacementSimulator
             {
                 simulator = new Simulator();
             }
+
+            RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2); 
+            List<RubisStation> resultList = rubis.Calculate();
+
             stationList.Clear();
-            RUBIS.Calculate(eventGrid, eventList, ref stationList, ref simulator, targetStationCount, targetStationCount);
+            foreach (RubisStation s in resultList)
+            {
+                stationList.Add(s);
+            }
         }
 
         private void MainForm_Load(object sender, EventArgs e)

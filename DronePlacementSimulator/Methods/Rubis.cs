@@ -10,7 +10,7 @@ using System.Windows.Shapes;
 
 namespace DronePlacementSimulator
 {
-    static class RUBIS
+    class RUBIS
     {
         enum Direction
         {
@@ -25,27 +25,50 @@ namespace DronePlacementSimulator
             RightBottom
         }
 
-        public static void Calculate(Grid eventGrid, List<OHCAEvent> eventList, ref List<Station> stationList, ref Simulator simulator, int stations, int drones)
+        private Grid eventGrid;
+        private Simulator simulator;
+        private int stations;
+        private int drones;
+
+        private List<RubisStation> stationList;
+        private List<RubisCell> cellList;
+
+        public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones)
         {
-            List<Station> prevStationList = new List<Station>();
-            List<Station> nextStationList;
-            CloneList(stationList, prevStationList);
+            this.eventGrid = eventGrid;
+            this.simulator = simulator;
+            this.stations = stations;
+            this.drones = drones;
+
+            this.stationList = new List<RubisStation>();
+
+            cellList = new List<RubisCell>();
+            foreach (Cell c in eventGrid.cells)
+            {
+                cellList.Add(new RubisCell(c, eventGrid.lambda[c.intX][c.intY]));
+            }
+        }
+
+        public List<RubisStation> Calculate()
+        {
+            List<RubisStation> prevStationList = new List<RubisStation>();
+            List<RubisStation> nextStationList;
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
-            prevStationList.Add(new Station(4.5, 15.0, 1));
-            prevStationList.Add(new Station(8.5, 7.7, 1));
-            prevStationList.Add(new Station(14.5, 5.0, 1));
-            prevStationList.Add(new Station(12.0, 16.3, 1));
-            prevStationList.Add(new Station(16.5, 13.0, 1));
-            prevStationList.Add(new Station(17.0, 22.6, 1));
-            prevStationList.Add(new Station(21.0, 7.5, 1));
-            prevStationList.Add(new Station(22.0, 19.0, 1));
-            prevStationList.Add(new Station(24.7, 27.0, 1));
-            prevStationList.Add(new Station(25.0, 13.0, 1));
-            prevStationList.Add(new Station(27.0, 4.5, 1));
-            prevStationList.Add(new Station(27.0, 20.5, 1));
-            prevStationList.Add(new Station(30.5, 8.5, 1));
-            prevStationList.Add(new Station(33.0, 13.5, 1));
+            prevStationList.Add(new RubisStation(4.5, 15.0, 1));
+            prevStationList.Add(new RubisStation(8.5, 7.7, 1));
+            prevStationList.Add(new RubisStation(14.5, 5.0, 1));
+            prevStationList.Add(new RubisStation(12.0, 16.3, 1));
+            prevStationList.Add(new RubisStation(16.5, 13.0, 1));
+            prevStationList.Add(new RubisStation(17.0, 22.6, 1));
+            prevStationList.Add(new RubisStation(21.0, 7.5, 1));
+            prevStationList.Add(new RubisStation(22.0, 19.0, 1));
+            prevStationList.Add(new RubisStation(24.7, 27.0, 1));
+            prevStationList.Add(new RubisStation(25.0, 13.0, 1));
+            prevStationList.Add(new RubisStation(27.0, 4.5, 1));
+            prevStationList.Add(new RubisStation(27.0, 20.5, 1));
+            prevStationList.Add(new RubisStation(30.5, 8.5, 1));
+            prevStationList.Add(new RubisStation(33.0, 13.5, 1));
 
             // Step 2. Add remaining stations in crowded cells
             int remainingStations = stations - prevStationList.Count;
@@ -53,40 +76,45 @@ namespace DronePlacementSimulator
             {
                 double kiloX = eventGrid.cells[i].kiloX;
                 double kiloY = eventGrid.cells[i].kiloY;
-                prevStationList.Add(new Station(kiloX, kiloY, 1));
+                prevStationList.Add(new RubisStation(kiloX, kiloY, 1));
             }
 
             // Step 3. Add remaining drones in busy stations
-            CalculateCoveredEvents(eventList, ref prevStationList, ref simulator);
+            CalculateCoveredCells(prevStationList);
             int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
             {
                 prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));
             }
-
+            
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
-            double alpha = 0.99;
+            double alpha = 0.999;
             int iteration = 0;
 
-            double currentSurvivalRate = GetOverallSurvivalRate(eventList, prevStationList, ref simulator);
+            double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
             double bestSurvivalRate = 0.0;
+
+            double delta = 0.0;
+            double nextSurvivalRate = 0.0;
 
             while (currentTemp > epsilonTemp)
             {
                 iteration++;
 
                 // Near search using local optimization
-                nextStationList = MoveOneStepToBestDirection(eventGrid, eventList, prevStationList, ref simulator);
-                double nextSurvivalRate = GetOverallSurvivalRate(eventList, nextStationList, ref simulator);
-                double delta = nextSurvivalRate - currentSurvivalRate;
+                nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate);
+                nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
+                delta = nextSurvivalRate - prevSurvivalRate;
 
                 if (delta > 0)
                 {
-                    // If better, choose it
                     CloneList(nextStationList, prevStationList);
-                    currentSurvivalRate = nextSurvivalRate;
+                    prevSurvivalRate = nextSurvivalRate;
+
+                    // Heat-up
+                    currentTemp += currentTemp * 0.001;
                 }
                 else
                 {
@@ -95,72 +123,98 @@ namespace DronePlacementSimulator
                     if (probility < Math.Exp(-delta / currentTemp))
                     {
                         // Far search using random placement
-                        nextStationList = FindRandomStationPlacement(eventGrid, eventList, prevStationList, ref simulator, remainingDrones);
+                        nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones);
                         CloneList(nextStationList, prevStationList);
-                        currentSurvivalRate = GetOverallSurvivalRate(eventList, prevStationList, ref simulator);
+                        prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
                     }
                 }
 
                 // Keep the best solution
-                if (currentSurvivalRate > bestSurvivalRate)
+                if (prevSurvivalRate > bestSurvivalRate)
                 {
                     CloneList(prevStationList, stationList);
-                    bestSurvivalRate = currentSurvivalRate;
+                    bestSurvivalRate = prevSurvivalRate;
                 }
 
                 // Cool-down
-                // TODO: When do we have to heat up?
                 currentTemp *= alpha;
-                Console.WriteLine("[" + iteration + "] CurrentTemperature: " + currentTemp + "℃, BestSurvivalRate = " + (bestSurvivalRate * 100) + "%");
+                Console.WriteLine("[" + iteration + "] Temp.: " + String.Format("{0:0.000000000000}", currentTemp) + "℃    " +
+                    "Best = " + String.Format("{0:0.000000}", (bestSurvivalRate * 100)) + "%    " +
+                    "Current = " + String.Format("{0:0.000000}", (prevSurvivalRate * 100)) + "%");
             }
+
+            return stationList;
         }
 
         // Find the best station placement with only one-step movement
-        private static List<Station> MoveOneStepToBestDirection(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList, ref Simulator simulator)
+        private List<RubisStation> MoveOneStepToBestDirection(List<RubisStation> currentStationList, double currentSurvivalRate)
         {
-            List<Station> tempList = new List<Station>();
+            List<RubisStation> tempList = new List<RubisStation>();
             CloneList(currentStationList, tempList);
 
-            List<Station> solutionList = new List<Station>();
-            double maxSurvivalRate = GetOverallSurvivalRate(eventList, currentStationList, ref simulator);
+            List<RubisStation> solutionList = new List<RubisStation>();
+            CloneList(currentStationList, solutionList);
+
+            double maxSurvivalRate = currentSurvivalRate;
 
             // Find the best one-step movement for all directions of all stations
-            foreach (Station s in tempList)
+            double kiloX = 0.0;
+            double kiloY = 0.0;
+
+            foreach (RubisStation s in tempList)
             {
                 double tempKiloX = s.kiloX;
                 double tempKiloY = s.kiloY;
+                int step = 10;
 
-                foreach (Direction d in Enum.GetValues(typeof(Direction)))
+                foreach (Direction direction in Enum.GetValues(typeof(Direction)))
                 {
-                    switch (d)
+                    switch (direction)
                     {
                         case Direction.LeftTop:
-                            s.SetLocation(s.kiloX - Utils.UNIT, s.kiloY + Utils.UNIT);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Top:
-                            s.SetLocation(s.kiloX, s.kiloY + Utils.UNIT);
+                            kiloX = s.kiloX;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.RightTop:
-                            s.SetLocation(s.kiloX + Utils.UNIT, s.kiloY + Utils.UNIT);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Left:
-                            s.SetLocation(s.kiloX - Utils.UNIT, s.kiloY);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY;
                             break;
                         case Direction.Right:
-                            s.SetLocation(s.kiloX + Utils.UNIT, s.kiloY);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY;
                             break;
                         case Direction.LeftBottom:
-                            s.SetLocation(s.kiloX - Utils.UNIT, s.kiloY - Utils.UNIT);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.Bottom:
-                            s.SetLocation(s.kiloX, s.kiloY - Utils.UNIT);
+                            kiloX = s.kiloX;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                         case Direction.RightBottom:
-                            s.SetLocation(s.kiloX + Utils.UNIT, s.kiloY - Utils.UNIT);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
                             break;
                     }
 
-                    double survivalRate = GetOverallSurvivalRate(eventList, tempList, ref simulator);
+                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
+                    {
+                        s.SetLocation(kiloX, kiloY);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    double survivalRate = GetOverallSurvivalRate(tempList);
                     if (survivalRate > maxSurvivalRate)
                     {
                         maxSurvivalRate = survivalRate;
@@ -172,64 +226,90 @@ namespace DronePlacementSimulator
                 }
             }
 
-            double sr = GetOverallSurvivalRate(eventList, solutionList, ref simulator);
+            double sr = GetOverallSurvivalRate(solutionList);
             return solutionList;
         }
 
-        private static List<Station> FindRandomStationPlacement(Grid eventGrid, List<OHCAEvent> eventList, List<Station> currentStationList, ref Simulator simulator, int remainingDrones)
+        private List<RubisStation> FindRandomStationPlacement(List<RubisStation> currentStationList, int remainingDrones)
         {
-            List<Station> tempList = new List<Station>();
-            List<Station> feasibleList = new List<Station>();
+            List<RubisStation> tempList = new List<RubisStation>();
+            List<RubisStation> feasibleList = new List<RubisStation>();
+            CloneList(currentStationList, feasibleList);
 
+            int iteration = 0;
             while (true)
             {
                 CloneList(currentStationList, tempList);
+                double kiloX = 0.0;
+                double kiloY = 0.0;
 
                 // Move each station a random distance in a random direction
                 foreach (Station s in tempList)
                 {
                     int randomDirection = new Random().Next(0, 8);
-                    int randomDistance = new Random().Next(0, 4);
-
+                    int randomDistance = new Random().Next(0, 5);
                     switch ((Direction)randomDirection)
                     {
                         case Direction.LeftTop:
-                            s.SetLocation(s.kiloX - Utils.UNIT * randomDistance, s.kiloY + Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
                             break;
                         case Direction.Top:
-                            s.SetLocation(s.kiloX, s.kiloY + Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
                             break;
                         case Direction.RightTop:
-                            s.SetLocation(s.kiloX + Utils.UNIT * randomDistance, s.kiloY + Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
                             break;
                         case Direction.Left:
-                            s.SetLocation(s.kiloX - Utils.UNIT * randomDistance, s.kiloY);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY;
                             break;
                         case Direction.Center:
-                            s.SetLocation(s.kiloX, s.kiloY);
+                            kiloX = s.kiloX;
+                            kiloY = s.kiloY;
                             break;
                         case Direction.Right:
-                            s.SetLocation(s.kiloX + Utils.UNIT * randomDistance, s.kiloY);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY;
                             break;
                         case Direction.LeftBottom:
-                            s.SetLocation(s.kiloX - Utils.UNIT * randomDistance, s.kiloY - Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
                             break;
                         case Direction.Bottom:
-                            s.SetLocation(s.kiloX, s.kiloY - Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
                             break;
                         case Direction.RightBottom:
-                            s.SetLocation(s.kiloX + Utils.UNIT * randomDistance, s.kiloY - Utils.UNIT * randomDistance);
+                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
+                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
                             break;
+                    }
+
+                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
+                    {
+                        s.SetLocation(kiloX, kiloY);
                     }
                 }
 
-                CloneList(tempList, feasibleList);
-                break;
-            }
+                if (IsAllCovered(tempList))
+                {
+                    CloneList(tempList, feasibleList);
+                    break;
+                }
 
+                if (iteration++ > 5000)
+                {
+                    return feasibleList;
+                }
+            }
+            
             // Assign drones to randomly-selected stations
-            CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
-            foreach (Station s in feasibleList)
+            // CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
+            /*
+            foreach (RubisStation s in feasibleList)
             {
                 s.droneList.Clear();
                 s.droneList.Add(new Drone(s.stationID));
@@ -239,44 +319,45 @@ namespace DronePlacementSimulator
                 Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
                 s.droneList.Add(new Drone(s.stationID));
             }
+            */
 
             return feasibleList;
         }
 
         // Check whether all events is reachable
-        public static bool IsAllCovered(Grid eventGrid, List<Station> stationList, ref Simulator simulator)
+        public bool IsAllCovered(List<RubisStation> stationList)
         {
-            foreach (Cell c in eventGrid.cells)
+            foreach (RubisCell cell in cellList)
             {
                 bool isCovered = false;
-                foreach (Station s in stationList)
+                foreach (RubisStation s in stationList)
                 {
-                    if(simulator.GetPathPlanner().CalcuteFlightTime(c.kiloX, c.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
+                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    if (distance <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
                         break;
                     }
                 }
-                if(isCovered == false)
+                if (isCovered == false)
                 {
                     return false;
                 }
             }
-
             return true;
         }
 
         // Check whether all events is reachable
-        private static void CalculateCoveredEvents(List<OHCAEvent> eventList, ref List<Station> stationList, ref Simulator simulator)
+        private void CalculateCoveredCells(List<RubisStation> stationList)
         {
-            foreach (Station s in stationList)
+            foreach (RubisStation s in stationList)
             {
                 s.eventCount = 0;
             }
 
-            foreach (OHCAEvent e in eventList)
+            foreach (RubisCell e in cellList)
             {
-                foreach (Station s in stationList)
+                foreach (RubisStation s in stationList)
                 {
                     if (simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
                     {
@@ -284,52 +365,114 @@ namespace DronePlacementSimulator
                     }
                 }
             }
+
             stationList.Sort((a, b) => a.eventCount <= b.eventCount ? 1 : -1);
         }
 
-        //TODO: How to calculate the survival rate for the given event list and station list
-        private static double GetOverallSurvivalRate(List<OHCAEvent> eventList, List<Station> stationList, ref Simulator simulator)
+        public double GetOverallSurvivalRate(List<RubisStation> stationList)
         {
-            double sum = 0.0;
-            foreach (OHCAEvent e in eventList)
+            List<RubisCell> tempCellList = new List<RubisCell>();
+            CloneList(cellList, tempCellList);
+
+            // Finds reachable stations for each cell
+            foreach (RubisCell cell in tempCellList)
             {
-                double minTime = Double.MaxValue;
-                foreach (Station s in stationList)
+                foreach (RubisStation s in stationList)
                 {
-                    double time = simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY);
-                    if (time < minTime)
+                    if (s.kiloY < 0.1)
                     {
-                        minTime = time;
+                        Console.WriteLine(s.ToString());
+                    }
+                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    if (distance <= Utils.GOLDEN_TIME)
+                    {
+                        cell.stations.Add(new StationDistancePair(s, distance));
+                        s.cellList.Add(cell);
                     }
                 }
-                sum += (minTime > Utils.GOLDEN_TIME) ? 0 : CalculateSurvivalRate(minTime);
             }
 
-            return sum / eventList.Count;
+            // Sorts stationList ordered by distance
+            foreach (RubisCell cell in tempCellList)
+            {
+                cell.stations.Sort((a, b) => a.distance >= b.distance ? 1 : -1);
+            }
+
+            // Calculates the average probabilty of including cells for each station
+            foreach (RubisStation s in stationList)
+            {
+                foreach (RubisCell cell in s.cellList)
+                {
+                    s.pdfSum += cell.pdf;
+                }
+            }
+
+            // Calculates the survival rate for each cell
+            double overallSum = 0.0;
+            foreach (RubisCell cell in tempCellList)
+            {
+                double pSum = 0.0;
+                foreach (StationDistancePair pair in cell.stations)
+                {
+                    RubisStation s = pair.station;
+                    double prob = (1 - pSum) * ProbabilityMassFunction(s.droneList.Count - 1, s.pdfSum);
+                    pSum += prob;
+                    cell.survivalRate += prob * CalculateSurvivalRate(pair.distance);
+                }
+                overallSum += cell.survivalRate;
+            }
+
+            double survivalRate = overallSum / tempCellList.Count;
+            return survivalRate;
         }
 
-        //TODO: How to calculate the survival rate when the Station s dispatches a drone to the Event e
-        public static double GetSurvivalRate(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e)
+        private double ProbabilityMassFunction(int k, double lambda)
         {
-            return new Random().NextDouble();
+            double e = Math.Pow(Math.E, -lambda);
+            int i = 0;
+            double sum = 0.0;
+            while (i <= k)
+            {
+                double n = Math.Pow(lambda, i) / Factorial(i);
+                sum += n;
+                i++;
+            }
+            double cdf = e * sum;
+            return cdf;
         }
 
-        private static double CalculateSurvivalRate(double time)
+        private int Factorial(int k)
+        {
+            int count = k;
+            int factorial = 1;
+            while (count >= 1)
+            {
+                factorial = factorial * count;
+                count--;
+            }
+            return factorial;
+        }
+
+        private double CalculateSurvivalRate(double time)
         {
             return 0.7 - (0.1 * time);
         }
 
-        public static double GetPotential(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e)
-        {
-            return 0.0;
-        }
-
-        private static void CloneList(List<Station> srcList, List<Station> dstList)
+        private void CloneList(List<RubisStation> srcList, List<RubisStation> dstList)
         {
             dstList.Clear();
             srcList.ForEach((item) =>
             {
-                dstList.Add(new Station(item));
+                dstList.Add(new RubisStation(item));
+            });
+        }
+
+        private void CloneList(List<RubisCell> srcList, List<RubisCell> dstList)
+        {
+            dstList.Clear();
+            srcList.ForEach((item) =>
+            {
+                dstList.Add(new RubisCell(item));
             });
         }
     }

@@ -48,7 +48,7 @@ namespace DronePlacementSimulator
             Counter current = new Counter(ref initialCount);
             double sum = 0;
 
-            foreach(OHCAEvent e in simulatedEventList)
+            foreach (OHCAEvent e in simulatedEventList)
             {
                 current.Flush(e.occurrenceTime);
                 int dispatchFrom = policy(stationList, ref current, e);
