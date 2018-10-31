@@ -81,10 +81,11 @@ namespace DronePlacementSimulator
 
         private void PerformPulver()
         {
+            eventGrid.Pool(ref polyCoordList);
             stationList.Clear();
-            for (int i = 0; i < eventGrid.cells.Count; i++)
+            for (int i = 0; i < eventGrid.inSeoul.Count; i++)
             {
-                stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
+                stationList.Add(new Station(eventGrid.inSeoul[i].kiloX, eventGrid.inSeoul[i].kiloY, 0));
             }
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, ref stationList, ref eventGrid);
         }
@@ -92,7 +93,7 @@ namespace DronePlacementSimulator
         private void PerformBoutilier()
         {
             stationList.Clear();
-            bool stationsSet = !File.Exists("Boutilier_stations.csv");
+            bool stationsSet = File.Exists("Boutilier_stations.csv");
 
             if (stationsSet)
             {
@@ -112,7 +113,7 @@ namespace DronePlacementSimulator
                     stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
                 }
             }
-            Boutilier boutilier = new Boutilier(stationsSet, ref stationList, ref eventList, 100, 0.9999999);
+            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 100, 0.9999999);
 
             if (!stationsSet)
             {
