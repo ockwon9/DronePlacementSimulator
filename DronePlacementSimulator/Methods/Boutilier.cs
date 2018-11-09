@@ -9,14 +9,13 @@ namespace DronePlacementSimulator
 {
     class Boutilier
     {
-        private static bool DEBUG = false;
         private int I;
         private int J;
         private double f;
         private int numStations = 0;
         private List<List<int>> realCoverList;
 
-        public Boutilier(bool stationsSet, ref List<Station> stationList, ref List<OHCAEvent> eventList, double f, double r)
+        public Boutilier(ref List<Station> stationList, ref List<OHCAEvent> eventList, double f, double r)
         {
             this.I = stationList.Count;
             this.J = eventList.Count;
@@ -25,12 +24,9 @@ namespace DronePlacementSimulator
 
             Console.WriteLine(I);
             Console.WriteLine(J);
-
-            if (!stationsSet)
-            {
-                OptimalPlacement(ref stationList, ref eventList);
-                PlaceDrones(r, ref stationList);
-            }
+            
+            OptimalPlacement(ref stationList, ref eventList);
+            PlaceDrones(r, ref stationList);
         }
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
@@ -182,6 +178,7 @@ namespace DronePlacementSimulator
                     m++;
                     mrho = lambda / mu;
                     rho = mrho / m;
+
 
                     sum = 0.0;
                     double temp = 1.0;

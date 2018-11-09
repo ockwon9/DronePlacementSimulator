@@ -22,10 +22,12 @@ namespace DronePlacementSimulator
     class Grid
     {
         public List<Cell> cells;
-        private int lambda_width;
-        private int lambda_height;
+        public int lambda_width;
+        public int lambda_height;
         public double[][] lambda;
+        public bool[][] inSeoulBool;
         public List<Pair> inSeoul;
+        public double[][] pooledLambda;
 
         public Grid (ref List<List<double[]>> polyCoordList)
         {
@@ -50,16 +52,16 @@ namespace DronePlacementSimulator
             this.lambda_height = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
             this.lambda = new double[lambda_height][];
             this.inSeoul = new List<Pair>();
+            this.inSeoulBool = new bool[lambda_height][];
+            this.pooledLambda = new double[(lambda_height + 2)/ 5][];
             for (int i = 0; i < lambda_height; i++)
             {
                 this.lambda[i] = new double[lambda_width];
+                this.inSeoulBool[i] = new bool[lambda_width];
                 for (int j = 0; j < lambda_width; j++)
                 {
                     this.lambda[i][j] = 0;
-                    if (IsInside((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, ref polyCoordList))
-                    {
-                        inSeoul.Add(new Pair(j, i, j * Utils.LAMBDA_PRECISION, i * Utils.LAMBDA_PRECISION));
-                    }
+                    inSeoulBool[i][j] = (IsInside((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, ref polyCoordList));
                 }
             }
         }
@@ -122,8 +124,8 @@ namespace DronePlacementSimulator
             for (int i = 0; i < eventList.Count; i++)
             {
                 OHCAEvent e = eventList[i];
-                int intX = (int) Math.Round(e.kiloX / Utils.LAMBDA_PRECISION - 0.5);
-                int intY = (int) Math.Round(e.kiloY / Utils.LAMBDA_PRECISION - 0.5);
+                int intX = (int)Math.Round(e.kiloX / Utils.LAMBDA_PRECISION - 0.5);
+                int intY = (int)Math.Round(e.kiloY / Utils.LAMBDA_PRECISION - 0.5);
 
                 for (int j = 0; j < this.lambda_height; j++)
                 {
@@ -137,12 +139,40 @@ namespace DronePlacementSimulator
                 }
             }
 
-            for (int j =  0; j < this.lambda_height; j++)
+            for (int j = 0; j < this.lambda_height; j++)
             {
                 for (int k = 0; k < this.lambda_width; k++)
                 {
                     this.lambda[j][k] /= (Math.PI * Utils.MINUTES_IN_4_YEARS);
                     this.lambda[j][k] = this.lambda[j][k] * Utils.LAMBDA_PRECISION * Utils.LAMBDA_PRECISION;
+                }
+            }
+        }
+
+        public void Pool(ref List<List<double[]>> polyCoordList)
+        {
+            for (int i = 2; i < lambda_height; i += 5)
+            {
+                pooledLambda[i / 5] = new double[(lambda_width + 2) / 5];
+                double kiloY = (i + 0.5) * Utils.LAMBDA_PRECISION;
+                for (int j = 2; j < lambda_width; j += 5)
+                {
+                    double kiloX = (j + 0.5) * Utils.LAMBDA_PRECISION;
+                    if (IsInside(kiloX, kiloY, ref polyCoordList))
+                    {
+                        inSeoul.Add(new Pair(j / 5, i / 5, (j - 2) * Utils.LAMBDA_PRECISION, (i - 2) * Utils.LAMBDA_PRECISION));
+                    }
+
+                    int remX = (lambda_height > i + 2) ? 2 : lambda_height - 1 - i;
+                    int remY = (lambda_width > j + 2) ? 2 : lambda_width - 1 - j;
+                    pooledLambda[i / 5][j / 5] = 0;
+                    for (int k = -2; k <= remX; k++)
+                    {
+                        for (int l = -2; l <= remY; l++)
+                        {
+                            pooledLambda[i / 5][j / 5] += lambda[i + k][j + l];
+                        }
+                    }
                 }
             }
         }

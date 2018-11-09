@@ -26,7 +26,6 @@ namespace DronePlacementSimulator
         }
 
         private Grid eventGrid;
-        private Simulator simulator;
         private int stations;
         private int drones;
 
@@ -36,7 +35,6 @@ namespace DronePlacementSimulator
         public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones)
         {
             this.eventGrid = eventGrid;
-            this.simulator = simulator;
             this.stations = stations;
             this.drones = drones;
 
@@ -55,20 +53,26 @@ namespace DronePlacementSimulator
             List<RubisStation> nextStationList;
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
-            prevStationList.Add(new RubisStation(4.5, 15.0, 1));
-            prevStationList.Add(new RubisStation(8.5, 7.7, 1));
-            prevStationList.Add(new RubisStation(14.5, 5.0, 1));
-            prevStationList.Add(new RubisStation(12.0, 16.3, 1));
-            prevStationList.Add(new RubisStation(16.5, 13.0, 1));
-            prevStationList.Add(new RubisStation(17.0, 22.6, 1));
-            prevStationList.Add(new RubisStation(21.0, 7.5, 1));
-            prevStationList.Add(new RubisStation(22.0, 19.0, 1));
-            prevStationList.Add(new RubisStation(24.7, 27.0, 1));
-            prevStationList.Add(new RubisStation(25.0, 13.0, 1));
-            prevStationList.Add(new RubisStation(27.0, 4.5, 1));
-            prevStationList.Add(new RubisStation(27.0, 20.5, 1));
-            prevStationList.Add(new RubisStation(30.5, 8.5, 1));
-            prevStationList.Add(new RubisStation(33.0, 13.5, 1));
+            /*            prevStationList.Add(new RubisStation(4.5, 15.0, 1));
+                        prevStationList.Add(new RubisStation(8.5, 7.7, 1));
+                        prevStationList.Add(new RubisStation(14.5, 5.0, 1));
+                        prevStationList.Add(new RubisStation(12.0, 16.3, 1));
+                        prevStationList.Add(new RubisStation(16.5, 13.0, 1));
+                        prevStationList.Add(new RubisStation(17.0, 22.6, 1));
+                        prevStationList.Add(new RubisStation(21.0, 7.5, 1));
+                        prevStationList.Add(new RubisStation(22.0, 19.0, 1));
+                        prevStationList.Add(new RubisStation(24.7, 27.0, 1));
+                        prevStationList.Add(new RubisStation(25.0, 13.0, 1));
+                        prevStationList.Add(new RubisStation(27.0, 4.5, 1));
+                        prevStationList.Add(new RubisStation(27.0, 20.5, 1));
+                        prevStationList.Add(new RubisStation(30.5, 8.5, 1));
+                        prevStationList.Add(new RubisStation(33.0, 13.5, 1));
+            */
+            KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
+            foreach (double[] d in kMeansStations.Means)
+            {
+                prevStationList.Add(new RubisStation(d[0], d[1], 2));
+            }
 
             // Step 2. Add remaining stations in crowded cells
             int remainingStations = stations - prevStationList.Count;
@@ -236,7 +240,7 @@ namespace DronePlacementSimulator
             List<RubisStation> feasibleList = new List<RubisStation>();
             CloneList(currentStationList, feasibleList);
 
-            int iteration = 0;
+//            int iteration = 0;
             while (true)
             {
                 CloneList(currentStationList, tempList);
@@ -294,21 +298,21 @@ namespace DronePlacementSimulator
                     }
                 }
 
-                if (IsAllCovered(tempList))
+//                if (IsAllCovered(tempList, ref pathPlanner))
                 {
                     CloneList(tempList, feasibleList);
                     break;
-                }
-
+                } 
+/*
                 if (iteration++ > 5000)
                 {
                     return feasibleList;
                 }
-            }
+*/            }
             
             // Assign drones to randomly-selected stations
             // CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
-            /*
+            
             foreach (RubisStation s in feasibleList)
             {
                 s.droneList.Clear();
@@ -319,7 +323,6 @@ namespace DronePlacementSimulator
                 Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
                 s.droneList.Add(new Drone(s.stationID));
             }
-            */
 
             return feasibleList;
         }
