@@ -461,11 +461,8 @@ namespace DronePlacementSimulator
 
         private void ClickRunSimulation(object sender, EventArgs e)
         {
-            Del policy = Policy.NearestStation;
-            if (rubisToolStripMenuItem.Checked)
-            {
-                policy = Policy.HighestSurvalRateStation;
-            }
+            Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
+                ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
 
             if (writeSimulation)
             {

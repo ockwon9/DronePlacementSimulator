@@ -379,10 +379,6 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    if (s.kiloY < 0.1)
-                    {
-                        Console.WriteLine(s.ToString());
-                    }
                     double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
                     if (distance <= Utils.GOLDEN_TIME)
                     {

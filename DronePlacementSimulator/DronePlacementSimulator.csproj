@@ -152,7 +152,6 @@
     <Compile Include="Classes\Counter.cs" />
     <Compile Include="Classes\Drone.cs" />
     <Compile Include="Classes\PathPlanner.cs" />
-    <Compile Include="Classes\Policy.cs" />
     <Compile Include="Classes\RubisCell.cs" />
     <Compile Include="Classes\RubisStation.cs" />
     <Compile Include="Classes\Utils.cs" />

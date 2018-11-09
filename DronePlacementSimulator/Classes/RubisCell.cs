@@ -38,8 +38,12 @@ namespace DronePlacementSimulator
             this.intX = cell.intX;
             this.intY = cell.intY;
             this.pdf = cell.pdf;
-            survivalRate = 0.0;
+            survivalRate = cell.survivalRate;
             stations = new List<StationDistancePair>();
+            foreach (StationDistancePair pair in cell.stations)
+            {
+                this.stations.Add(new StationDistancePair(pair.station, pair.distance));
+            }
         }
     }
 }

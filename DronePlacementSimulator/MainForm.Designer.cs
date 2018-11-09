@@ -34,6 +34,8 @@
             this.labelDeliveryMiss = new System.Windows.Forms.Label();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileFToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.savePlacementToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.placementToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.kMeansToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -45,8 +47,8 @@
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBoxStations = new System.Windows.Forms.ToolStripComboBox();
-            this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.savePlacementToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
+            this.toolStripComboBoxPolicy = new System.Windows.Forms.ToolStripComboBox();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -123,11 +125,27 @@
             this.fileFToolStripMenuItem.Size = new System.Drawing.Size(76, 29);
             this.fileFToolStripMenuItem.Text = "File (F)";
             // 
+            // savePlacementToolStripMenuItem
+            // 
+            this.savePlacementToolStripMenuItem.Name = "savePlacementToolStripMenuItem";
+            this.savePlacementToolStripMenuItem.ShortcutKeyDisplayString = "S";
+            this.savePlacementToolStripMenuItem.Size = new System.Drawing.Size(248, 30);
+            this.savePlacementToolStripMenuItem.Text = "Save placement";
+            this.savePlacementToolStripMenuItem.Click += new System.EventHandler(this.savePlacementToolStripMenuItem_Click);
+            // 
+            // openToolStripMenuItem
+            // 
+            this.openToolStripMenuItem.Name = "openToolStripMenuItem";
+            this.openToolStripMenuItem.ShortcutKeyDisplayString = "L";
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(248, 30);
+            this.openToolStripMenuItem.Text = "Load placement";
+            this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+            // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             this.exitToolStripMenuItem.ShortcutKeyDisplayString = "X";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(252, 30);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(248, 30);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.ClickExit);
             // 
@@ -196,7 +214,9 @@
             this.toolStrip1.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel1,
-            this.toolStripComboBoxStations});
+            this.toolStripComboBoxStations,
+            this.toolStripLabel2,
+            this.toolStripComboBoxPolicy});
             this.toolStrip1.Location = new System.Drawing.Point(0, 33);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(1120, 33);
@@ -240,21 +260,20 @@
             this.toolStripComboBoxStations.Size = new System.Drawing.Size(60, 33);
             this.toolStripComboBoxStations.SelectedIndexChanged += new System.EventHandler(this.toolStripComboBoxStations_SelectedIndexChanged);
             // 
-            // openToolStripMenuItem
+            // toolStripLabel2
             // 
-            this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.ShortcutKeyDisplayString = "L";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(252, 30);
-            this.openToolStripMenuItem.Text = "Load placement";
-            this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
+            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Size = new System.Drawing.Size(59, 30);
+            this.toolStripLabel2.Text = "Policy";
             // 
-            // savePlacementToolStripMenuItem
+            // toolStripComboBoxPolicy
             // 
-            this.savePlacementToolStripMenuItem.Name = "savePlacementToolStripMenuItem";
-            this.savePlacementToolStripMenuItem.ShortcutKeyDisplayString = "S";
-            this.savePlacementToolStripMenuItem.Size = new System.Drawing.Size(252, 30);
-            this.savePlacementToolStripMenuItem.Text = "Save placement";
-            this.savePlacementToolStripMenuItem.Click += new System.EventHandler(this.savePlacementToolStripMenuItem_Click);
+            this.toolStripComboBoxPolicy.DropDownWidth = 200;
+            this.toolStripComboBoxPolicy.Items.AddRange(new object[] {
+            "Nearest Station First",
+            "Highest Survival Rate Station First"});
+            this.toolStripComboBoxPolicy.Name = "toolStripComboBoxPolicy";
+            this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(75, 33);
             // 
             // MainForm
             // 
@@ -303,5 +322,7 @@
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxStations;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem savePlacementToolStripMenuItem;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel2;
+        private System.Windows.Forms.ToolStripComboBox toolStripComboBoxPolicy;
     }
 }
