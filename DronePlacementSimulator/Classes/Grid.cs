@@ -35,7 +35,7 @@ namespace DronePlacementSimulator
             int numLon = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
             int numLat = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
             
-            for (int i = 2; i < numLat; i++)
+            for (int i = 0; i < numLat; i++)
             {
                 double kiloY = (i + 0.5) * Utils.UNIT;
                 for (int j = 0; j < numLon; j++)

@@ -179,6 +179,7 @@ namespace DronePlacementSimulator
                     mrho = lambda / mu;
                     rho = mrho / m;
 
+
                     sum = 0.0;
                     double temp = 1.0;
                     double pi = 1.0;

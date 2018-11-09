@@ -92,12 +92,14 @@ namespace DronePlacementSimulator
 
         private void PerformBoutilier()
         {
+            double space = 99;
+            double time = 0.9999999;
             stationList.Clear();
-            bool stationsSet = File.Exists("Boutilier_stations.csv");
+            bool stationsSet = File.Exists("Boutilier_stations_" + space + "_" + time + ".csv");
 
             if (stationsSet)
             {
-                StreamReader file = new StreamReader("Boutilier_stations.csv");
+                StreamReader file = new StreamReader("Boutilier_stations_" + space + "_" + time + ".csv");
                 string line;
                 while ((line = file.ReadLine()) != null)
                 {
@@ -113,11 +115,11 @@ namespace DronePlacementSimulator
                     stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
                 }
             }
-            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, 100, 0.9999999);
+            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, space, time);
 
             if (!stationsSet)
             {
-                StreamWriter file = new StreamWriter("Boutilier_stations.csv");
+                StreamWriter file = new StreamWriter("Boutilier_stations_" + space + "_" + time + ".csv");
                 for (int i = 0; i < stationList.Count; i++)
                 {
                     file.Write(stationList[i].kiloX);
@@ -139,7 +141,7 @@ namespace DronePlacementSimulator
             }
 
             RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2); 
-            List<RubisStation> resultList = rubis.Calculate();
+            List<RubisStation> resultList = rubis.Calculate(ref simulator.GetPathPlanner(), ref eventList, ref targetStationCount);
 
             stationList.Clear();
             foreach (RubisStation s in resultList)
@@ -465,7 +467,7 @@ namespace DronePlacementSimulator
             Del policy = Policy.NearestStation;
             if (rubisToolStripMenuItem.Checked)
             {
-                policy = Policy.HighestSurvalRateStation;
+                policy = Policy.HighestSurvivalRateStation;
             }
 
             if (writeSimulation)

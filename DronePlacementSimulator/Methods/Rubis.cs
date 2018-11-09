@@ -26,7 +26,6 @@ namespace DronePlacementSimulator
         }
 
         private Grid eventGrid;
-        private Simulator simulator;
         private int stations;
         private int drones;
 
@@ -36,7 +35,6 @@ namespace DronePlacementSimulator
         public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones)
         {
             this.eventGrid = eventGrid;
-            this.simulator = simulator;
             this.stations = stations;
             this.drones = drones;
 
@@ -49,26 +47,32 @@ namespace DronePlacementSimulator
             }
         }
 
-        public List<RubisStation> Calculate()
+        public List<RubisStation> Calculate(ref PathPlanner pathPlanner, ref List<OHCAEvent> eventList, ref int targetStationCount)
         {
             List<RubisStation> prevStationList = new List<RubisStation>();
             List<RubisStation> nextStationList;
 
             // Step 1. Find an initial station placement that covers the whole of Seoul
-            prevStationList.Add(new RubisStation(4.5, 15.0, 1));
-            prevStationList.Add(new RubisStation(8.5, 7.7, 1));
-            prevStationList.Add(new RubisStation(14.5, 5.0, 1));
-            prevStationList.Add(new RubisStation(12.0, 16.3, 1));
-            prevStationList.Add(new RubisStation(16.5, 13.0, 1));
-            prevStationList.Add(new RubisStation(17.0, 22.6, 1));
-            prevStationList.Add(new RubisStation(21.0, 7.5, 1));
-            prevStationList.Add(new RubisStation(22.0, 19.0, 1));
-            prevStationList.Add(new RubisStation(24.7, 27.0, 1));
-            prevStationList.Add(new RubisStation(25.0, 13.0, 1));
-            prevStationList.Add(new RubisStation(27.0, 4.5, 1));
-            prevStationList.Add(new RubisStation(27.0, 20.5, 1));
-            prevStationList.Add(new RubisStation(30.5, 8.5, 1));
-            prevStationList.Add(new RubisStation(33.0, 13.5, 1));
+            /*            prevStationList.Add(new RubisStation(4.5, 15.0, 1));
+                        prevStationList.Add(new RubisStation(8.5, 7.7, 1));
+                        prevStationList.Add(new RubisStation(14.5, 5.0, 1));
+                        prevStationList.Add(new RubisStation(12.0, 16.3, 1));
+                        prevStationList.Add(new RubisStation(16.5, 13.0, 1));
+                        prevStationList.Add(new RubisStation(17.0, 22.6, 1));
+                        prevStationList.Add(new RubisStation(21.0, 7.5, 1));
+                        prevStationList.Add(new RubisStation(22.0, 19.0, 1));
+                        prevStationList.Add(new RubisStation(24.7, 27.0, 1));
+                        prevStationList.Add(new RubisStation(25.0, 13.0, 1));
+                        prevStationList.Add(new RubisStation(27.0, 4.5, 1));
+                        prevStationList.Add(new RubisStation(27.0, 20.5, 1));
+                        prevStationList.Add(new RubisStation(30.5, 8.5, 1));
+                        prevStationList.Add(new RubisStation(33.0, 13.5, 1));
+            */
+            KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
+            foreach (double[] d in kMeansStations.Means)
+            {
+                prevStationList.Add(new RubisStation(d[0], d[1], 2));
+            }
 
             // Step 2. Add remaining stations in crowded cells
             int remainingStations = stations - prevStationList.Count;
@@ -80,7 +84,7 @@ namespace DronePlacementSimulator
             }
 
             // Step 3. Add remaining drones in busy stations
-            CalculateCoveredCells(prevStationList);
+            CalculateCoveredCells(prevStationList, ref pathPlanner);
             int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
             {
@@ -93,7 +97,7 @@ namespace DronePlacementSimulator
             double alpha = 0.999;
             int iteration = 0;
 
-            double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
+            double prevSurvivalRate = GetOverallSurvivalRate(prevStationList, ref pathPlanner);
             double bestSurvivalRate = 0.0;
 
             double delta = 0.0;
@@ -104,8 +108,8 @@ namespace DronePlacementSimulator
                 iteration++;
 
                 // Near search using local optimization
-                nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate);
-                nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
+                nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate, ref pathPlanner);
+                nextSurvivalRate = GetOverallSurvivalRate(nextStationList, ref pathPlanner);
                 delta = nextSurvivalRate - prevSurvivalRate;
 
                 if (delta > 0)
@@ -123,9 +127,9 @@ namespace DronePlacementSimulator
                     if (probility < Math.Exp(-delta / currentTemp))
                     {
                         // Far search using random placement
-                        nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones);
+                        nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones, ref pathPlanner);
                         CloneList(nextStationList, prevStationList);
-                        prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
+                        prevSurvivalRate = GetOverallSurvivalRate(prevStationList, ref pathPlanner);
                     }
                 }
 
@@ -147,7 +151,7 @@ namespace DronePlacementSimulator
         }
 
         // Find the best station placement with only one-step movement
-        private List<RubisStation> MoveOneStepToBestDirection(List<RubisStation> currentStationList, double currentSurvivalRate)
+        private List<RubisStation> MoveOneStepToBestDirection(List<RubisStation> currentStationList, double currentSurvivalRate, ref PathPlanner pathPlanner)
         {
             List<RubisStation> tempList = new List<RubisStation>();
             CloneList(currentStationList, tempList);
@@ -214,7 +218,7 @@ namespace DronePlacementSimulator
                         continue;
                     }
 
-                    double survivalRate = GetOverallSurvivalRate(tempList);
+                    double survivalRate = GetOverallSurvivalRate(tempList, ref pathPlanner);
                     if (survivalRate > maxSurvivalRate)
                     {
                         maxSurvivalRate = survivalRate;
@@ -226,17 +230,17 @@ namespace DronePlacementSimulator
                 }
             }
 
-            double sr = GetOverallSurvivalRate(solutionList);
+            double sr = GetOverallSurvivalRate(solutionList, ref pathPlanner);
             return solutionList;
         }
 
-        private List<RubisStation> FindRandomStationPlacement(List<RubisStation> currentStationList, int remainingDrones)
+        private List<RubisStation> FindRandomStationPlacement(List<RubisStation> currentStationList, int remainingDrones, ref PathPlanner pathPlanner)
         {
             List<RubisStation> tempList = new List<RubisStation>();
             List<RubisStation> feasibleList = new List<RubisStation>();
             CloneList(currentStationList, feasibleList);
 
-            int iteration = 0;
+//            int iteration = 0;
             while (true)
             {
                 CloneList(currentStationList, tempList);
@@ -294,21 +298,21 @@ namespace DronePlacementSimulator
                     }
                 }
 
-                if (IsAllCovered(tempList))
+//                if (IsAllCovered(tempList, ref pathPlanner))
                 {
                     CloneList(tempList, feasibleList);
                     break;
-                }
-
+                } 
+/*
                 if (iteration++ > 5000)
                 {
                     return feasibleList;
                 }
-            }
+*/            }
             
             // Assign drones to randomly-selected stations
             // CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
-            /*
+            
             foreach (RubisStation s in feasibleList)
             {
                 s.droneList.Clear();
@@ -319,20 +323,19 @@ namespace DronePlacementSimulator
                 Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
                 s.droneList.Add(new Drone(s.stationID));
             }
-            */
 
             return feasibleList;
         }
 
         // Check whether all events is reachable
-        public bool IsAllCovered(List<RubisStation> stationList)
+/*        public bool IsAllCovered(List<RubisStation> stationList, ref PathPlanner pathPlanner)
         {
             foreach (RubisCell cell in cellList)
             {
                 bool isCovered = false;
                 foreach (RubisStation s in stationList)
                 {
-                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double distance = pathPlanner.CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
                     if (distance <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
@@ -345,10 +348,10 @@ namespace DronePlacementSimulator
                 }
             }
             return true;
-        }
+        } */
 
         // Check whether all events is reachable
-        private void CalculateCoveredCells(List<RubisStation> stationList)
+        private void CalculateCoveredCells(List<RubisStation> stationList, ref PathPlanner pathPlanner)
         {
             foreach (RubisStation s in stationList)
             {
@@ -359,7 +362,7 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    if (simulator.GetPathPlanner().CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
+                    if (pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY) <= Utils.GOLDEN_TIME)
                     {
                         s.eventCount++;
                     }
@@ -369,7 +372,7 @@ namespace DronePlacementSimulator
             stationList.Sort((a, b) => a.eventCount <= b.eventCount ? 1 : -1);
         }
 
-        public double GetOverallSurvivalRate(List<RubisStation> stationList)
+        public double GetOverallSurvivalRate(List<RubisStation> stationList, ref PathPlanner pathPlanner)
         {
             List<RubisCell> tempCellList = new List<RubisCell>();
             CloneList(cellList, tempCellList);
@@ -383,7 +386,7 @@ namespace DronePlacementSimulator
                     {
                         Console.WriteLine(s.ToString());
                     }
-                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double distance = pathPlanner.CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
                     if (distance <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, distance));
@@ -453,7 +456,7 @@ namespace DronePlacementSimulator
             return factorial;
         }
 
-        private double CalculateSurvivalRate(double time)
+        private static double CalculateSurvivalRate(double time)
         {
             return 0.7 - (0.1 * time);
         }
@@ -474,6 +477,16 @@ namespace DronePlacementSimulator
             {
                 dstList.Add(new RubisCell(item));
             });
+        }
+
+        public static double GetSurvivalRate(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e, ref PathPlanner pathPlanner)
+        {
+            return RUBIS.CalculateSurvivalRate(pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY));
+        }
+
+        public static double GetPotential(List<Station> stationList, ref Counter counter, Station s, OHCAEvent e, ref PathPlanner pathPlanner)
+        {
+            return 0.0;
         }
     }
 }

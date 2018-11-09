@@ -207,25 +207,25 @@ namespace DronePlacementSimulator
                 GRBVar[] X = new GRBVar[m];         // number of drones launched from site j
                 for (int j = 0; j < m; j++)
                 {
-                    X[j] = model.AddVar(0.0, 10.0, 0.0, GRB.INTEGER, "X_" + j);
+                    X[j] = model.AddVar(0.0, Double.PositiveInfinity, 0.0, GRB.INTEGER, "X_" + j);
                 }
 
                 GRBVar[] Z = new GRBVar[n];         // amount of total overall coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    Z[i] = model.AddVar(0.0, 100.0, 0.0, GRB.CONTINUOUS, "Z_" + i);
+                    Z[i] = model.AddVar(0.0, Double.PositiveInfinity, 0.0, GRB.CONTINUOUS, "Z_" + i);
                 }
 
                 GRBVar[] Y = new GRBVar[n];         // amount of backup coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    Y[i] = model.AddVar(0.0, 100.0, 0.0, GRB.CONTINUOUS, "Y_" + i);
+                    Y[i] = model.AddVar(0.0, Double.PositiveInfinity, 0.0, GRB.CONTINUOUS, "Y_" + i);
                 }
 
                 GRBVar[] W = new GRBVar[n];         // amount of primary coverage received by demand unit i
                 for (int i = 0; i < n; i++)
                 {
-                    W[i] = model.AddVar(0.0, 100.0, 0.0, GRB.CONTINUOUS, "W_" + i);
+                    W[i] = model.AddVar(0.0, Double.PositiveInfinity, 0.0, GRB.CONTINUOUS, "W_" + i);
                 }
 
                 GRBLinExpr obj_expr = 0.0;
@@ -314,10 +314,12 @@ namespace DronePlacementSimulator
                 {
                     Console.WriteLine("Optimization was stopped with status = " + optimstatus);
                 }
-                
-                for (int l = 0; l < stationList.Count; l++)
+
+                int sum = 0;
+                for (int l = 0; l < m; l++)
                 {
                     int numDrone = (int) X[l].Get(GRB.DoubleAttr.X);
+                    sum += numDrone;
                     for (int k = 0; k < numDrone; k++)
                     {
                         stationList[l].droneList.Add(new Drone(stationList[l].stationID));
@@ -331,6 +333,7 @@ namespace DronePlacementSimulator
                     if (stationList[l].droneList.Count == 0)
                         stationList.RemoveAt(l);
                 }
+                Console.WriteLine("sum = " + sum);
 
                 model.Dispose();
                 env.Dispose();

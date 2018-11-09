@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace DronePlacementSimulator
 {
-    delegate int Del(List<Station> stationList, ref Counter counter, OHCAEvent ohca);
+    delegate int Del(List<Station> stationList, ref Counter counter, OHCAEvent e, ref PathPlanner pathPlanner);
 
     class Simulator
     {
@@ -51,7 +51,7 @@ namespace DronePlacementSimulator
             foreach (OHCAEvent e in simulatedEventList)
             {
                 current.Flush(e.occurrenceTime);
-                int dispatchFrom = policy(stationList, ref current, e);
+                int dispatchFrom = policy(stationList, ref current, e, ref pathPlanner);
                 e.assignedStationId = dispatchFrom;
 
                 if (dispatchFrom == -1)

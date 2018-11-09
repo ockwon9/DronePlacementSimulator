@@ -8,7 +8,7 @@ namespace DronePlacementSimulator
 {
     static class Policy
     {
-        public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
+        public static int NearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e, ref PathPlanner pathPlanner)
         {
             int n = stationList.Count;
             int[] index = new int[n];
@@ -49,13 +49,13 @@ namespace DronePlacementSimulator
             return index[k];
         }
 
-        public static int HighestSurvalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
+        public static int HighestSurvivalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e, ref PathPlanner pathPlanner)
         {
             int resultIndex = -1;
-            double maxSurvivalRate = Double.NegativeInfinity;
+            double maxSurvivalRate = Double.NegativeInfinity;;
             foreach (Station s in stationList)
             {
-                double survivalRate = 0.0;// RUBIS.GetSurvivalRate(stationList, ref counter, s, e) - RUBIS.GetPotential(stationList, ref counter, s, e);
+                double survivalRate = RUBIS.GetSurvivalRate(stationList, ref counter, s, e, ref pathPlanner) - RUBIS.GetPotential(stationList, ref counter, s, e, ref pathPlanner);
                 if (survivalRate > maxSurvivalRate)
                 {
                     maxSurvivalRate = survivalRate;
