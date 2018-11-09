@@ -273,7 +273,7 @@
             "Nearest Station First",
             "Highest Survival Rate Station First"});
             this.toolStripComboBoxPolicy.Name = "toolStripComboBoxPolicy";
-            this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(75, 33);
+            this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(275, 33);
             // 
             // MainForm
             // 

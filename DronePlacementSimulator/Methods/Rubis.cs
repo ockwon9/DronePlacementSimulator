@@ -26,6 +26,7 @@ namespace DronePlacementSimulator
         }
 
         private Grid eventGrid;
+        private Simulator simulator;
         private int stations;
         private int drones;
 
@@ -47,7 +48,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public List<RubisStation> Calculate()
+        public List<RubisStation> Calculate(List<OHCAEvent> eventList)
         {
             List<RubisStation> prevStationList = new List<RubisStation>();
             List<RubisStation> nextStationList;
@@ -68,7 +69,7 @@ namespace DronePlacementSimulator
                         prevStationList.Add(new RubisStation(30.5, 8.5, 1));
                         prevStationList.Add(new RubisStation(33.0, 13.5, 1));
             */
-            KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
+            KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
             foreach (double[] d in kMeansStations.Means)
             {
                 prevStationList.Add(new RubisStation(d[0], d[1], 2));

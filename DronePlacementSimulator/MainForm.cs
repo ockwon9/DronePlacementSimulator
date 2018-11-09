@@ -141,7 +141,7 @@ namespace DronePlacementSimulator
             }
 
             RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2); 
-            List<RubisStation> resultList = rubis.Calculate(ref simulator.GetPathPlanner(), ref eventList, ref targetStationCount);
+            List<RubisStation> resultList = rubis.Calculate(eventList);
 
             stationList.Clear();
             foreach (RubisStation s in resultList)
