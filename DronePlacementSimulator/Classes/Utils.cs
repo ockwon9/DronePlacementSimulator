@@ -35,6 +35,7 @@ namespace DronePlacementSimulator
         public static double BASE_FLIGHT_HEIGHT = 10.0; // meter
         public static double DRONE_TAKE_OFF_VELOCITY = 2.0; // m/s
         public static double DRONE_LANDING_VELOCITY = 1.0; // m/s
+        public static int DRONE_REST_TIME = 4;
 
         public static int BUDGET = 600000;
         public static int STATION_PRICE = 10000;

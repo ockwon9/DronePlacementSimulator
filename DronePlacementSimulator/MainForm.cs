@@ -28,8 +28,6 @@ namespace DronePlacementSimulator
         private int targetStationCount;
         private int workersRemaining;
         private SpinLock workersLock;
-        private int numEvents;
-        private SpinLock numEventLock;
 
         public int coverRange = 0;
         
@@ -48,7 +46,6 @@ namespace DronePlacementSimulator
             coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 12;
             targetStationCount = 20;
-            this.numEventLock = new SpinLock();
             this.workersLock = new SpinLock();
 
             // Read OHCA events data
@@ -580,30 +577,14 @@ namespace DronePlacementSimulator
         private void WriteSimulationEventList(Grid eventGrid)
         {
             BackgroundWorker[] workers = new BackgroundWorker[coreCount];
-            int dividedLoad = eventGrid.lambda.Length / coreCount;
-            int rem = eventGrid.lambda.Length % coreCount;
             this.workersRemaining = coreCount;
-            int len = eventGrid.lambda[0].Length;
 
-            this.numEvents = 0;
-            int row = 0;
             for (int i = 0; i < workers.Length; i++)
             {
-                int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
                 workers[i] = new BackgroundWorker();
-                double[][] workLoad = new double[actualLoad][];
-
-                for (int j = 0; j < actualLoad; j++)
-                {
-                    workLoad[j] = new double[len];
-                    Array.Copy(eventGrid.lambda[row + j], workLoad[j], len);
-                }
-
-                WorkObject work = new WorkObject(workLoad, i, row);
-
+                WorkObject work = new WorkObject(eventGrid.lambda, eventGrid.inSeoulBool, i, new DateTime(2018 + i * 80, 1, 1));
                 workers[i].DoWork += eventList_DoWork;
                 workers[i].RunWorkerCompleted += eventList_RunWorkerCompleted;
-                row += actualLoad;
                 workers[i].RunWorkerAsync(work);
             }
 
@@ -614,61 +595,46 @@ namespace DronePlacementSimulator
 
         private void eventList_DoWork(object sender, DoWorkEventArgs e)
         {
-            
             WorkObject workObject = e.Argument as WorkObject;
             Console.WriteLine(workObject.index);
 
-            DateTime currentTime = new DateTime(2018, 1, 1);
+            DateTime current = workObject.start;
+            DateTime end = workObject.start.AddYears(80);
             Random rand = new Random((int) DateTime.Now.ToBinary() + workObject.index);
 
             StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
-
-            bool keepWorking = true;
-            while (keepWorking)
+            int numEvents = 0;
+            int len1 = workObject.lambda.Length;
+            int len2 = workObject.lambda[0].Length;
+            
+            while (current < end)
             {
-                currentTime = currentTime.AddMinutes(1.0);
-                for (int i = 0; i < workObject.lambda.Length; i++)
+                for (int i = 0; i < len1; i++)
                 {
-                    for (int j = 0; j < workObject.lambda[i].Length; j++)
+                    for (int j = 0; j < len2; j++)
                     {
+                        if (!workObject.inSeoulBool[i][j])
+                            continue;
                         double randVal = rand.NextDouble();
                         if (randVal < workObject.lambda[i][j])
                         {
-                            bool lockTaken = false;
-                            while (!lockTaken)
+                            numEvents++;
+                            if (numEvents % 10000 == 0)
                             {
-                                this.numEventLock.TryEnter(ref lockTaken);
+                                Console.WriteLine(workObject.index + " : " + numEvents);
                             }
-
-                            if (this.numEvents >= Utils.SIMULATION_EVENTS)
-                            {
-                                keepWorking = false;
-                                this.numEventLock.Exit();
-                                break;
-                            }
-
-                            this.numEvents++;
-                            if (this.numEvents % 10000 == 0)
-                            {
-                                Console.WriteLine(this.numEvents);
-                            }
-                            this.numEventLock.Exit();
 
                             file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
                             file.Write(",");
-                            file.Write((workObject.row + i + 0.5) * Utils.LAMBDA_PRECISION);
+                            file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
                             file.Write(",");
-                            String s = string.Format("{0 : yyyy MM dd HH mm ss}", currentTime);
-                            file.Write(currentTime);
+                            String s = string.Format("{0 : yyyy MM dd HH mm ss}", current);
+                            file.Write(current);
                             file.Write("\n");
                         }
                     }
-
-                    if (!keepWorking)
-                    {
-                        break;
-                    }
                 }
+                current = current.AddMinutes(1);
             }
             Console.WriteLine("thread " + workObject.index + " done.");
             file.Close();
@@ -689,13 +655,15 @@ namespace DronePlacementSimulator
         public class WorkObject
         {
             public double[][] lambda;
+            public bool[][] inSeoulBool;
             public int index;
-            public int row;
-            public WorkObject(double[][] lambda, int index, int row)
+            public DateTime start;
+            public WorkObject(double[][] lambda, bool[][] inSeoulBool, int index, DateTime dateTime)
             {
                 this.lambda = lambda.Clone() as double[][];
+                this.inSeoulBool = inSeoulBool.Clone() as bool[][];
                 this.index = index;
-                this.row = row;
+                this.start = dateTime;
             }
         }
 

@@ -12,21 +12,20 @@ namespace DronePlacementSimulator
         private int I;
         private int J;
         private double f;
-        private int numStations = 0;
-        private List<List<int>> realCoverList;
+        private List<List<int>> coverList;
 
         public Boutilier(ref List<Station> stationList, ref List<OHCAEvent> eventList, double f, double r)
         {
             this.I = stationList.Count;
             this.J = eventList.Count;
             this.f = f;
-            this.realCoverList = new List<List<int>>();
+            this.coverList = new List<List<int>>();
 
             Console.WriteLine(I);
             Console.WriteLine(J);
             
             OptimalPlacement(ref stationList, ref eventList);
-            PlaceDrones(r, ref stationList);
+            PlaceDrones(r, ref stationList, ref eventList);
         }
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
@@ -37,7 +36,7 @@ namespace DronePlacementSimulator
                 a[j] = new int[I];
                 for (int i = 0; i < I; i++)
                 {
-                    a[j][i] = (Utils.GetDistance(stationList[i].kiloX, stationList[i].kiloY, eventList[j].kiloX, eventList[j].kiloY) < Utils.GOLDEN_TIME) ? 1 : 0;
+                    a[j][i] = (Utils.GetDistance(stationList[i].kiloX, stationList[i].kiloY, eventList[j].kiloX, eventList[j].kiloY) < Utils.GOLDEN_TIME - 1.0 / 6.0) ? 1 : 0;
                 }
             }
 
@@ -105,10 +104,8 @@ namespace DronePlacementSimulator
 
                 if (optimstatus == GRB.Status.OPTIMAL)
                 {
-                    double objval = model.ObjVal;
-
-                    numStations = (int) objval;
                 }
+
                 else if (optimstatus == GRB.Status.INFEASIBLE)
                 {
                     Console.WriteLine("Model is unbounded");
@@ -118,37 +115,33 @@ namespace DronePlacementSimulator
                     Console.WriteLine("Optimization was stopped with status = " + optimstatus);
                 }
 
-                bool[] boolY = new bool[I];
+                List<Station> tempList = new List<Station>();
+                CloneList(stationList, tempList);
+                stationList.Clear();
                 for (int i = 0; i < I; i++)
                 {
-                    boolY[i] = (y[i].Get(GRB.DoubleAttr.X) == 1);
+                    if (y[i].Get(GRB.DoubleAttr.X) > 0)
+                    {
+                        stationList.Add(tempList[i]);
+                    }
                 }
 
-                List<int>[] coverList = new List<int>[I];
+                I = stationList.Count;
+
+                List<List<int>> coverList = new List<List<int>>();
                 for (int i = 0; i < I; i++)
                 {
                     coverList[i] = new List<int>();
                 }
+
                 for (int j = 0; j < J; j++)
                 {
                     for (int i = 0; i < I; i++)
                     {
-                        if (boolY[i] && z[j][i].Get(GRB.DoubleAttr.X) == 1)
+                        if (z[j][i].Get(GRB.DoubleAttr.X) > 0)
                         {
                             coverList[i].Add(j);
                         }
-                    }
-                }
-
-                for (int i = I - 1; i >= 0; i--)
-                {
-                    if (boolY[i])
-                    {
-                        realCoverList.Insert(0, coverList[i]);
-                    }
-                    else
-                    {
-                        stationList.RemoveAt(i);
                     }
                 }
 
@@ -161,15 +154,20 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void PlaceDrones(double r, ref List<Station> stationList)
+        public void PlaceDrones(double r, ref List<Station> stationList, ref List<OHCAEvent> eventList)
         {
-            for (int i = 0;  i < stationList.Count; i++)
+            for (int i = 0;  i < I; i++)
             {
-                int m = 0;
-                List<int> list = realCoverList[i];
+                int m = 0, eventCount = 0;
+                List<int> list = coverList[i];
+                for (int j = 0; j < list.Count; j++)
+                {
+                    if (eventList[j].occurrenceTime.Hour >= 8 && eventList[j].occurrenceTime.Hour < 20)
+                        eventCount++;
+                }
 
-                double lambda = list.Count / Utils.MINUTES_IN_4_YEARS;
-                double mu = 1.0 / 60.0;
+                double lambda = 2.0 * (double)eventCount / Utils.MINUTES_IN_4_YEARS;
+                double mu = 1.0 / (60 * Utils.DRONE_REST_TIME);
                 double rho, mrho;
 
                 double sum = 0.0;
@@ -205,6 +203,15 @@ namespace DronePlacementSimulator
                     stationList[i].droneList.Add(new Drone(stationList[i].stationID));
                 }
             }
+        }
+
+        private void CloneList(List<Station> srcList, List<Station> dstList)
+        {
+            dstList.Clear();
+            srcList.ForEach((item) =>
+            {
+                dstList.Add(new Station(item));
+            });
         }
     }
 }

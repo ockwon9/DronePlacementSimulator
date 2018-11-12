@@ -106,6 +106,11 @@ namespace DronePlacementSimulator
             }
             expectedSurvivalRate = sum / simulatedEventList.Count;
         }
+
+        public List<OHCAEvent> GetSimulatedEvents()
+        {
+            return simulatedEventList;
+        }
         
         private int GetNearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
