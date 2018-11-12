@@ -37,6 +37,7 @@ namespace DronePlacementSimulator
         {
             this.eventGrid = eventGrid;
             this.stations = stations;
+            this.simulator = simulator;
             this.drones = drones;
             this.simulator = simulator;
 
@@ -91,7 +92,7 @@ namespace DronePlacementSimulator
             int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
             {
-                prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));
+                prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));                
             }
             
             // Step 4. Simulated Annealing
@@ -133,6 +134,25 @@ namespace DronePlacementSimulator
                         nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones);
                         CloneList(nextStationList, prevStationList);
                         prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
+
+                        if (prevSurvivalRate < bestSurvivalRate * 0.97)
+                        {
+                            /*
+                            kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
+                            foreach (double[] d in kMeansStations.Means)
+                            {
+                                prevStationList.Add(new RubisStation(d[0], d[1], 2));
+                            }*/
+
+                            Random rand = new Random();
+                            int pos = rand.Next(0, 900000);
+                            kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 100000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+                            prevStationList.Clear();
+                            foreach (double[] d in kMeansStations.Means)
+                            {
+                                prevStationList.Add(new RubisStation(d[0], d[1], 2));
+                            }
+                        }
                     }
                 }
 
@@ -262,7 +282,7 @@ namespace DronePlacementSimulator
             List<RubisStation> feasibleList = new List<RubisStation>();
             CloneList(currentStationList, feasibleList);
 
-//            int iteration = 0;
+//          int iteration = 0;
             while (true)
             {
                 CloneList(currentStationList, tempList);
@@ -320,7 +340,7 @@ namespace DronePlacementSimulator
                     }
                 }
 
-//                if (IsAllCovered(tempList, ref pathPlanner))
+//              if (IsAllCovered(tempList, ref pathPlanner))
                 {
                     CloneList(tempList, feasibleList);
                     break;
@@ -335,6 +355,7 @@ namespace DronePlacementSimulator
             // Assign drones to randomly-selected stations
             // CalculateCoveredEvents(eventList, ref feasibleList, ref simulator);
             
+            /*
             foreach (RubisStation s in feasibleList)
             {
                 s.droneList.Clear();
@@ -345,7 +366,7 @@ namespace DronePlacementSimulator
                 Station s = feasibleList[new Random().Next(0, feasibleList.Count - 1)];
                 s.droneList.Add(new Drone(s.stationID));
             }
-
+            */
             return feasibleList;
         }
 

@@ -22,6 +22,16 @@ namespace DronePlacementSimulator
             this.eventID = ID++;
         }
 
+        public OHCAEvent(OHCAEvent e)
+        {
+            this.kiloX = e.kiloX;
+            this.kiloY = e.kiloY;
+            this.pixelX = e.pixelX;
+            this.pixelY = e.pixelY;
+            this.occurrenceTime = e.occurrenceTime;
+            this.eventID = e.eventID;
+        }
+
         public void SetLocation(double kiloX, double kiloY)
         {
             this.kiloX = kiloX;
