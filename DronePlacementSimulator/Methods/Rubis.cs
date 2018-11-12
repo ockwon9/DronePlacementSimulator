@@ -38,6 +38,7 @@ namespace DronePlacementSimulator
             this.eventGrid = eventGrid;
             this.stations = stations;
             this.drones = drones;
+            this.simulator = simulator;
 
             this.stationList = new List<RubisStation>();
 
@@ -69,6 +70,7 @@ namespace DronePlacementSimulator
                         prevStationList.Add(new RubisStation(30.5, 8.5, 1));
                         prevStationList.Add(new RubisStation(33.0, 13.5, 1));
             */
+            
             KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
             foreach (double[] d in kMeansStations.Means)
             {
@@ -95,7 +97,7 @@ namespace DronePlacementSimulator
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
-            double alpha = 0.999;
+            double alpha = 0.99;
             int iteration = 0;
 
             double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
@@ -119,7 +121,7 @@ namespace DronePlacementSimulator
                     prevSurvivalRate = nextSurvivalRate;
 
                     // Heat-up
-                    currentTemp += currentTemp * 0.001;
+                    currentTemp += currentTemp * 0.01;
                 }
                 else
                 {
@@ -131,6 +133,25 @@ namespace DronePlacementSimulator
                         nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones);
                         CloneList(nextStationList, prevStationList);
                         prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
+                    }
+                }
+
+                if (prevSurvivalRate < bestSurvivalRate * 0.97)
+                {
+                    prevStationList.Clear();
+                    /*
+                    kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
+                    foreach (double[] d in kMeansStations.Means)
+                    {
+                        prevStationList.Add(new RubisStation(d[0], d[1], 2));
+                    }*/
+
+                    Random rand = new Random();
+                    int pos = rand.Next(0, 900000);
+                    kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 100000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+                    foreach (double[] d in kMeansStations.Means)
+                    {
+                        prevStationList.Add(new RubisStation(d[0], d[1], 2));
                     }
                 }
 

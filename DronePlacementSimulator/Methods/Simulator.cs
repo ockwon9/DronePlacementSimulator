@@ -29,6 +29,17 @@ namespace DronePlacementSimulator
             missCount = 0;
             pathPlanner = new PathPlanner();
             simulatedEventList = new List<OHCAEvent>();
+
+            if (File.Exists("simulation_events.csv") && simulatedEventList.Count == 0)
+            {
+
+                ReadSimulatedEvents();
+            }
+            else
+            {
+                MessageBox.Show("There is no simulated events file.", "Simulation", MessageBoxButtons.OK);
+                return;
+            }
         }
 
         public void Simulate(List<Station> stationList, Grid eventGrid)
@@ -41,16 +52,6 @@ namespace DronePlacementSimulator
                 s.droneList.Add(new Drone(1));
                 s.droneList.Add(new Drone(1));
                 s.droneList.Add(new Drone(1));
-            }
-
-            if (File.Exists("simulation_events.csv") && simulatedEventList.Count == 0)
-            {
-                ReadSimulatedEvents();
-            }
-            else
-            {
-                MessageBox.Show("There is no simulated events file.", "Simulation", MessageBoxButtons.OK);
-                return;
             }
             
             missCount = 0;
@@ -102,6 +103,11 @@ namespace DronePlacementSimulator
                 }
             }
             expectedSurvivalRate = sum / simulatedEventList.Count;
+        }
+
+        public List<OHCAEvent> GetSimulatedEvents()
+        {
+            return simulatedEventList;
         }
         
         private int GetNearestStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
