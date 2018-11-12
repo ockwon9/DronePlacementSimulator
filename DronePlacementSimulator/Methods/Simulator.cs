@@ -17,7 +17,12 @@ namespace DronePlacementSimulator
         private PathPlanner pathPlanner;
         
         private double expectedSurvivalRate;
-        private int missCount;
+        private int unreachableEvents;
+        private int noDrones;
+
+        private int secondChoices;
+        private double survivalRateGain;
+        private double survivalRateLoss;
 
         private List<OHCAEvent> simulatedEventList;
         private List<RubisCell> rCellList;
@@ -25,24 +30,8 @@ namespace DronePlacementSimulator
 
         public Simulator()
         {
-            expectedSurvivalRate = 0;
-            missCount = 0;
             pathPlanner = new PathPlanner();
             simulatedEventList = new List<OHCAEvent>();
-        }
-
-        public void Simulate(List<Station> stationList, Grid eventGrid)
-        {
-            // Instance Test
-            foreach(Station s in stationList)
-            {
-                s.droneList.Clear();
-                s.droneList.Add(new Drone(1));
-                s.droneList.Add(new Drone(1));
-                s.droneList.Add(new Drone(1));
-                s.droneList.Add(new Drone(1));
-            }
-
             if (File.Exists("simulation_events.csv") && simulatedEventList.Count == 0)
             {
                 ReadSimulatedEvents();
@@ -52,8 +41,25 @@ namespace DronePlacementSimulator
                 MessageBox.Show("There is no simulated events file.", "Simulation", MessageBoxButtons.OK);
                 return;
             }
-            
-            missCount = 0;
+        }
+
+        public void Simulate(List<Station> stationList, Grid eventGrid)
+        {
+            expectedSurvivalRate = 0;
+            unreachableEvents = 0;
+            noDrones = 0;
+
+            survivalRateGain = 0.0;
+            survivalRateLoss = 0.0;
+
+            // Instance Test
+            foreach (Station s in stationList)
+            {
+                s.droneList.Clear();
+                s.droneList.Add(new Drone(1));
+                s.droneList.Add(new Drone(1));
+            }
+
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
@@ -80,20 +86,17 @@ namespace DronePlacementSimulator
 
                 if (dispatchFrom == -1)
                 {
-                    missCount++;
+                    noDrones++;
+                }
+                else if (dispatchFrom == -2)
+                {
+                    unreachableEvents++;
                 }
                 else
                 {
                     double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                    if (flightTime > Utils.GOLDEN_TIME)
-                    {
-                        missCount++;
-                    }
-                    else
-                    {
-                        current.Dispatch(dispatchFrom, e.occurrenceTime);
-                        sum += CalculateSurvivalRate(flightTime);
-                    }
+                    sum += CalculateSurvivalRate(flightTime);
+                    current.Dispatch(dispatchFrom, e.occurrenceTime);
                 }
 
                 if (iteration++% 100000 == 0)
@@ -114,7 +117,7 @@ namespace DronePlacementSimulator
             {
                 Station s = stationList[i];
                 index[i] = i;
-                distance[i] = Utils.GetDistance(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+                distance[i] = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
 
                 for (int j = i; j > 0; j--)
                 {
@@ -132,14 +135,20 @@ namespace DronePlacementSimulator
 
             int k = 0;
             counter.Flush(e.occurrenceTime);
+
+            bool isReachable = false;
             while (k < n && counter.whenReady[index[k]].Count == stationList[index[k]].droneList.Count)
             {
+                if (distance[k] <= Utils.GOLDEN_TIME)
+                {
+                    isReachable = true;
+                }
                 k++;
             }
 
             if (k == n)
             {
-                return -1;
+                return isReachable ? -1 : -2;
             }
 
             return index[k];
@@ -148,23 +157,59 @@ namespace DronePlacementSimulator
         private int GetHighestSurvivalRateStation(ref Counter counter, OHCAEvent e)
         {
             int resultIndex = -1;
+            int nearestIndex = -1;
             double maxSurvivalRate = Double.NegativeInfinity;
+            double maxOverallSurvivalRate = Double.NegativeInfinity;
+            
+            double potential = 0.0;
             double survivalRate = 0.0;
+            double overallSurvivalRate = 0.0;
 
             counter.Flush(e.occurrenceTime);
+
+            bool isReachable = false;
             foreach (RubisStation s in rStationList)
             {
+                int index = rStationList.IndexOf(s);
                 double distance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY);
+
                 if (distance <= Utils.GOLDEN_TIME)
                 {
-                    double potential = CalculatePotential(s, counter);
-                    survivalRate = CalculateSurvivalRate(distance) - potential;
-                    if (survivalRate > maxSurvivalRate)
+                    isReachable = true;
+                    if (counter.whenReady[index].Count < rStationList[index].droneList.Count)
                     {
-                        maxSurvivalRate = survivalRate;
-                        resultIndex = rStationList.IndexOf(s);
-                    }
+                        potential = CalculatePotential(s, counter);
+                        survivalRate = CalculateSurvivalRate(distance);
+                        overallSurvivalRate = survivalRate - potential;
+
+                        if (overallSurvivalRate > maxOverallSurvivalRate)
+                        {
+                            maxOverallSurvivalRate = overallSurvivalRate;
+                            resultIndex = rStationList.IndexOf(s);
+                        }
+
+                        if (survivalRate > maxSurvivalRate)
+                        {
+                            maxSurvivalRate = survivalRate;
+                            nearestIndex = rStationList.IndexOf(s);
+                        }
+                    }                    
                 }
+            }
+
+            if (resultIndex != nearestIndex)
+            {
+                secondChoices++;
+                double nearestDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
+                double resultDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
+                survivalRateLoss += CalculateSurvivalRate(resultDistance - nearestDistance);
+                // TODO: Simulates the nearest station for running time
+            }
+
+            if (resultIndex == -1)
+            {
+                noDrones++;
+                return isReachable ? -1 : -2;
             }
             
             return resultIndex;
@@ -274,9 +319,24 @@ namespace DronePlacementSimulator
             return expectedSurvivalRate;
         }
 
-        public int GetMissCount()
+        public int GetUnreachableEvents()
         {
-            return missCount;
+            return unreachableEvents;
+        }
+
+        public int GetNoDrones()
+        {
+            return noDrones;
+        }
+
+        public double GetSurvivalRateLoss()
+        {
+            return survivalRateLoss;
+        }
+
+        public double GetSurvivalRateGain()
+        {
+            return survivalRateGain;
         }
 
         public ref PathPlanner GetPathPlanner()
@@ -313,6 +373,15 @@ namespace DronePlacementSimulator
                 line = reader.ReadLine();
             }
             reader.Close();
+            simulatedEventList.Sort((a, b) => a.occurrenceTime <= b.occurrenceTime ? 1 : -1);
+            
+            StreamWriter file = new StreamWriter("events.csv");
+            for (int i = 0; i < simulatedEventList.Count; i++)
+            {
+                OHCAEvent e = simulatedEventList[i];
+                file.Write(e.kiloX + "," + e.kiloY + "," + e.occurrenceTime + "\n");
+            }
+            file.Close();
         }
 
         public int GetSimulatedEventsCount()
@@ -354,6 +423,11 @@ namespace DronePlacementSimulator
             {
                 dstList.Add(new RubisCell(item));
             });
+        }
+
+        public List<OHCAEvent> GetSimulatedEvents()
+        {
+            return simulatedEventList;
         }
     }
 }

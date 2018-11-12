@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
-
 
 namespace DronePlacementSimulator
 {
@@ -57,6 +55,8 @@ namespace DronePlacementSimulator
             ReadEventData();
             ReadMapData();
 
+            simulator = new Simulator();
+
             eventGrid = new Grid(ref polyCoordList);
             if (File.Exists("pdf.csv"))
             {
@@ -67,12 +67,14 @@ namespace DronePlacementSimulator
                 eventGrid.Interpolate(ref eventList);
                 WritePDF(ref eventGrid);
             }
+
+            toolStripComboBoxPolicy.SelectedIndex = 0;
         }
 
         private void PerformKMeans()
         {
             stationList.Clear();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, Utils.KMEANS_ITERATION_COUNT);
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, 100);
             foreach (double[] d in stations.Means)
             {
                 stationList.Add(new Station(d[0], d[1], 2));
@@ -481,11 +483,11 @@ namespace DronePlacementSimulator
                 simulator.Simulate(stationList, eventGrid);
 
                 Console.WriteLine(simulator.GetExpectedSurvivalRate());
-                Console.WriteLine("Total Miss Count = " + simulator.GetMissCount());
+                Console.WriteLine("Total Miss Count = " + simulator.GetUnreachableEvents());
 
                 labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
-                double rate = (double)simulator.GetMissCount() / (double)simulator.GetSimulatedEventsCount() * 100.0;
-                labelDeliveryMissValue.Text = simulator.GetMissCount().ToString() + " / " + simulator.GetSimulatedEventsCount() + " (" + rate + "%)";
+                double rate = (double)simulator.GetUnreachableEvents() / (double)simulator.GetSimulatedEventsCount() * 100.0;
+                labelDeliveryMissValue.Text = simulator.GetUnreachableEvents().ToString() + " / " + simulator.GetSimulatedEventsCount() + " (" + rate + "%)";
 
                 this.Invalidate();
             }
@@ -614,7 +616,7 @@ namespace DronePlacementSimulator
         {
             
             WorkObject workObject = e.Argument as WorkObject;
-            System.Console.WriteLine(workObject.index);
+            Console.WriteLine(workObject.index);
 
             DateTime currentTime = new DateTime(2018, 1, 1);
             Random rand = new Random((int) DateTime.Now.ToBinary() + workObject.index);
@@ -695,6 +697,27 @@ namespace DronePlacementSimulator
                 this.index = index;
                 this.row = row;
             }
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            Random rand = new Random();
+            int pos = rand.Next(0, 990000);
+
+            Console.WriteLine("pos = " + pos);
+
+            List<OHCAEvent> temp = simulator.GetSimulatedEvents().GetRange(pos, 10000);
+            CloneList(temp, eventList);
+            this.Invalidate();
+        }
+
+        private void CloneList(List<OHCAEvent> srcList, List<OHCAEvent> dstList)
+        {
+            dstList.Clear();
+            srcList.ForEach((item) =>
+            {
+                dstList.Add(new OHCAEvent(item));
+            });
         }
     }   
 }
