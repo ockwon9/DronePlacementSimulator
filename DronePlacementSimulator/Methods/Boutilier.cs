@@ -128,7 +128,7 @@ namespace DronePlacementSimulator
 
                 I = stationList.Count;
 
-                List<List<int>> coverList = new List<List<int>>();
+                coverList = new List<List<int>>();
                 for (int i = 0; i < I; i++)
                 {
                     coverList.Add(new List<int>());

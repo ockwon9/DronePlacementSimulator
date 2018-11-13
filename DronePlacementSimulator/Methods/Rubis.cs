@@ -152,6 +152,8 @@ namespace DronePlacementSimulator
                             {
                                 prevStationList.Add(new RubisStation(d[0], d[1], 2));
                             }
+
+                            prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
                         }
                     }
                 }
