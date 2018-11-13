@@ -57,7 +57,7 @@ namespace DronePlacementSimulator
             {
                 s.droneList.Clear();
                 s.droneList.Add(new Drone(1));
-                s.droneList.Add(new Drone(1));
+                //s.droneList.Add(new Drone(1));
             }
 
             int n = stationList.Count;
