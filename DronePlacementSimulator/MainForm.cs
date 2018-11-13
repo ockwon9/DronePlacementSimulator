@@ -91,14 +91,16 @@ namespace DronePlacementSimulator
 
         private void PerformBoutilier()
         {
-            double space = 99;
-            double time = 0.9999999;
+            Console.WriteLine("space coverage constraint : ");
+            double space = double.Parse(Console.ReadLine());
+            Console.WriteLine("time coverage constraint : ");
+            double time = double.Parse(Console.ReadLine());
             stationList.Clear();
-            bool stationsSet = File.Exists("Boutilier_stations_" + space + "_" + time + ".csv");
+            bool stationsSet = File.Exists("Boutilier_" + space + "," + time + ".csv");
 
             if (stationsSet)
             {
-                StreamReader file = new StreamReader("Boutilier_stations_" + space + "_" + time + ".csv");
+                StreamReader file = new StreamReader("Boutilier_" + space + "," + time + ".csv");
                 string line;
                 while ((line = file.ReadLine()) != null)
                 {
@@ -109,26 +111,28 @@ namespace DronePlacementSimulator
             }
             else
             {
-                for (int i = 0; i < eventGrid.cells.Count; i++)
+                StreamReader file = new StreamReader("Boutilier.csv");
+                string line;
+                while ((line = file.ReadLine()) != null)
                 {
-                    stationList.Add(new Station(eventGrid.cells[i].kiloX, eventGrid.cells[i].kiloY, 0));
-                }
-            }
-            Boutilier boutilier = new Boutilier(ref stationList, ref eventList, space, time);
-
-            if (!stationsSet)
-            {
-                StreamWriter file = new StreamWriter("Boutilier_stations_" + space + "_" + time + ".csv");
-                for (int i = 0; i < stationList.Count; i++)
-                {
-                    file.Write(stationList[i].kiloX);
-                    file.Write(",");
-                    file.Write(stationList[i].kiloY);
-                    file.Write(",");
-                    file.Write(stationList[i].droneList.Count);
-                    file.Write("\n");
+                    string[] parts = line.Split(',');
+                    stationList.Add(new Station(Utils.LonToKilos(double.Parse(parts[1])), Utils.LatToKilos(double.Parse(parts[0])), 0));
                 }
                 file.Close();
+
+                Boutilier boutilier = new Boutilier(ref stationList, ref eventList, space, time);
+                
+                StreamWriter file2 = new StreamWriter("Boutilier_stations_" + space + "_" + time + ".csv");
+                for (int i = 0; i < stationList.Count; i++)
+                {
+                    file2.Write(stationList[i].kiloX);
+                    file2.Write(",");
+                    file2.Write(stationList[i].kiloY);
+                    file2.Write(",");
+                    file2.Write(stationList[i].droneList.Count);
+                    file2.Write("\n");
+                }
+                file2.Close();
             }
         }
 
