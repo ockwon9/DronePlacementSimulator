@@ -99,9 +99,10 @@ namespace DronePlacementSimulator
                     current.Dispatch(dispatchFrom, e.occurrenceTime);
                 }
 
-                if (iteration++% 100000 == 0)
+                if (iteration++% 10000 == 0)
                 {
-                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime);
+                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime + ", unreachables = " + unreachableEvents + 
+                        ", noDrones = " + noDrones + ", secondChoices = " + secondChoices);
                 }
             }
             expectedSurvivalRate = sum / simulatedEventList.Count;
@@ -142,13 +143,17 @@ namespace DronePlacementSimulator
             counter.Flush(e.occurrenceTime);
 
             bool isReachable = false;
-            while (k < n && counter.whenReady[index[k]].Count == stationList[index[k]].droneList.Count)
+            
+            for (;k < n; k++)
             {
                 if (distance[k] <= Utils.GOLDEN_TIME)
                 {
                     isReachable = true;
+                    if (counter.whenReady[index[k]].Count < stationList[index[k]].droneList.Count)
+                    {
+                        break;
+                    }
                 }
-                k++;
             }
 
             if (k == n)
@@ -378,7 +383,7 @@ namespace DronePlacementSimulator
                 line = reader.ReadLine();
             }
             reader.Close();
-            simulatedEventList.Sort((a, b) => a.occurrenceTime <= b.occurrenceTime ? 1 : -1);
+            simulatedEventList.Sort((a, b) => a.occurrenceTime <= b.occurrenceTime ? -1 : 1);
             
             StreamWriter file = new StreamWriter("events.csv");
             for (int i = 0; i < simulatedEventList.Count; i++)
@@ -428,11 +433,6 @@ namespace DronePlacementSimulator
             {
                 dstList.Add(new RubisCell(item));
             });
-        }
-
-        public List<OHCAEvent> GetSimulatedEvents()
-        {
-            return simulatedEventList;
         }
     }
 }

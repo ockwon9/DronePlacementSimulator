@@ -480,7 +480,8 @@ namespace DronePlacementSimulator
                 simulator.Simulate(stationList, eventGrid);
 
                 Console.WriteLine(simulator.GetExpectedSurvivalRate());
-                Console.WriteLine("Total Miss Count = " + simulator.GetUnreachableEvents());
+                Console.WriteLine("Total Unreachable Events = " + simulator.GetUnreachableEvents());
+                Console.WriteLine("Total No Drones Events = " + simulator.GetNoDrones());
 
                 labelOverallSurvivalRateValue.Text = simulator.GetExpectedSurvivalRate() * 100 + "%";
                 double rate = (double)simulator.GetUnreachableEvents() / (double)simulator.GetSimulatedEventsCount() * 100.0;

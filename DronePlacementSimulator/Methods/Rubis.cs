@@ -98,7 +98,6 @@ namespace DronePlacementSimulator
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
-            double alpha = 0.99;
             double alpha = 0.995;
             int iteration = 0;
 
@@ -123,8 +122,7 @@ namespace DronePlacementSimulator
                     prevSurvivalRate = nextSurvivalRate;
 
                     // Heat-up
-                    currentTemp += currentTemp * 0.01;
-                    // currentTemp += currentTemp * 0.002;
+                    //currentTemp += currentTemp * 0.01;
                 }
                 else
                 {
@@ -137,7 +135,7 @@ namespace DronePlacementSimulator
                         CloneList(nextStationList, prevStationList);
                         prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
 
-                        if (prevSurvivalRate < bestSurvivalRate * 0.97)
+                        if (prevSurvivalRate < bestSurvivalRate * 0.98)
                         {
                             /*
                             kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
