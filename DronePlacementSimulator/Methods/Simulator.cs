@@ -53,13 +53,13 @@ namespace DronePlacementSimulator
             survivalRateLoss = 0.0;
 
             // Instance Test
-            foreach (Station s in stationList)
+ /*           foreach (Station s in stationList)
             {
                 s.droneList.Clear();
                 s.droneList.Add(new Drone(1));
                 //s.droneList.Add(new Drone(1));
             }
-
+*/
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
