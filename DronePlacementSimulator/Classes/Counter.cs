@@ -22,6 +22,21 @@ namespace DronePlacementSimulator
             }
         }
 
+        public Counter(Counter c)
+        {
+            this.limits = new int[c.limits.Length];
+            Array.Copy(c.limits, this.limits, c.limits.Length);
+            this.whenReady = new Queue<DateTime>[c.limits.Length];
+            for (int i = 0; i < c.limits.Length; i++)
+            {
+                this.whenReady[i] = new Queue<DateTime>();
+                foreach (DateTime dt in c.whenReady[i])
+                {
+                    this.whenReady[i].Enqueue(dt);
+                }
+            }
+        }
+
         public void Flush(DateTime now)
         {
             for (int i = 0; i < this.limits.Length; i++)

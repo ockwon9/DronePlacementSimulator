@@ -81,7 +81,7 @@ namespace DronePlacementSimulator
                 current.Flush(e.occurrenceTime);
                 int dispatchFrom = policy == Policy.NearestStationFirst ? 
                     GetNearestStation(stationList, ref current, e) : 
-                    GetHighestSurvivalRateStation(ref current, e);
+                    GetHighestSurvivalRateStation(stationList, ref current, e);
                 e.assignedStationId = dispatchFrom;
 
                 if (dispatchFrom == -1)
@@ -101,8 +101,8 @@ namespace DronePlacementSimulator
 
                 if (iteration++% 10000 == 0)
                 {
-                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime + ", unreachables = " + unreachableEvents + 
-                        ", noDrones = " + noDrones + ", secondChoices = " + secondChoices);
+                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime + ", unreachables = " + unreachableEvents + ", noDrones = " + noDrones);
+                    Console.WriteLine("   secondChoices = " + secondChoices + ", loss = " + survivalRateLoss + ", gain = " + survivalRateGain + "\n");
                 }
             }
             expectedSurvivalRate = sum / simulatedEventList.Count;
@@ -164,7 +164,7 @@ namespace DronePlacementSimulator
             return index[k];
         }
         
-        private int GetHighestSurvivalRateStation(ref Counter counter, OHCAEvent e)
+        private int GetHighestSurvivalRateStation(List<Station> stationList, ref Counter counter, OHCAEvent e)
         {
             int resultIndex = -1;
             int nearestIndex = -1;
@@ -213,7 +213,32 @@ namespace DronePlacementSimulator
                 double nearestDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
                 double resultDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
                 survivalRateLoss += CalculateSurvivalRate(resultDistance - nearestDistance);
-                // TODO: Simulates the nearest station for running time
+
+                // Look-ahead simulation
+                Counter tempCounter = new Counter(counter);
+                int eventIndex = simulatedEventList.IndexOf(e);
+                tempCounter.Dispatch(nearestIndex, e.occurrenceTime);
+
+                while (simulatedEventList[++eventIndex].occurrenceTime < e.occurrenceTime.AddHours(6))
+                {
+                    OHCAEvent next = simulatedEventList[eventIndex];
+                    tempCounter.Flush(next.occurrenceTime);
+
+                    int dispatchFrom = GetNearestStation(stationList, ref tempCounter, next);
+                    if (dispatchFrom != -1 && dispatchFrom != -2)
+                    {
+                        double flightTime = pathPlanner.CalcuteFlightTime(next.kiloX, next.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                        if (dispatchFrom == nearestIndex)
+                        {
+                            KeyValuePair<int, double> secondStation = GetSecondNearestStation(stationList, next);
+                            if (nearestIndex != secondStation.Key)
+                            {
+                                survivalRateGain += (CalculateSurvivalRate(flightTime) - CalculateSurvivalRate(secondStation.Value));
+                            }
+                        }
+                        tempCounter.Dispatch(dispatchFrom, next.occurrenceTime);
+                    }
+                }
             }
 
             if (resultIndex == -1)
@@ -223,6 +248,19 @@ namespace DronePlacementSimulator
             }
             
             return resultIndex;
+        }
+
+        private KeyValuePair<int, double> GetSecondNearestStation(List<Station> stationList, OHCAEvent next)
+        {
+            List<KeyValuePair<int, double>> distanceList = new List<KeyValuePair<int, double>>();
+            for(int i = 0; i < stationList.Count; i++)
+            {
+                Station s = stationList[i];
+                double distance = pathPlanner.CalcuteFlightTime(next.kiloX, next.kiloY, s.kiloX, s.kiloY);
+                distanceList.Add(new KeyValuePair<int, double>(i, distance));
+            }
+            distanceList.Sort((a, b) => a.Value >= b.Value ? 1 : -1);
+            return distanceList[1];
         }
 
         private double CalculatePotential(RubisStation s, Counter counter)
