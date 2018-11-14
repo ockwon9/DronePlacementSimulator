@@ -53,13 +53,13 @@ namespace DronePlacementSimulator
             survivalRateLoss = 0.0;
 
             // Instance Test
- /*           foreach (Station s in stationList)
+            foreach (Station s in stationList)
             {
                 s.droneList.Clear();
                 s.droneList.Add(new Drone(1));
-                //s.droneList.Add(new Drone(1));
+                s.droneList.Add(new Drone(1));
             }
-*/
+
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
@@ -321,7 +321,7 @@ namespace DronePlacementSimulator
 
         private double CalculateSurvivalRate(double distance)
         {            
-            return 0.7 - (0.1 * distance);
+            return (distance < Utils.GOLDEN_TIME) ? (0.7 - (0.2 * distance / Utils.GOLDEN_TIME)) : 0;
         }
 
         public double GetExpectedSurvivalRate()
