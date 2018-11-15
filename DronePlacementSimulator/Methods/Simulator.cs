@@ -296,7 +296,7 @@ namespace DronePlacementSimulator
                     int index = rStationList.IndexOf(s);
                     if(ready[index] > 0)
                     {
-                        double prob = (1 - pSum) * ProbabilityMassFunction(ready[index] - 1, s.pdfSum);
+                        double prob = (1 - pSum) * ProbabilityMassFunction(ready[index] - 1, Utils.DRONE_REST_TIME * 60 * s.pdfSum);
                         pSum += prob;
                         cell.survivalRate = cell.survivalRate + (prob * CalculateSurvivalRate(pair.distance));
                     }
