@@ -212,7 +212,7 @@ namespace DronePlacementSimulator
                 secondChoices++;
                 double nearestDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
                 double resultDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
-                survivalRateLoss += CalculateSurvivalRate(resultDistance - nearestDistance);
+                survivalRateLoss = survivalRateLoss + (CalculateSurvivalRate(resultDistance) - CalculateSurvivalRate(nearestDistance));
 
                 // Look-ahead simulation
                 Counter tempCounter = new Counter(counter);
@@ -233,7 +233,7 @@ namespace DronePlacementSimulator
                             KeyValuePair<int, double> secondStation = GetSecondNearestStation(stationList, next);
                             if (nearestIndex != secondStation.Key)
                             {
-                                survivalRateGain += (CalculateSurvivalRate(flightTime) - CalculateSurvivalRate(secondStation.Value));
+                                survivalRateGain = survivalRateGain + (CalculateSurvivalRate(flightTime) - CalculateSurvivalRate(secondStation.Value));
                             }
                         }
                         tempCounter.Dispatch(dispatchFrom, next.occurrenceTime);
@@ -280,7 +280,7 @@ namespace DronePlacementSimulator
             {
                 ready[i] = rStationList[i].droneList.Count - counter.whenReady[i].Count;
             }
-
+            
             if (dispatch == true)
             {
                 int index = rStationList.IndexOf(tempStation);
@@ -302,7 +302,6 @@ namespace DronePlacementSimulator
                     }
                 }
                 overallSum += cell.survivalRate;
-                //Console.WriteLine("overallSum = " + overallSum);
             }
 
             return overallSum / tempStation.cellList.Count;
@@ -381,7 +380,7 @@ namespace DronePlacementSimulator
         {
             return survivalRateLoss;
         }
-
+        
         public double GetSurvivalRateGain()
         {
             return survivalRateGain;
