@@ -98,7 +98,7 @@ namespace DronePlacementSimulator
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.01;
-            double alpha = 0.995;
+            double alpha = 0.99;
             int iteration = 0;
 
             double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
@@ -480,7 +480,7 @@ namespace DronePlacementSimulator
 
         private double CalculateSurvivalRate(double time)
         {
-            return 0.7 - (0.1 * time);
+            return (time < Utils.GOLDEN_TIME) ? (0.7 - (0.2 * time / Utils.GOLDEN_TIME)) : 0;
         }
 
         private void CloneList(List<RubisStation> srcList, List<RubisStation> dstList)
