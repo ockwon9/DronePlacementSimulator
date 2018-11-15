@@ -96,11 +96,11 @@ namespace DronePlacementSimulator
             Console.WriteLine("time coverage constraint : ");
             double time = double.Parse(Console.ReadLine());
             stationList.Clear();
-            bool stationsSet = File.Exists("Boutilier_" + space + "," + time + ".csv");
+            bool stationsSet = File.Exists("Boutilier_stations_" + space + "_" + time + ".csv");
 
             if (stationsSet)
             {
-                StreamReader file = new StreamReader("Boutilier_" + space + "," + time + ".csv");
+                StreamReader file = new StreamReader("Boutilier_stations_" + space + "_" + time + ".csv");
                 string line;
                 while ((line = file.ReadLine()) != null)
                 {

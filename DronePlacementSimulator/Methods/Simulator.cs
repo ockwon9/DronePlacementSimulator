@@ -267,7 +267,7 @@ namespace DronePlacementSimulator
         {
             double prev = GetOverallSurvivalRate(s, counter, false);
             double next = GetOverallSurvivalRate(s, counter, true);
-            return prev - next;
+            return ProbabilityMassFunction(Utils.DRONE_REST_TIME * 60, s.pdfSum) * (prev - next);
         }
 
         private double GetOverallSurvivalRate(RubisStation targetStation, Counter counter, bool dispatch)
