@@ -79,6 +79,7 @@ namespace DronePlacementSimulator
             }
 
             // Step 2. Add remaining stations in crowded cells
+            /*
             int remainingStations = stations - prevStationList.Count;
             for (int i = 0; i < remainingStations; i++)
             {
@@ -86,18 +87,22 @@ namespace DronePlacementSimulator
                 double kiloY = eventGrid.cells[i].kiloY;
                 prevStationList.Add(new RubisStation(kiloX, kiloY, 1));
             }
+            */
 
             // Step 3. Add remaining drones in busy stations
             CalculateCoveredCells(prevStationList);
+
+            /*
             int remainingDrones = drones - prevStationList.Count;
             for (int i = 0; i < remainingDrones; i++)
             {
                 prevStationList[i].droneList.Add(new Drone(prevStationList[i].stationID));                
             }
+            */
             
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
-            double epsilonTemp = 0.01;
+            double epsilonTemp = 0.1;
             double alpha = 0.99;
             int iteration = 0;
 
@@ -131,7 +136,7 @@ namespace DronePlacementSimulator
                     if (probility < Math.Exp(-delta / currentTemp))
                     {
                         // Far search using random placement
-                        nextStationList = FindRandomStationPlacement(prevStationList, remainingDrones);
+                        nextStationList = FindRandomStationPlacement(prevStationList, 0);
                         CloneList(nextStationList, prevStationList);
                         prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
 
@@ -404,6 +409,19 @@ namespace DronePlacementSimulator
             CloneList(cellList, tempCellList);
 
             // Finds reachable stations for each cell
+
+            foreach (RubisStation s in stationList)
+            {
+                s.cellList.Clear();
+                s.pdfSum = 0.0;
+            }
+
+            foreach (RubisCell cell in tempCellList)
+            {
+                cell.stations.Clear();
+                cell.survivalRate = 0.0;
+            }
+
             foreach (RubisCell cell in tempCellList)
             {
                 foreach (RubisStation s in stationList)
@@ -441,10 +459,10 @@ namespace DronePlacementSimulator
                 {
                     RubisStation s = pair.station;
                     double prob = (1 - pSum) * ProbabilityMassFunction(s.droneList.Count - 1, s.pdfSum);
-                    pSum += prob;
-                    cell.survivalRate += prob * CalculateSurvivalRate(pair.distance);
+                    pSum = pSum + prob;
+                    cell.survivalRate = cell.survivalRate + (prob * CalculateSurvivalRate(pair.distance));
                 }
-                overallSum += cell.survivalRate;
+                overallSum = overallSum + cell.survivalRate;
             }
 
             double survivalRate = overallSum / tempCellList.Count;

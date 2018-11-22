@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.labelOverallSurvivalRate = new System.Windows.Forms.Label();
             this.labelOverallSurvivalRateValue = new System.Windows.Forms.Label();
             this.labelDeliveryMissValue = new System.Windows.Forms.Label();
@@ -50,7 +49,6 @@
             this.toolStripComboBoxStations = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBoxPolicy = new System.Windows.Forms.ToolStripComboBox();
-            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -218,8 +216,7 @@
             this.toolStripLabel1,
             this.toolStripComboBoxStations,
             this.toolStripLabel2,
-            this.toolStripComboBoxPolicy,
-            this.toolStripButton1});
+            this.toolStripComboBoxPolicy});
             this.toolStrip1.Location = new System.Drawing.Point(0, 33);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(1120, 33);
@@ -278,16 +275,6 @@
             this.toolStripComboBoxPolicy.Name = "toolStripComboBoxPolicy";
             this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(275, 33);
             // 
-            // toolStripButton1
-            // 
-            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(28, 30);
-            this.toolStripButton1.Text = "Show";
-            this.toolStripButton1.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
@@ -337,6 +324,5 @@
         private System.Windows.Forms.ToolStripMenuItem savePlacementToolStripMenuItem;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxPolicy;
-        private System.Windows.Forms.ToolStripButton toolStripButton1;
     }
 }
