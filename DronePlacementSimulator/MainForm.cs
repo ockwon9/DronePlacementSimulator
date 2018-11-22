@@ -143,7 +143,7 @@ namespace DronePlacementSimulator
                 simulator = new Simulator();
             }
 
-            RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2); 
+            RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2, ref polyCoordList); 
             List<RubisStation> resultList = rubis.Calculate(eventList);
 
             stationList.Clear();

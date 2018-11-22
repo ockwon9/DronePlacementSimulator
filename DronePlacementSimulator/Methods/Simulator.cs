@@ -354,7 +354,7 @@ namespace DronePlacementSimulator
 
         private double CalculateSurvivalRate(double distance)
         {            
-            return (distance < Utils.GOLDEN_TIME) ? (0.7 - (0.01 * distance / Utils.GOLDEN_TIME)) : 0.0;
+            return (distance < Utils.GOLDEN_TIME) ? (0.7 - (0.2 * distance / Utils.GOLDEN_TIME)) : 0.0;
         }
 
         public double GetExpectedSurvivalRate()

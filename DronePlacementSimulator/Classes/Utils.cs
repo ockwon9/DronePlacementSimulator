@@ -22,7 +22,7 @@ namespace DronePlacementSimulator
         public static int ROW_NUM = 305;
         public static int COL_NUM = 370;
 
-        public static double UNIT = 3.0;
+        public static double UNIT = 0.5;
         public static double LAMBDA_PRECISION = 0.1;
         public static double GOLDEN_TIME = 4.949;
 

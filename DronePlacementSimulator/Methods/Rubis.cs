@@ -33,7 +33,7 @@ namespace DronePlacementSimulator
         private List<RubisStation> stationList;
         private List<RubisCell> cellList;
 
-        public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones)
+        public RUBIS(Grid eventGrid, Simulator simulator, int stations, int drones, ref List<List<double[]>> polyCoordList)
         {
             this.eventGrid = eventGrid;
             this.stations = stations;
@@ -44,9 +44,10 @@ namespace DronePlacementSimulator
             this.stationList = new List<RubisStation>();
 
             cellList = new List<RubisCell>();
+            eventGrid.Pool(ref polyCoordList);
             foreach (Cell c in eventGrid.cells)
             {
-                cellList.Add(new RubisCell(c, eventGrid.lambda[c.intX][c.intY]));
+                cellList.Add(new RubisCell(c, eventGrid.pooledLambda[c.intY][c.intX]));
             }
         }
 
@@ -103,7 +104,7 @@ namespace DronePlacementSimulator
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.1;
-            double alpha = 0.99;
+            double alpha = 0.995;
             int iteration = 0;
 
             double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
@@ -451,7 +452,7 @@ namespace DronePlacementSimulator
             }
 
             // Calculates the survival rate for each cell
-            double overallSum = 0.0;
+            double overallSum = .0;
             foreach (RubisCell cell in tempCellList)
             {
                 double pSum = 0.0;
