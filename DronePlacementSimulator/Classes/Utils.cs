@@ -22,9 +22,10 @@ namespace DronePlacementSimulator
         public static int ROW_NUM = 305;
         public static int COL_NUM = 370;
 
-        public static double UNIT = 3.0;
+        public static double UNIT = 1.0;
         public static double LAMBDA_PRECISION = 0.1;
-        public static double GOLDEN_TIME = 4.949;
+        public static double GOLDEN_TIME = 5;
+        public static double SURVIVAL_RATE_SLOPE = 0.2;
 
         public static int KMEANS_ITERATION_COUNT = 100;
 
@@ -32,6 +33,7 @@ namespace DronePlacementSimulator
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int MINUTES_IN_4_YEARS = 2103840;
 
+        public static double DRONE_VELOCITY = 1.0;
         public static double BASE_FLIGHT_HEIGHT = 10.0; // meter
         public static double DRONE_TAKE_OFF_VELOCITY = 2.0; // m/s
         public static double DRONE_LANDING_VELOCITY = 1.0; // m/s

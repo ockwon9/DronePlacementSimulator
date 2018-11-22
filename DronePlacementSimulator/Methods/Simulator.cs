@@ -48,6 +48,7 @@ namespace DronePlacementSimulator
             expectedSurvivalRate = 0;
             unreachableEvents = 0;
             noDrones = 0;
+            secondChoices = 0;
 
             survivalRateGain = 0.0;
             survivalRateLoss = 0.0;
@@ -91,7 +92,7 @@ namespace DronePlacementSimulator
                 }
                 else
                 {
-                    double flightTime = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[dispatchFrom].kiloX, rStationList[dispatchFrom].kiloY);
+                    double flightTime = pathPlanner.CalcuteFlightTime(rStationList[dispatchFrom].kiloX, rStationList[dispatchFrom].kiloY, e.kiloX, e.kiloY);
                     sum += CalculateSurvivalRate(flightTime);
                     current.Dispatch(dispatchFrom, e.occurrenceTime);
                 }
@@ -137,7 +138,7 @@ namespace DronePlacementSimulator
             }
 
             int k = 0;
-            counter.Flush(e.occurrenceTime);
+            //counter.Flush(e.occurrenceTime);
 
             bool isReachable = false;
             
@@ -176,15 +177,15 @@ namespace DronePlacementSimulator
             foreach (RubisStation s in rStationList)
             {
                 int index = rStationList.IndexOf(s);
-                double distance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, s.kiloX, s.kiloY);
+                double time = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
 
-                if (distance <= Utils.GOLDEN_TIME)
+                if (time <= Utils.GOLDEN_TIME)
                 {
                     isReachable = true;
                     if (counter.whenReady[index].Count < rStationList[index].droneList.Count)
                     {
                         potential = CalculatePotential(s, counter);
-                        survivalRate = CalculateSurvivalRate(distance);
+                        survivalRate = CalculateSurvivalRate(time);
                         overallSurvivalRate = survivalRate - potential;
 
                         if (overallSurvivalRate > maxOverallSurvivalRate)
@@ -322,10 +323,10 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in rStationList)
                 {
-                    double distance = pathPlanner.CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
-                    if (distance <= Utils.GOLDEN_TIME)
+                    double time = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, cell.kiloX, cell.kiloY);
+                    if (time <= Utils.GOLDEN_TIME)
                     {
-                        cell.stations.Add(new StationDistancePair(s, distance));
+                        cell.stations.Add(new StationDistancePair(s, time));
                         s.cellList.Add(cell);
                     }
                 }
@@ -352,9 +353,9 @@ namespace DronePlacementSimulator
             this.policy = policy;
         }
 
-        private double CalculateSurvivalRate(double distance)
+        private double CalculateSurvivalRate(double time)
         {            
-            return (distance < Utils.GOLDEN_TIME) ? (0.7 - (0.01 * distance / Utils.GOLDEN_TIME)) : 0.0;
+            return (time <= Utils.GOLDEN_TIME) ? (0.7 - (Utils.SURVIVAL_RATE_SLOPE * time / Utils.GOLDEN_TIME)) : 0.0;
         }
 
         public double GetExpectedSurvivalRate()

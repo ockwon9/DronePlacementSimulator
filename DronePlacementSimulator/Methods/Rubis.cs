@@ -46,7 +46,7 @@ namespace DronePlacementSimulator
             cellList = new List<RubisCell>();
             foreach (Cell c in eventGrid.cells)
             {
-                cellList.Add(new RubisCell(c, eventGrid.lambda[c.intX][c.intY]));
+                cellList.Add(new RubisCell(c, eventGrid.lambda[c.intY][c.intX]));
             }
         }
 
@@ -103,7 +103,7 @@ namespace DronePlacementSimulator
             // Step 4. Simulated Annealing
             double currentTemp = 100.0;
             double epsilonTemp = 0.1;
-            double alpha = 0.99;
+            double alpha = 0.999;
             int iteration = 0;
 
             double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
@@ -140,7 +140,9 @@ namespace DronePlacementSimulator
                         CloneList(nextStationList, prevStationList);
                         prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
 
-                        if (prevSurvivalRate < bestSurvivalRate * 0.98)
+                        //if (prevSurvivalRate < bestSurvivalRate * 0.99)
+                        double r = new Random().NextDouble();
+                        if (r < 0.1)
                         {
                             /*
                             kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
@@ -150,8 +152,8 @@ namespace DronePlacementSimulator
                             }*/
 
                             Random rand = new Random();
-                            int pos = rand.Next(0, 900000);
-                            kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 100000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+                            int pos = rand.Next(0, 990000);
+                            kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 10000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
                             prevStationList.Clear();
                             foreach (double[] d in kMeansStations.Means)
                             {
@@ -426,10 +428,10 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
-                    if (distance <= Utils.GOLDEN_TIME)
+                    double time = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    if (time <= Utils.GOLDEN_TIME)
                     {
-                        cell.stations.Add(new StationDistancePair(s, distance));
+                        cell.stations.Add(new StationDistancePair(s, time));
                         s.cellList.Add(cell);
                     }
                 }
@@ -498,7 +500,7 @@ namespace DronePlacementSimulator
 
         private double CalculateSurvivalRate(double time)
         {
-            return (time < Utils.GOLDEN_TIME) ? (0.7 - (0.2 * time / Utils.GOLDEN_TIME)) : 0;
+            return (time <= Utils.GOLDEN_TIME) ? (0.7 - (Utils.SURVIVAL_RATE_SLOPE * time / Utils.GOLDEN_TIME)) : 0.0;
         }
 
         private void CloneList(List<RubisStation> srcList, List<RubisStation> dstList)
