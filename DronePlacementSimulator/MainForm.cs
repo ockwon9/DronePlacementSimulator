@@ -43,7 +43,7 @@ namespace DronePlacementSimulator
             // Set the size of simulator's window
             this.Height = Screen.PrimaryScreen.Bounds.Height;
             this.Width = (int)(this.Height * Utils.SEOUL_WIDTH / Utils.SEOUL_HEIGHT);
-            coverRange = (int)(this.Height * Utils.GOLDEN_TIME / Utils.SEOUL_HEIGHT);
+            coverRange = (int)(this.Height * (Utils.GOLDEN_TIME * Utils.DRONE_VELOCITY) / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 12;
             targetStationCount = 20;
             this.workersLock = new SpinLock();
@@ -189,14 +189,15 @@ namespace DronePlacementSimulator
 
         private void DrawGrid(Graphics g)
         {
-            int numXCells = (int)Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT) * 10;
-            int numYCells = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT) * 10;
+            double unit = 1.0;
+            int numXCells = (int)Math.Ceiling(Utils.SEOUL_WIDTH / unit) * 10;
+            int numYCells = (int)Math.Ceiling(Utils.SEOUL_HEIGHT / unit) * 10;
 
             Pen pLight = new Pen(Color.LightGray, 1);
             Pen pDark = new Pen(Color.DimGray, 1);
             for (int x = 0; x <= numXCells; ++x)
             {
-                int xInt = (int)(x * Utils.UNIT / 10 / Utils.SEOUL_WIDTH * this.Width);
+                int xInt = (int)(x * unit / 10 / Utils.SEOUL_WIDTH * this.Width);
                 if ((x + 5) % 50 == 0)
                 {
                     g.DrawLine(pDark, xInt, 0, xInt, this.Height);
@@ -209,7 +210,7 @@ namespace DronePlacementSimulator
 
             for (int y = 0; y <= numYCells; ++y)
             {
-                int yInt = this.Height - (int)(y * Utils.UNIT / 10 / Utils.SEOUL_HEIGHT * this.Height);
+                int yInt = this.Height - (int)(y * unit / 10 / Utils.SEOUL_HEIGHT * this.Height);
                 if ((y + 5) % 50 == 0)
                 {
                     g.DrawLine(pDark, 0, yInt, this.Width, yInt);

@@ -53,7 +53,7 @@ namespace DronePlacementSimulator
             double takeOffHeight = maxHeightOnRoute - srcHeight + Utils.BASE_FLIGHT_HEIGHT;
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.BASE_FLIGHT_HEIGHT;
             
-            return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + distance + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
+            return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
         }
 
         private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
