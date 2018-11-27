@@ -7,6 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using System.Windows.Shapes;
+using System.Threading;
+using System.Threading.Tasks;
+using Nito.AsyncEx;
 
 namespace DronePlacementSimulator
 {
@@ -25,6 +28,7 @@ namespace DronePlacementSimulator
             RightBottom
         }
 
+        private static int[] factorial = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
         private Grid eventGrid;
         private Simulator simulator;
         private int stations;
@@ -453,8 +457,28 @@ namespace DronePlacementSimulator
             }
 
             // Calculates the survival rate for each cell
-            double overallSum = 0.0;
-            foreach (RubisCell cell in tempCellList)
+            double overallSum = AsyncContext.Run(() => ComputeSurvivalRate(tempCellList));
+
+            double survivalRate = overallSum / tempCellList.Count;
+            return survivalRate;
+        }
+
+        private class WorkObject
+        {
+            public RubisCell[] cellList;
+            public int index;
+
+            public WorkObject(RubisCell[] cellList, int index)
+            {
+                this.cellList = cellList.Clone() as RubisCell[];
+                this.index = index;
+            }
+        }
+
+        private double ComputeSurvivalRateDoWork(WorkObject workObject)
+        {
+            double sum = 0.0;
+            foreach (RubisCell cell in workObject.cellList)
             {
                 double pSum = 0.0;
                 foreach (StationDistancePair pair in cell.stations)
@@ -464,11 +488,41 @@ namespace DronePlacementSimulator
                     pSum = pSum + prob;
                     cell.survivalRate = cell.survivalRate + (prob * CalculateSurvivalRate(pair.distance));
                 }
-                overallSum = overallSum + cell.survivalRate;
+                sum += cell.survivalRate;
+            }
+            return sum;
+        }
+
+        private async Task<double> ComputeSurvivalRateAsync(WorkObject workObject)
+        {
+            return await Task.Run(() => ComputeSurvivalRateDoWork(workObject));
+        }
+
+        private async Task<double> ComputeSurvivalRate(List<RubisCell> cellList)
+        {
+            int coreCount = 12;
+            List<Task<double>> tasks = new List<Task<double>>();
+            int dividedLoad = cellList.Count / coreCount;
+            int remainder = cellList.Count % coreCount;
+
+            int pos = 0;
+            for (int i = 0; i < coreCount; i++)
+            {
+                int actualLoad = dividedLoad + (i < remainder ? 1 : 0);
+                RubisCell[] workLoad = new RubisCell[actualLoad];
+                Array.Copy(cellList.ToArray(), pos, workLoad, 0, actualLoad);
+                WorkObject workObject = new WorkObject(workLoad, i);
+                pos += actualLoad;
+                tasks.Add(ComputeSurvivalRateAsync(workObject));
             }
 
-            double survivalRate = overallSum / tempCellList.Count;
-            return survivalRate;
+            double sum = 0.0;
+            for (int i = 0; i < coreCount; i++)
+            {
+                sum += await Task.WhenAny(tasks).Result;
+            }
+
+            return sum;
         }
 
         private double ProbabilityMassFunction(int k, double lambda)
@@ -478,24 +532,12 @@ namespace DronePlacementSimulator
             double sum = 0.0;
             while (i <= k)
             {
-                double n = Math.Pow(lambda, i) / Factorial(i);
+                double n = Math.Pow(lambda, i) / factorial[i];
                 sum += n;
                 i++;
             }
             double cdf = e * sum;
             return cdf;
-        }
-
-        private int Factorial(int k)
-        {
-            int count = k;
-            int factorial = 1;
-            while (count >= 1)
-            {
-                factorial = factorial * count;
-                count--;
-            }
-            return factorial;
         }
 
         private double CalculateSurvivalRate(double time)
