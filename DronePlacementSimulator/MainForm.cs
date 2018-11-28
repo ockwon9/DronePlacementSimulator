@@ -6,6 +6,8 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
+using Nito.AsyncEx;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
@@ -15,7 +17,7 @@ namespace DronePlacementSimulator
     public partial class MainForm : Form
     {
         private bool writeSimulation = false;
-        private int coreCount = 6;
+        private int coreCount = 12;
         
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
@@ -26,8 +28,6 @@ namespace DronePlacementSimulator
         private Grid eventGrid = null;
         private Bitmap _canvas = null;
         private int targetStationCount;
-        private int workersRemaining;
-        private SpinLock workersLock;
 
         public int coverRange = 0;
         
@@ -46,7 +46,6 @@ namespace DronePlacementSimulator
             coverRange = (int)(this.Height * (Utils.GOLDEN_TIME * Utils.DRONE_VELOCITY) / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 12;
             targetStationCount = 20;
-            this.workersLock = new SpinLock();
 
             // Read OHCA events data
             ReadEventData();
@@ -86,7 +85,7 @@ namespace DronePlacementSimulator
             {
                 stationList.Add(new Station(eventGrid.inSeoul[i].kiloX, eventGrid.inSeoul[i].kiloY, 0));
             }
-            Pulver pulver = new Pulver(0.2, targetStationCount, 2, ref stationList, ref eventGrid);
+            Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
         }
 
         private void PerformBoutilier()
@@ -473,7 +472,7 @@ namespace DronePlacementSimulator
 
             if (writeSimulation)
             {
-                WriteSimulationEventList(eventGrid);
+                AsyncContext.Run(() => WriteSimulationEventList(eventGrid));
             }
             else
             {
@@ -580,39 +579,31 @@ namespace DronePlacementSimulator
             }
         }
 
-        private void WriteSimulationEventList(Grid eventGrid)
+        public class WorkObject
         {
-            BackgroundWorker[] workers = new BackgroundWorker[coreCount];
-            this.workersRemaining = coreCount;
-
-            for (int i = 0; i < workers.Length; i++)
+            public double[][] lambda;
+            public bool[][] inSeoulBool;
+            public int index;
+            public DateTime start;
+            public WorkObject(double[][] lambda, bool[][] inSeoulBool, int index, DateTime dateTime)
             {
-                workers[i] = new BackgroundWorker();
-                WorkObject work = new WorkObject(eventGrid.lambda, eventGrid.inSeoulBool, i, new DateTime(2018 + i * 80, 1, 1));
-                workers[i].DoWork += eventList_DoWork;
-                workers[i].RunWorkerCompleted += eventList_RunWorkerCompleted;
-                workers[i].RunWorkerAsync(work);
-            }
-
-            while (workersRemaining > 0)
-            {
+                this.lambda = lambda.Clone() as double[][];
+                this.inSeoulBool = inSeoulBool.Clone() as bool[][];
+                this.index = index;
+                this.start = dateTime;
             }
         }
 
-        private void eventList_DoWork(object sender, DoWorkEventArgs e)
+        private void EventListDoWork(WorkObject workObject)
         {
-            WorkObject workObject = e.Argument as WorkObject;
-            Console.WriteLine(workObject.index);
-
             DateTime current = workObject.start;
             DateTime end = workObject.start.AddYears(80);
-            Random rand = new Random((int) DateTime.Now.ToBinary() + workObject.index);
-
+            Random rand = new Random((int)DateTime.Now.ToBinary() + workObject.index);
             StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
             int numEvents = 0;
             int len1 = workObject.lambda.Length;
             int len2 = workObject.lambda[0].Length;
-            
+
             while (current < end)
             {
                 for (int i = 0; i < len1; i++)
@@ -644,35 +635,28 @@ namespace DronePlacementSimulator
             }
             Console.WriteLine("thread " + workObject.index + " done.");
             file.Close();
+            return;
         }
 
-        private void eventList_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private async Task EventListAsync(WorkObject workObject)
         {
-            System.Console.WriteLine((string)e.Result);
-            bool lockTaken = false;
-            while (!lockTaken)
-            {
-                workersLock.TryEnter(ref lockTaken);
-            }
-            --workersRemaining;
-            workersLock.Exit();
+            await Task.Run(() => EventListDoWork(workObject));
+            return;
         }
 
-        public class WorkObject
+        private async Task WriteSimulationEventList(Grid eventGrid)
         {
-            public double[][] lambda;
-            public bool[][] inSeoulBool;
-            public int index;
-            public DateTime start;
-            public WorkObject(double[][] lambda, bool[][] inSeoulBool, int index, DateTime dateTime)
-            {
-                this.lambda = lambda.Clone() as double[][];
-                this.inSeoulBool = inSeoulBool.Clone() as bool[][];
-                this.index = index;
-                this.start = dateTime;
-            }
-        }
+            List<Task> tasks = new List<Task>();
 
+            for (int i = 0; i < coreCount; i++)
+            {
+                WorkObject work = new WorkObject(eventGrid.lambda, eventGrid.inSeoulBool, i, new DateTime(2018 + i * 30, 1, 1));
+                tasks.Add(EventListAsync(work));
+            }
+
+            await Task.WhenAll(tasks);
+            return;
+        }
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             Random rand = new Random();

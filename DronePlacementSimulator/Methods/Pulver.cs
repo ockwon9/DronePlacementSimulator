@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Nito.AsyncEx;
 using Gurobi;
 using System.ComponentModel;
-using System.Threading;
 using System.IO;
 
 
@@ -26,10 +27,8 @@ namespace DronePlacementSimulator
         private double optimalCoverage;
         private List<double> demandList;
         private List<int>[] N;
-        private int workersRemaining;
-        private SpinLock workersLock;
 
-        public Pulver (double w, int p, double h, ref List<Station> stationList, ref Grid grid)
+        public Pulver (double w, int p, double h, List<Station> stationList, Grid grid)
         {
             this.stationList = stationList.ConvertAll(s => new Station(s));
             this.n = grid.inSeoul.Count;
@@ -47,7 +46,7 @@ namespace DronePlacementSimulator
             this.Demandify(grid);
             if (DEBUG)
             {
-                QuantifyService(n, m, ref stationList, ref grid);
+                AsyncContext.Run(() => QuantifyService(n, m, stationList, grid));
             }
             else
             {
@@ -85,41 +84,21 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void QuantifyService(int n, int m, ref List<Station> stationList, ref Grid grid)
+        private class WorkObject
         {
-            int coreCount = 6;
-            BackgroundWorker[] workers = new BackgroundWorker[coreCount];
-            int dividedLoad = n / coreCount;
-            int rem = n % coreCount;
-            this.workersRemaining = coreCount;
-            this.workersLock = new SpinLock();
-            
-            int row = 0;
-            for (int i = 0; i < coreCount; i++)
+            public Pair[] load;
+            public int index;
+            public int row;
+            public WorkObject(Pair[] load, int index, int row)
             {
-                int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
-                workers[i] = new BackgroundWorker();
-                Pair[] workLoad = new Pair[actualLoad];
-                Array.Copy(grid.inSeoul.ToArray(), row, workLoad, 0, actualLoad);
-
-                WorkObject work = new WorkObject(workLoad, i, row);
-
-                workers[i].DoWork += Quantify_DoWork;
-                workers[i].RunWorkerCompleted += Quantify_RunWorkerCompleted;
-                row += actualLoad;
-                workers[i].RunWorkerAsync(work);
+                this.load = load.Clone() as Pair[];
+                this.index = index;
+                this.row = row;
             }
-
-            while (workersRemaining > 0)
-            {
-            }
-
-            return;
         }
 
-        private void Quantify_DoWork(object sender, DoWorkEventArgs e)
+        private void QuantifyDoWork(WorkObject workObject)
         {
-            WorkObject workObject = e.Argument as WorkObject;
             Overlap overlap = new Overlap();
             System.Console.WriteLine(workObject.index);
             StreamWriter file = new StreamWriter("Pulver_Area_" + workObject.index + ".csv");
@@ -138,33 +117,35 @@ namespace DronePlacementSimulator
                 Console.WriteLine("Thread " + workObject.index + " done with line " + i);
             }
             file.Close();
-            
+
             Console.WriteLine("thread " + workObject.index + " done.");
         }
 
-        private void Quantify_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private async Task QuantifyAsync(WorkObject workObject)
         {
-            System.Console.WriteLine((string)e.Result);
-            bool lockTaken = false;
-            while (!lockTaken)
-            {
-                workersLock.TryEnter(ref lockTaken);
-            }
-            --workersRemaining;
-            workersLock.Exit();
+            await Task.Run(() => QuantifyDoWork(workObject));
         }
 
-        public class WorkObject
+        private async Task QuantifyService(int n, int m, List<Station> stationList, Grid grid)
         {
-            public Pair[] load;
-            public int index;
-            public int row;
-            public WorkObject(Pair[] load, int index, int row)
+            int coreCount = 12;
+            List<Task> tasks = new List<Task>();
+            int dividedLoad = n / coreCount;
+            int rem = n % coreCount;
+
+            int row = 0;
+            for (int i = 0; i < coreCount; i++)
             {
-                this.load = load.Clone() as Pair[];
-                this.index = index;
-                this.row = row;
+                int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
+                Pair[] workLoad = new Pair[actualLoad];
+                Array.Copy(grid.inSeoul.ToArray(), row, workLoad, 0, actualLoad);
+                WorkObject workObject = new WorkObject(workLoad, i, row);
+                row += actualLoad;
+                tasks.Add(QuantifyAsync(workObject));
             }
+
+            await Task.WhenAll(tasks);
+            return;
         }
 
         public int Demandify(Grid grid)
