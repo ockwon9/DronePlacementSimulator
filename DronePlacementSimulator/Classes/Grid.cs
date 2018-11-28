@@ -31,23 +31,6 @@ namespace DronePlacementSimulator
 
         public Grid (ref List<List<double[]>> polyCoordList)
         {
-            this.cells = new List<Cell>();
-            int numLon = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
-            int numLat = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
-            
-            for (int i = 0; i < numLat; i++)
-            {
-                double kiloY = (i + 0.5) * Utils.UNIT;
-                for (int j = 0; j < numLon; j++)
-                {
-                    double kiloX = (j + 0.5) * Utils.UNIT;
-                    if (IsInside(kiloX, kiloY, ref polyCoordList))
-                    {   
-                        cells.Add(new Cell(kiloX, kiloY, j, i));
-                    }
-                }
-            }
-
             this.lambda_width = (int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.LAMBDA_PRECISION);
             this.lambda_height = (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.LAMBDA_PRECISION);
             this.lambda = new double[lambda_height][];
@@ -62,6 +45,23 @@ namespace DronePlacementSimulator
                 {
                     this.lambda[i][j] = 0;
                     inSeoulBool[i][j] = (IsInside((j + 0.5) * Utils.LAMBDA_PRECISION, (i + 0.5) * Utils.LAMBDA_PRECISION, ref polyCoordList));
+                }
+            }
+
+            this.cells = new List<Cell>();
+            int numLon = (lambda_height + 2) / 5; //(int) Math.Ceiling(Utils.SEOUL_WIDTH / Utils.UNIT);
+            int numLat = (lambda_width + 2) / 5; // (int) Math.Ceiling(Utils.SEOUL_HEIGHT / Utils.UNIT);
+            
+            for (int i = 2; i < lambda_height; i += 5)
+            {
+                double kiloY = (i + 0.5) * Utils.LAMBDA_PRECISION;
+                for (int j = 2; j < lambda_width; j += 5)
+                {
+                    double kiloX = (j + 0.5) * Utils.LAMBDA_PRECISION;
+                    if (IsInside(kiloX, kiloY, ref polyCoordList))
+                    {
+                        cells.Add(new Cell(kiloX, kiloY, j / 5, i / 5));
+                    }
                 }
             }
         }
