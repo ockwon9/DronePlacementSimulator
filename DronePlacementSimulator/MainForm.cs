@@ -250,6 +250,12 @@ namespace DronePlacementSimulator
                     g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.DrawEllipse(new Pen(Color.Red, 1), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.FillRectangle((Brush)Brushes.Red, s.pixelX, s.pixelY, 3, 3);
+                    string stationInfo = stationList.IndexOf(s).ToString();
+                    if (s.droneList.Count > 0)
+                    {
+                        stationInfo += " (" + s.droneList.Count + ")";
+                    }
+                    g.DrawString(stationInfo, new Font("Times New Roman", 24, FontStyle.Bold, GraphicsUnit.Pixel), Brushes.Black, new Point(s.pixelX, s.pixelY));
                 }
             }
         }
