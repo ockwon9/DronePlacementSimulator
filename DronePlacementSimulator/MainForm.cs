@@ -45,6 +45,7 @@ namespace DronePlacementSimulator
             this.Width = (int)(this.Height * Utils.SEOUL_WIDTH / Utils.SEOUL_HEIGHT);
             coverRange = (int)(this.Height * (Utils.GOLDEN_TIME * Utils.DRONE_VELOCITY) / Utils.SEOUL_HEIGHT);
             toolStripComboBoxStations.SelectedIndex = 12;
+            toolStripComboBoxBudget.SelectedIndex = 0;
             targetStationCount = 20;
 
             // Read OHCA events data
@@ -142,8 +143,9 @@ namespace DronePlacementSimulator
                 simulator = new Simulator();
             }
 
-            RUBIS rubis = new RUBIS(eventGrid, simulator, targetStationCount, targetStationCount * 2, ref polyCoordList); 
-            List<RubisStation> resultList = rubis.Calculate(eventList);
+            RUBIS rubis = new RUBIS(eventGrid, simulator, ref polyCoordList);
+            int budget = int.Parse(toolStripComboBoxBudget.SelectedItem.ToString());
+            List <RubisStation> resultList = rubis.Calculate(eventList, budget);
 
             stationList.Clear();
             foreach (RubisStation s in resultList)

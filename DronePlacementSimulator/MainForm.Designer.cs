@@ -49,6 +49,8 @@
             this.toolStripComboBoxStations = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBoxPolicy = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
+            this.toolStripComboBoxBudget = new System.Windows.Forms.ToolStripComboBox();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -216,7 +218,9 @@
             this.toolStripLabel1,
             this.toolStripComboBoxStations,
             this.toolStripLabel2,
-            this.toolStripComboBoxPolicy});
+            this.toolStripComboBoxPolicy,
+            this.toolStripLabel3,
+            this.toolStripComboBoxBudget});
             this.toolStrip1.Location = new System.Drawing.Point(0, 33);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(1120, 33);
@@ -275,6 +279,44 @@
             this.toolStripComboBoxPolicy.Name = "toolStripComboBoxPolicy";
             this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(275, 33);
             // 
+            // toolStripLabel3
+            // 
+            this.toolStripLabel3.Name = "toolStripLabel3";
+            this.toolStripLabel3.Size = new System.Drawing.Size(71, 30);
+            this.toolStripLabel3.Text = "Budget";
+            // 
+            // toolStripComboBoxBudget
+            // 
+            this.toolStripComboBoxBudget.Items.AddRange(new object[] {
+            "72000",
+            "76000",
+            "81000",
+            "85500",
+            "90000",
+            "95000",
+            "99000",
+            "104500",
+            "108000",
+            "114000",
+            "117000",
+            "123500",
+            "126000",
+            "133000",
+            "135000",
+            "142500",
+            "144000",
+            "152000",
+            "153000",
+            "161500",
+            "162000",
+            "171000",
+            "171000",
+            "180500",
+            "180000",
+            "190000"});
+            this.toolStripComboBoxBudget.Name = "toolStripComboBoxBudget";
+            this.toolStripComboBoxBudget.Size = new System.Drawing.Size(121, 33);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
@@ -324,5 +366,7 @@
         private System.Windows.Forms.ToolStripMenuItem savePlacementToolStripMenuItem;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxPolicy;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel3;
+        private System.Windows.Forms.ToolStripComboBox toolStripComboBoxBudget;
     }
 }

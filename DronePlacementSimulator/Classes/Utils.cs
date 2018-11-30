@@ -39,9 +39,8 @@ namespace DronePlacementSimulator
         public static double DRONE_LANDING_VELOCITY = 1.0; // m/s
         public static int DRONE_REST_TIME = 6;
 
-        public static int BUDGET = 600000;
-        public static int STATION_PRICE = 10000;
-        public static int DRONE_PRICE = 10000;
+        public static int STATION_PRICE = 8000;
+        public static int DRONE_PRICE = 1000;
 
         static Utils()
         {
