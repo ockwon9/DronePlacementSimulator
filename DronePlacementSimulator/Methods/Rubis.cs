@@ -64,6 +64,7 @@ namespace DronePlacementSimulator
                 // Step 1. Finds initial stations with a drone using K-Means
                 tempBudget = tempBudget - (stations * (Utils.STATION_PRICE + Utils.DRONE_PRICE));
                 KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+                prevStationList.Clear();
                 foreach (double[] d in kMeansStations.Means)
                 {
                     prevStationList.Add(new RubisStation(d[0], d[1], 1));
@@ -455,7 +456,7 @@ namespace DronePlacementSimulator
 
         private async Task<double> ComputeSurvivalRate(List<RubisCell> cellList)
         {
-            int coreCount = 12-1;
+            int coreCount = 5;
             List<Task<double>> tasks = new List<Task<double>>();
             int dividedLoad = cellList.Count / coreCount;
             int remainder = cellList.Count % coreCount;
