@@ -130,7 +130,15 @@ namespace DronePlacementSimulator
                                 prevStationList.Clear();
                                 foreach (double[] d in kMeansStations.Means)
                                 {
-                                    prevStationList.Add(new RubisStation(d[0], d[1], 2));
+                                    prevStationList.Add(new RubisStation(d[0], d[1], 1));
+                                }
+
+                                remainingDrones = (int)(tempBudget / Utils.DRONE_PRICE);
+                                while (remainingDrones > 0)
+                                {
+                                    int mostBusyStationIndex = getIndexOfMostBusyStation(prevStationList);
+                                    prevStationList[mostBusyStationIndex].droneList.Add(new Drone(prevStationList[mostBusyStationIndex].stationID));
+                                    remainingDrones--;
                                 }
 
                                 prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
@@ -447,7 +455,7 @@ namespace DronePlacementSimulator
 
         private async Task<double> ComputeSurvivalRate(List<RubisCell> cellList)
         {
-            int coreCount = 12;
+            int coreCount = 12-1;
             List<Task<double>> tasks = new List<Task<double>>();
             int dividedLoad = cellList.Count / coreCount;
             int remainder = cellList.Count % coreCount;
@@ -463,10 +471,12 @@ namespace DronePlacementSimulator
                 tasks.Add(ComputeSurvivalRateAsync(workObject));
             }
 
+            await Task.WhenAll(tasks);
+
             double sum = 0.0;
             for (int i = 0; i < coreCount; i++)
             {
-                sum += await Task.WhenAny(tasks).Result;
+                sum += tasks[i].Result;
             }
 
             return sum;
