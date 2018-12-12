@@ -126,8 +126,24 @@ namespace DronePlacementSimulator
                                 }*/
 
                                 Random rand = new Random();
-                                int pos = rand.Next(0, 990000);
-                                kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 10000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+
+                                bool okay = false;
+                                while (!okay)
+                                {
+                                    int pos = rand.Next(0, 990000);
+                                    kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 10000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+
+                                    okay = true;
+                                    foreach (double[] d in kMeansStations.Means)
+                                    {
+                                        if (d[0] == 0.0 || d[1] == 0.0)
+                                        {
+                                            okay = false;
+                                            break;
+                                        }
+                                    }
+                                }
+
                                 prevStationList.Clear();
                                 foreach (double[] d in kMeansStations.Means)
                                 {
@@ -205,7 +221,7 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    double time = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double time = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
                     if (time <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, time));
@@ -392,7 +408,7 @@ namespace DronePlacementSimulator
                 bool isCovered = false;
                 foreach (RubisStation s in stationList)
                 {
-                    double distance = simulator.GetPathPlanner().CalcuteFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double distance = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
                     if (distance <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
@@ -456,17 +472,18 @@ namespace DronePlacementSimulator
 
         private async Task<double> ComputeSurvivalRate(List<RubisCell> cellList)
         {
-            int coreCount = 5;
+            int coreCount = 12;
             List<Task<double>> tasks = new List<Task<double>>();
             int dividedLoad = cellList.Count / coreCount;
             int remainder = cellList.Count % coreCount;
+            RubisCell[] cellArray = cellList.ToArray();
 
             int pos = 0;
             for (int i = 0; i < coreCount; i++)
             {
                 int actualLoad = dividedLoad + (i < remainder ? 1 : 0);
                 RubisCell[] workLoad = new RubisCell[actualLoad];
-                Array.Copy(cellList.ToArray(), pos, workLoad, 0, actualLoad);
+                Array.Copy(cellArray, pos, workLoad, 0, actualLoad);
                 WorkObject workObject = new WorkObject(workLoad, i);
                 pos += actualLoad;
                 tasks.Add(ComputeSurvivalRateAsync(workObject));
@@ -495,6 +512,7 @@ namespace DronePlacementSimulator
                 i++;
             }
             double cdf = e * sum;
+
             return cdf;
         }
 

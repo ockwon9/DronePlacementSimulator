@@ -71,10 +71,40 @@ namespace DronePlacementSimulator
         private void PerformKMeans()
         {
             stationList.Clear();
-            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), targetStationCount, 100);
-            foreach (double[] d in stations.Means)
+            int budget = int.Parse(toolStripComboBoxBudget.SelectedItem.ToString());
+            Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
+                ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
+            double maxSurvivalRate = 0.0;
+
+            for (int i = 1; i <= budget / (Utils.DRONE_PRICE + Utils.STATION_PRICE); i++)
             {
-                stationList.Add(new Station(d[0], d[1], 2));
+                KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), i, 100);
+                List<Station> tempStationList = new List<Station>();
+                double[][] results = stations.Means.Clone() as double[][];
+                int numStations = results.Length;
+                int numDrones = (budget - Utils.STATION_PRICE * numStations) / Utils.DRONE_PRICE;
+                int fewer = numDrones / numStations;
+                int remainder = numDrones % numStations;
+                for (int j = 0; j < numStations; j++)
+                {
+                    tempStationList.Add(new Station(results[j][0], results[j][1], fewer + (j < remainder ? 1 : 0)));
+                }
+
+                Simulator tempSimulator = new Simulator();
+                tempSimulator.SetPolicy(policy);
+                tempSimulator.Simulate(tempStationList, eventGrid);
+                double survivalRate = tempSimulator.GetExpectedSurvivalRate();
+
+                if (survivalRate > maxSurvivalRate)
+                {
+                    maxSurvivalRate = survivalRate;
+                    stationList.Clear();
+
+                    foreach(Station s in tempStationList)
+                    {
+                        stationList.Add(s);
+                    }
+                }
             }
         }
 

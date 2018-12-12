@@ -32,7 +32,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public double CalcuteFlightTime(double srcX, double srcY, double dstX, double dstY)
+        public double CalculateFlightTime(double srcX, double srcY, double dstX, double dstY)
         {
             if (srcX < 0 || srcY < 0 || dstX < 0 || dstY < 0)
             {

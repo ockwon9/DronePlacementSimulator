@@ -33,7 +33,7 @@ namespace DronePlacementSimulator
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int MINUTES_IN_4_YEARS = 2103840;
 
-        public static double DRONE_VELOCITY = 2.0;
+        public static double DRONE_VELOCITY = 1.5;
         public static double BASE_FLIGHT_HEIGHT = 10.0; // meter
         public static double DRONE_TAKE_OFF_VELOCITY = 2.0; // m/s
         public static double DRONE_LANDING_VELOCITY = 1.0; // m/s

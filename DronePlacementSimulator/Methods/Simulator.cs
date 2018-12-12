@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using Nito.AsyncEx;
+using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
@@ -53,14 +55,6 @@ namespace DronePlacementSimulator
             survivalRateGain = 0.0;
             survivalRateLoss = 0.0;
 
-            // Instance Test
-            foreach (Station s in stationList)
-            {
-                s.droneList.Clear();
-                s.droneList.Add(new Drone(1));
-                s.droneList.Add(new Drone(1));
-            }
-
             int n = stationList.Count;
             int[] initialCount = new int[n];
             for (int i = 0; i < n; i++)
@@ -92,7 +86,7 @@ namespace DronePlacementSimulator
                 }
                 else
                 {
-                    double flightTime = pathPlanner.CalcuteFlightTime(rStationList[dispatchFrom].kiloX, rStationList[dispatchFrom].kiloY, e.kiloX, e.kiloY);
+                    double flightTime = pathPlanner.CalculateFlightTime(rStationList[dispatchFrom].kiloX, rStationList[dispatchFrom].kiloY, e.kiloX, e.kiloY);
                     sum += CalculateSurvivalRate(flightTime);
                     current.Dispatch(dispatchFrom, e.occurrenceTime);
                 }
@@ -121,7 +115,7 @@ namespace DronePlacementSimulator
             {
                 RubisStation s = rStationList[i];
                 index[i] = i;
-                distance[i] = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+                distance[i] = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
 
                 for (int j = i; j > 0; j--)
                 {
@@ -177,7 +171,7 @@ namespace DronePlacementSimulator
             foreach (RubisStation s in rStationList)
             {
                 int index = rStationList.IndexOf(s);
-                double time = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+                double time = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
 
                 if (time <= Utils.GOLDEN_TIME)
                 {
@@ -207,8 +201,8 @@ namespace DronePlacementSimulator
             {
                 secondChoices++;
                 /*
-                double nearestDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
-                double resultDistance = pathPlanner.CalcuteFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
+                double nearestDistance = pathPlanner.CalculateFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
+                double resultDistance = pathPlanner.CalculateFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
                 survivalRateLoss = survivalRateLoss + (CalculateSurvivalRate(resultDistance) - CalculateSurvivalRate(nearestDistance));
 
                 // Look-ahead simulation
@@ -224,7 +218,7 @@ namespace DronePlacementSimulator
                     int dispatchFrom = GetNearestStation(stationList, ref tempCounter, next);
                     if (dispatchFrom != -1 && dispatchFrom != -2)
                     {
-                        double flightTime = pathPlanner.CalcuteFlightTime(next.kiloX, next.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
+                        double flightTime = pathPlanner.CalculateFlightTime(next.kiloX, next.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
                         if (dispatchFrom == nearestIndex)
                         {
                             KeyValuePair<int, double> secondStation = GetSecondNearestStation(stationList, next);
@@ -252,7 +246,7 @@ namespace DronePlacementSimulator
             for(int i = 0; i < stationList.Count; i++)
             {
                 Station s = stationList[i];
-                double distance = pathPlanner.CalcuteFlightTime(next.kiloX, next.kiloY, s.kiloX, s.kiloY);
+                double distance = pathPlanner.CalculateFlightTime(next.kiloX, next.kiloY, s.kiloX, s.kiloY);
                 distanceList.Add(new KeyValuePair<int, double>(i, distance));
             }
             distanceList.Sort((a, b) => a.Value >= b.Value ? 1 : -1);
@@ -263,6 +257,8 @@ namespace DronePlacementSimulator
         {
             double prev = GetOverallSurvivalRate(s, counter, false);
             double next = GetOverallSurvivalRate(s, counter, true);
+            Console.WriteLine("prev = " + prev + ", next = " + next);
+            Console.WriteLine((1 - ProbabilityMassFunction(0, Utils.DRONE_REST_TIME * 60 * s.pdfSum)) * (prev - next));
             return (1 - ProbabilityMassFunction(0, Utils.DRONE_REST_TIME * 60 * s.pdfSum)) * (prev - next);
             //return prev - next;
         }
@@ -270,7 +266,6 @@ namespace DronePlacementSimulator
         private double GetOverallSurvivalRate(RubisStation targetStation, Counter counter, bool dispatch)
         {
             RubisStation tempStation = new RubisStation(targetStation);
-            double overallSum = 0.0;
 
             int[] ready = new int[rStationList.Count];
             for (int i = 0; i < rStationList.Count; i++)
@@ -284,24 +279,80 @@ namespace DronePlacementSimulator
                 ready[index]--;
             }
 
-            foreach (RubisCell cell in tempStation.cellList)
+            // Calculates the survival rate for each cell
+            double overallSum = AsyncContext.Run(() => ComputeSurvivalRate(tempStation.cellList, ready));
+            double survivalRate = overallSum / tempStation.cellList.Count;
+            return survivalRate;
+        }
+
+        private class WorkObject
+        {
+            public RubisCell[] cellList;
+            public int index;
+            public int[] ready;
+
+            public WorkObject(RubisCell[] cellList, int index, int[] ready)
+            {
+                this.cellList = cellList.Clone() as RubisCell[];
+                this.index = index;
+                this.ready = ready.Clone() as int[];
+            }
+        }
+
+        private double ComputeSurvivalRateDoWork(WorkObject workObject)
+        {
+            double sum = 0.0;
+            foreach (RubisCell cell in workObject.cellList)
             {
                 double pSum = 0.0;
                 foreach (StationDistancePair pair in cell.stations)
                 {
                     RubisStation s = pair.station;
                     int index = rStationList.IndexOf(s);
-                    if(ready[index] > 0)
+                    if (workObject.ready[index] > 0)
                     {
-                        double prob = (1 - pSum) * ProbabilityMassFunction(ready[index] - 1, Utils.DRONE_REST_TIME * 60 * s.pdfSum);
+                        double prob = (1 - pSum) * ProbabilityMassFunction(workObject.ready[index] - 1, Utils.DRONE_REST_TIME * 60 * s.pdfSum);
                         pSum += prob;
                         cell.survivalRate = cell.survivalRate + (prob * CalculateSurvivalRate(pair.distance));
                     }
                 }
-                overallSum += cell.survivalRate;
+                sum += cell.survivalRate;
+            }
+            return sum;
+        }
+
+        private async Task<double> ComputeSurvivalRateAsync(WorkObject workObject)
+        {
+            return await Task.Run(() => ComputeSurvivalRateDoWork(workObject));
+        }
+
+        private async Task<double> ComputeSurvivalRate(List<RubisCell> cellList, int[] ready)
+        {
+            int coreCount = 12;
+            List<Task<double>> tasks = new List<Task<double>>();
+            int dividedLoad = cellList.Count / coreCount;
+            int remainder = cellList.Count % coreCount;
+
+            int pos = 0;
+            for (int i = 0; i < coreCount; i++)
+            {
+                int actualLoad = dividedLoad + (i < remainder ? 1 : 0);
+                RubisCell[] workLoad = new RubisCell[actualLoad];
+                Array.Copy(cellList.ToArray(), pos, workLoad, 0, actualLoad);
+                WorkObject workObject = new WorkObject(workLoad, i, ready);
+                pos += actualLoad;
+                tasks.Add(ComputeSurvivalRateAsync(workObject));
             }
 
-            return overallSum / tempStation.cellList.Count;
+            await Task.WhenAll(tasks);
+
+            double sum = 0.0;
+            for (int i = 0; i < coreCount; i++)
+            {
+                sum += tasks[i].Result;
+            }
+
+            return sum;
         }
 
         public void SetRubisMethod(Grid eventGrid, List<Station> stationList)
@@ -323,7 +374,7 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in rStationList)
                 {
-                    double time = pathPlanner.CalcuteFlightTime(s.kiloX, s.kiloY, cell.kiloX, cell.kiloY);
+                    double time = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, cell.kiloX, cell.kiloY);
                     if (time <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, time));
