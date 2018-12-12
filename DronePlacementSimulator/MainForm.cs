@@ -28,6 +28,7 @@ namespace DronePlacementSimulator
         private Grid eventGrid = null;
         private Bitmap _canvas = null;
         private int targetStationCount;
+        private bool placedStations = false;
 
         public int coverRange = 0;
         
@@ -106,6 +107,8 @@ namespace DronePlacementSimulator
                     }
                 }
             }
+
+            placedStations = true;
         }
 
         private void PerformPulver()
@@ -117,6 +120,7 @@ namespace DronePlacementSimulator
                 stationList.Add(new Station(eventGrid.inSeoul[i].kiloX, eventGrid.inSeoul[i].kiloY, 0));
             }
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
+            placedStations = true;
         }
 
         private void PerformBoutilier()
@@ -164,6 +168,8 @@ namespace DronePlacementSimulator
                 }
                 file2.Close();
             }
+
+            placedStations = true;
         }
 
         private void PerformRUBIS()
@@ -182,6 +188,8 @@ namespace DronePlacementSimulator
             {
                 stationList.Add(s);
             }
+
+            placedStations = true;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -503,10 +511,47 @@ namespace DronePlacementSimulator
             this.Invalidate();
         }
 
+        private void SaveLastStations()
+        {
+            StreamWriter file = new StreamWriter("Last.csv");
+            for (int i = 0; i < stationList.Count; i++)
+            {
+                file.Write(stationList[i].kiloX);
+                file.Write(',');
+                file.Write(stationList[i].kiloY);
+                file.Write(',');
+                file.Write(stationList[i].droneList.Count);
+                file.Write("\n");
+            }
+            file.Close();
+        }
+
+        private void LoadLastStations()
+        {
+            StreamReader file = new StreamReader("Last.csv");
+            String line = file.ReadLine();
+            while (line != null)
+            {
+                string[] split = line.Split(',');
+                stationList.Add(new Station(double.Parse(split[0]), double.Parse(split[1]), int.Parse(split[2])));
+                line = file.ReadLine();
+            }
+            file.Close();
+        }
+
         private void ClickRunSimulation(object sender, EventArgs e)
         {
             Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
                 ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
+
+            if (!placedStations)
+            {
+                LoadLastStations();
+            }
+            else
+            {
+                SaveLastStations();
+            }
 
             if (writeSimulation)
             {
