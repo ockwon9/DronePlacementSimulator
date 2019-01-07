@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -16,8 +17,8 @@ namespace DronePlacementSimulator
         public static double MAX_LONGITUDE = 127.1831312;
         public static double MIN_LATITUDE = 37.42834757;
         public static double MAX_LATITUDE = 37.70130154;
-        public static double SEOUL_WIDTH = 36.89;
-        public static double SEOUL_HEIGHT = 30.35;
+        public static double RANGE_LONGTITUDE = MAX_LONGITUDE - MIN_LONGITUDE;
+        public static double RANGE_LATITUDE = MAX_LATITUDE - MIN_LATITUDE;
         
         public static int ROW_NUM = 305;
         public static int COL_NUM = 370;
@@ -45,34 +46,19 @@ namespace DronePlacementSimulator
         static Utils()
         {
             SCREEN_HEIGHT = Screen.PrimaryScreen.Bounds.Height;
-            SCREEN_WIDTH = (int)(SCREEN_HEIGHT * SEOUL_WIDTH / SEOUL_HEIGHT);
+            SCREEN_WIDTH = (int)(SCREEN_HEIGHT * RANGE_LONGTITUDE / RANGE_LATITUDE);
         }
 
-        public static int TransformKiloXToPixel(double kiloX)
+        public static int TransformLonToPixel(double lon)
         {           
-            double ratio = kiloX / SEOUL_WIDTH;
+            double ratio = (lon - MIN_LONGITUDE) / RANGE_LONGTITUDE;
             return (int)(SCREEN_WIDTH * ratio);
         }
 
-        public static int TransformKiloYToPixel(double kiloY)
+        public static int TransformLatToPixel(double lat)
         {
-            double ratio = kiloY / SEOUL_HEIGHT;
+            double ratio = (lat - MIN_LATITUDE) / RANGE_LATITUDE;
             return SCREEN_HEIGHT - (int)(SCREEN_HEIGHT * ratio);
-        }
-
-        public static double LonToKilos(double longitude)
-        {
-            return (longitude - MIN_LONGITUDE) / 0.4185506 * SEOUL_WIDTH;
-        }
-
-        public static double LatToKilos(double latitude)
-        {
-            return (latitude - MIN_LATITUDE) / 0.27295397 * SEOUL_HEIGHT;
-        }
-
-        public static double GetDistance(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
         }
     }
 }

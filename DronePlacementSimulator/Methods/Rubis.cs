@@ -408,8 +408,8 @@ namespace DronePlacementSimulator
                 bool isCovered = false;
                 foreach (RubisStation s in stationList)
                 {
-                    double distance = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
-                    if (distance <= Utils.GOLDEN_TIME)
+                    double time = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    if (time <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
                         break;
@@ -518,7 +518,7 @@ namespace DronePlacementSimulator
 
         private double CalculateSurvivalRate(double time)
         {
-            return (time <= Utils.GOLDEN_TIME) ? (0.7 - (Utils.SURVIVAL_RATE_SLOPE * time / Utils.GOLDEN_TIME)) : 0.0;
+            return (time <= Utils.GOLDEN_TIME) ? (0.7 - ((Utils.SURVIVAL_RATE_SLOPE * time) / Utils.GOLDEN_TIME)) : 0.0;
         }
 
         private void CloneList(List<RubisStation> srcList, List<RubisStation> dstList)

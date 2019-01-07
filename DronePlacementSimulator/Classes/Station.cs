@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -7,15 +8,14 @@ namespace DronePlacementSimulator
         private static int ID = 100;
 
         public int stationID;
-        public double kiloX, kiloY;
+        public GeoCoordinate geo;
         public int pixelX, pixelY;
         public List<Drone> droneList;
         public int eventCount;
 
         public Station()
         {
-            this.kiloX = 0.0;
-            this.kiloY = 0.0;
+            this.geo = new GeoCoordinate(0, 0);
             this.pixelX = 0;
             this.pixelY = 0;
             this.eventCount = 0;
@@ -23,13 +23,12 @@ namespace DronePlacementSimulator
             droneList = new List<Drone>();
         }
 
-        public Station(double kiloX, double kiloY, int drones)
+        public Station(GeoCoordinate geo, int drones)
         {
             this.stationID = ID++;
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.geo = geo;
+            this.pixelX = Utils.TransformLonToPixel(geo.Longitude);
+            this.pixelY = Utils.TransformLatToPixel(geo.Latitude);
             this.eventCount = 0;
 
             droneList = new List<Drone>();
@@ -42,8 +41,7 @@ namespace DronePlacementSimulator
         public Station(Station copy)
         {
             this.stationID = copy.stationID;
-            this.kiloX = copy.kiloX;
-            this.kiloY = copy.kiloY;
+            this.geo = copy.geo;
             this.pixelX = copy.pixelX;
             this.pixelY = copy.pixelY;
             this.eventCount = 0;
@@ -84,15 +82,14 @@ namespace DronePlacementSimulator
             {
                 return false;
             }
-            return (this.kiloX == other.kiloX && this.kiloY == other.kiloY);
+            return (this.geo == other.geo);
         }
 
-        public void SetLocation(double kiloX, double kiloY)
+        public void SetLocation(GeoCoordinate geo)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.geo = geo;
+            this.pixelX = Utils.TransformLonToPixel(geo.Longitude);
+            this.pixelY = Utils.TransformLatToPixel(geo.Latitude);
         }
     }
 }

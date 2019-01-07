@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -7,15 +8,13 @@ namespace DronePlacementSimulator
     {
         public int xIndex;
         public int yIndex;
-        public double kiloX;
-        public double kiloY;
+        public GeoCoordinate geo;
 
-        public Pair(int xIndex, int yIndex, double kiloX, double kiloY)
+        public Pair(int xIndex, int yIndex, GeoCoordinate geo)
         {
             this.xIndex = xIndex;
             this.yIndex = yIndex;
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
+            this.geo = geo;
         }
     }
 
