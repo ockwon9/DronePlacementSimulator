@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -12,18 +9,22 @@ namespace DronePlacementSimulator
         public static int SCREEN_WIDTH;
         public static int SCREEN_HEIGHT;
 
-        public static double MIN_LONGITUDE = 126.7645806;
-        public static double MAX_LONGITUDE = 127.1831312;
         public static double MIN_LATITUDE = 37.42834757;
         public static double MAX_LATITUDE = 37.70130154;
+        public static double MIN_LONGITUDE = 126.7645806;
+        public static double MAX_LONGITUDE = 127.1831312;
+        public static double RANGE_LATITUDE = MAX_LATITUDE - MIN_LATITUDE;
+        public static double RANGE_LONGITUDE = MAX_LONGITUDE - MIN_LONGITUDE;
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
-        
-        public static int ROW_NUM = 305;
-        public static int COL_NUM = 370;
 
-        public static double UNIT = 0.5;
-        public static double LAMBDA_PRECISION = 0.1;
+        public static double UNIT = 0.1;
+        public static int ROW_NUM = (int)Math.Ceiling(SEOUL_HEIGHT / UNIT);
+        public static int COL_NUM = (int)Math.Ceiling(SEOUL_WIDTH / UNIT);
+
+        public static double LAT_UNIT = RANGE_LATITUDE / ROW_NUM;
+        public static double LON_UNIT = RANGE_LONGITUDE / COL_NUM;
+        
         public static double GOLDEN_TIME = 5;
         public static double SURVIVAL_RATE_SLOPE = 0.2;
 
@@ -33,10 +34,10 @@ namespace DronePlacementSimulator
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int MINUTES_IN_4_YEARS = 2103840;
 
-        public static double DRONE_VELOCITY = 1.5;
-        public static double BASE_FLIGHT_HEIGHT = 10.0; // meter
-        public static double DRONE_TAKE_OFF_VELOCITY = 2.0; // m/s
-        public static double DRONE_LANDING_VELOCITY = 1.0; // m/s
+        public static double DRONE_VELOCITY = 1;
+        public static double BASE_FLIGHT_HEIGHT = 0.01;
+        public static double DRONE_TAKE_OFF_VELOCITY = 0.12;
+        public static double DRONE_LANDING_VELOCITY = 0.06;
         public static int DRONE_REST_TIME = 6;
 
         public static int STATION_PRICE = 8000;
@@ -48,31 +49,41 @@ namespace DronePlacementSimulator
             SCREEN_WIDTH = (int)(SCREEN_HEIGHT * SEOUL_WIDTH / SEOUL_HEIGHT);
         }
 
-        public static int TransformKiloXToPixel(double kiloX)
-        {           
-            double ratio = kiloX / SEOUL_WIDTH;
-            return (int)(SCREEN_WIDTH * ratio);
-        }
-
-        public static int TransformKiloYToPixel(double kiloY)
+        public static int TransformLatToPixel(double lat)
         {
-            double ratio = kiloY / SEOUL_HEIGHT;
+            double ratio = lat / RANGE_LATITUDE;
             return SCREEN_HEIGHT - (int)(SCREEN_HEIGHT * ratio);
         }
 
-        public static double LonToKilos(double longitude)
-        {
-            return (longitude - MIN_LONGITUDE) / 0.4185506 * SEOUL_WIDTH;
+        public static int TransformLonToPixel(double lon)
+        {           
+            double ratio = lon / RANGE_LONGITUDE;
+            return (int)(SCREEN_WIDTH * ratio);
         }
 
-        public static double LatToKilos(double latitude)
+        public static int ConvertLatToRow(double lat)
         {
-            return (latitude - MIN_LATITUDE) / 0.27295397 * SEOUL_HEIGHT;
+            return (int)Math.Ceiling((lat - MIN_LATITUDE) / LAT_UNIT - 0.5);
         }
 
-        public static double GetDistance(double x1, double y1, double x2, double y2)
+        public static int ConvertLonToCol(double lon)
         {
-            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            return (int)Math.Ceiling((lon - MIN_LONGITUDE) / LON_UNIT - 0.5);
+        }
+
+        public static double ConvertRowToLat(int row)
+        {
+            return MIN_LATITUDE + (row + 0.5) * LAT_UNIT;
+        }
+
+        public static double ConvertColToLon(int col)
+        {
+            return MIN_LONGITUDE + (col + 0.5) * LON_UNIT;
+        }
+
+        public static double GetDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            return new GeoCoordinate(lat1, lon1).GetDistanceTo(new GeoCoordinate(lat2, lon2));
         }
     }
 }

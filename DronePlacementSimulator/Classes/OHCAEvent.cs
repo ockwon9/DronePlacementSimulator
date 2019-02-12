@@ -7,37 +7,37 @@ namespace DronePlacementSimulator
         private static int ID = 10000;
         
         public int eventID;
-        public double kiloX, kiloY;
-        public int pixelX, pixelY;
+        public double lat, lon;
+        public int pixelRow, pixelCol;
         public DateTime occurrenceTime;
         public int assignedStationId;
         
-        public OHCAEvent(double kiloX, double kiloY, DateTime occurrenceTime)
+        public OHCAEvent(double lat, double lon, DateTime occurrenceTime)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.lat = lat;
+            this.lon = lon;
+            this.pixelRow = Utils.TransformLatToPixel(lat);
+            this.pixelCol = Utils.TransformLonToPixel(lon);
             this.occurrenceTime = occurrenceTime;
             this.eventID = ID++;
         }
 
         public OHCAEvent(OHCAEvent e)
         {
-            this.kiloX = e.kiloX;
-            this.kiloY = e.kiloY;
-            this.pixelX = e.pixelX;
-            this.pixelY = e.pixelY;
+            this.lat = e.lat;
+            this.lon = e.lon;
+            this.pixelRow = e.pixelRow;
+            this.pixelCol = e.pixelCol;
             this.occurrenceTime = e.occurrenceTime;
             this.eventID = e.eventID;
         }
 
-        public void SetLocation(double kiloX, double kiloY)
+        public void SetLocation(double lat, double lon)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.lat = lat;
+            this.lon = lon;
+            this.pixelRow = Utils.TransformLatToPixel(lat);
+            this.pixelCol = Utils.TransformLonToPixel(lon);
         }
     }
 }

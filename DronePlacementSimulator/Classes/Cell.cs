@@ -2,27 +2,25 @@
 {
     class Cell
     {
-        public double kiloX;
-        public double kiloY;
-        public int intX;
-        public int intY;
+        public double lat, lon;
+        public int row, col;
         public int eventCount;
 
         public Cell()
         {
-            this.kiloX = 0.0;
-            this.kiloY = 0.0;
-            this.intX = 0;
-            this.intY = 0;
+            this.lat = 0.0;
+            this.lon = 0.0;
+            this.row = 0;
+            this.col = 0;
             this.eventCount = 0;
         }
 
-        public Cell(double kiloX, double kiloY, int j, int i)
+        public Cell(double lat, double lon, int i, int j)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.intX = j;
-            this.intY = i;
+            this.lat = lat;
+            this.lon = lon;
+            this.row = i;
+            this.col = j;
             this.eventCount = 0;
         }
 

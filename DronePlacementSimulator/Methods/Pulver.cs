@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Nito.AsyncEx;
 using Gurobi;
-using System.ComponentModel;
 using System.IO;
+using System.Device.Location;
 
 
 namespace DronePlacementSimulator
@@ -16,14 +13,13 @@ namespace DronePlacementSimulator
     class Pulver
     {
         private static bool DEBUG = false;
-        private static double square = (25 * Utils.LAMBDA_PRECISION * Utils.LAMBDA_PRECISION);
         private List<Station> stationList;
         private int n;
         private int m;
 
         private double w;
         private double h;
-        private double[][] b;
+        private double[,] b;
         private double optimalCoverage;
         private List<double> demandList;
         private List<int>[] N;
@@ -31,16 +27,12 @@ namespace DronePlacementSimulator
         public Pulver (double w, int p, double h, List<Station> stationList, Grid grid)
         {
             this.stationList = stationList.ConvertAll(s => new Station(s));
-            this.n = grid.inSeoul.Count;
+            this.n = grid.seoulCells.Count;
             this.m = stationList.Count;
             this.w = w;
             this.h = h;
 
-            this.b = new double[n][];
-            for (int i = 0; i < n; i++)
-            {
-                b[i] = new double[m];
-            }
+            this.b = new double[n, m];
 
             this.demandList = new List<double>();
             this.Demandify(grid);
@@ -58,7 +50,7 @@ namespace DronePlacementSimulator
                 this.N[i] = new List<int>();
             }
             BoundByT(ref grid, ref stationList);
-            this.optimalCoverage = OptimalCoverage(n, m, w, p, h, ref b, ref this.N, ref this.demandList, ref stationList);
+            this.optimalCoverage = OptimalCoverage(p, ref stationList);
         }
 
         public void ReadDemand()
@@ -76,7 +68,7 @@ namespace DronePlacementSimulator
                     string[] split = line.Split(',');
                     for (int j = 0; j < m; j++)
                     {
-                        this.b[row][j] = double.Parse(split[j]);
+                        this.b[row, j] = double.Parse(split[j]);
                     }
                     row++;
                 }
@@ -86,12 +78,12 @@ namespace DronePlacementSimulator
 
         private class WorkObject
         {
-            public Pair[] load;
+            public GeoCoordinate[] load;
             public int index;
             public int row;
-            public WorkObject(Pair[] load, int index, int row)
+            public WorkObject(GeoCoordinate[] load, int index, int row)
             {
-                this.load = load.Clone() as Pair[];
+                this.load = load.Clone() as GeoCoordinate[];
                 this.index = index;
                 this.row = row;
             }
@@ -108,9 +100,8 @@ namespace DronePlacementSimulator
                 int k = i + workObject.row;
                 for (int j = 0; j < this.m; j++)
                 {
-                    this.b[k][j] = overlap.Area(workObject.load[i].kiloX, workObject.load[i].kiloY, 5 * Utils.LAMBDA_PRECISION, 5 * Utils.LAMBDA_PRECISION, stationList[j].kiloX, stationList[j].kiloY, Utils.GOLDEN_TIME);
-                    this.b[k][j] /= square;
-                    file.Write(this.b[k][j]);
+                    this.b[k, j] = overlap.Area(workObject.load[i].Latitude, workObject.load[i].Longitude, Utils.LAT_UNIT, Utils.LON_UNIT, stationList[j].lat, stationList[j].lon, Utils.GOLDEN_TIME);
+                    file.Write(this.b[k, j]);
                     file.Write(",");
                 }
                 file.Write("\n");
@@ -137,8 +128,13 @@ namespace DronePlacementSimulator
             for (int i = 0; i < coreCount; i++)
             {
                 int actualLoad = dividedLoad + ((i < rem) ? 1 : 0);
-                Pair[] workLoad = new Pair[actualLoad];
-                Array.Copy(grid.inSeoul.ToArray(), row, workLoad, 0, actualLoad);
+                GeoCoordinate[] workLoad = new GeoCoordinate[actualLoad];
+                for (int j = 0; j < actualLoad; j++)
+                {
+                    double lat = Utils.ConvertRowToLat(grid.seoulCells[row + j].row);
+                    double lon = Utils.ConvertColToLon(grid.seoulCells[row + j].col);
+                    workLoad[j] = new GeoCoordinate(lat, lon);
+                }
                 WorkObject workObject = new WorkObject(workLoad, i, row);
                 row += actualLoad;
                 tasks.Add(QuantifyAsync(workObject));
@@ -156,7 +152,7 @@ namespace DronePlacementSimulator
             double maxDemand = grid.GetMaxDemand();
             for (int i = 0; i < n; i++)
             {
-                this.demandList.Add(grid.pooledLambda[grid.inSeoul[i].yIndex][grid.inSeoul[i].xIndex] / (25 * maxDemand));
+                this.demandList.Add(grid.lambda[grid.seoulCells[i].row, grid.seoulCells[i].col] / maxDemand);
             }
 
             return this.demandList.Count;
@@ -168,7 +164,7 @@ namespace DronePlacementSimulator
             {
                 for (int j = 0; j < this.m; j++)
                 {
-                    if (this.b[i][j] > 0)
+                    if (this.b[i, j] > 0)
                     {
                         this.N[i].Add(j);
                     }
@@ -176,7 +172,7 @@ namespace DronePlacementSimulator
             }
         }
 
-        public double OptimalCoverage(int n, int m, double w, int p, double h, ref double[][] b, ref List<int>[] N, ref List<double> demandList, ref List<Station> stationList)
+        public double OptimalCoverage(int p, ref List<Station> stationList)
         {
             double res = -1;
 
@@ -226,7 +222,7 @@ namespace DronePlacementSimulator
                     GRBLinExpr expr = 0.0;
                     foreach (int j in N[i])
                     {
-                        expr.AddTerm(b[i][j], X[j]);
+                        expr.AddTerm(b[i, j], X[j]);
                     }
                     expr.AddTerm(-1.0, Z[i]);
                     model.AddConstr(expr, GRB.GREATER_EQUAL, 0.0, "c0_" + i);
@@ -307,7 +303,7 @@ namespace DronePlacementSimulator
                     }
                     
                     if (/*DEBUG && */numDrone > 0)
-                        Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + stationList[l].kiloX + ", " + stationList[l].kiloY + ")");
+                        Console.WriteLine(numDrone + " drones at station " + l + ", which is at (" + stationList[l].lat + ", " + stationList[l].lon + ")");
                 }
                 for (int l = stationList.Count - 1; l >= 0; l--)
                 {

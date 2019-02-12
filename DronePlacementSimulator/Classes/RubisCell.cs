@@ -22,10 +22,10 @@ namespace DronePlacementSimulator
 
         public RubisCell(Cell cell, double pdf)
         {
-            this.kiloX = cell.kiloX;
-            this.kiloY = cell.kiloY;
-            this.intX = cell.intX;
-            this.intY = cell.intY; 
+            this.lat = cell.lat;
+            this.lon = cell.lon;
+            this.row = cell.row;
+            this.col = cell.col;
             this.pdf = pdf;
             survivalRate = 0.0;
             stations = new List<StationDistancePair>();
@@ -33,10 +33,10 @@ namespace DronePlacementSimulator
 
         public RubisCell(RubisCell cell)
         {
-            this.kiloX = cell.kiloX;
-            this.kiloY = cell.kiloY;
-            this.intX = cell.intX;
-            this.intY = cell.intY;
+            this.lat = cell.lat;
+            this.lon = cell.lon;
+            this.row = cell.row;
+            this.col = cell.col;
             this.pdf = cell.pdf;
             survivalRate = cell.survivalRate;
             stations = new List<StationDistancePair>();

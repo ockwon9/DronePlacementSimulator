@@ -32,55 +32,54 @@ namespace DronePlacementSimulator
             }
         }
 
-        public double CalculateFlightTime(double srcX, double srcY, double dstX, double dstY)
+        public double CalculateFlightTime(double srcLat, double srcLon, double dstLat, double dstLon)
         {
-            if (srcX < 0 || srcY < 0 || dstX < 0 || dstY < 0)
-            {
-                return Double.PositiveInfinity;
-            }
+            double distance = Utils.GetDistance(srcLat, srcLon, dstLat, dstLon);
 
-            double distance = GetDistance(srcX, srcY, dstX, dstY);
-
-            int srcCol = ConvertKiloToCol(srcX);
-            int srcRow = ConvertKiloToRow(srcY);
+            int srcRow = Utils.ConvertLatToRow(srcLat);
+            int srcCol = Utils.ConvertLonToCol(srcLon);
             double srcHeight = land_elevation[srcRow, srcCol];
 
-            int dstCol = ConvertKiloToCol(dstX);
-            int dstRow = ConvertKiloToRow(dstY);
+            int dstRow = Utils.ConvertLatToRow(dstLat);
+            int dstCol = Utils.ConvertLonToCol(dstLon);
             double dstHeight = land_elevation[dstRow, dstCol];
 
-            double maxHeightOnRoute = getMaxHeight(srcX, srcY, dstX, dstY);
+            double maxHeightOnRoute = getMaxHeight(srcLat, srcLon, dstLat, dstLon);
             double takeOffHeight = maxHeightOnRoute - srcHeight + Utils.BASE_FLIGHT_HEIGHT;
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.BASE_FLIGHT_HEIGHT;
             
-            return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY / 60) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY / 60);
+            return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY);
         }
 
-        private double getMaxHeight(double srcX, double srcY, double dstX, double dstY)
+        private double Intersect(int row1, int col1, int row2, int col2, int row)
         {
-            if (srcX > dstX)
+            return col1 + 0.5 + (col2 - col1) * (row - row1 - 0.5) / (row2 - row1);
+        }
+
+        private double getMaxHeight(double srcLat, double srcLon, double dstLat, double dstLon)
+        {
+            int srcRow = Utils.ConvertLatToRow(srcLat);
+            int srcCol = Utils.ConvertLonToCol(srcLon);
+
+            int dstRow = Utils.ConvertLatToRow(dstLat);
+            int dstCol = Utils.ConvertLonToCol(dstLon);
+
+            if (srcRow > dstRow || srcRow == dstRow && srcCol > dstCol)
             {
-                Swap<double>(ref srcX, ref dstX);
-                Swap<double>(ref srcY, ref dstY);
+                Swap<int>(ref srcRow, ref dstRow);
+                Swap<int>(ref srcCol, ref dstCol);
             }
 
-            int srcCol = ConvertKiloToCol(srcX);
-            int srcRow = ConvertKiloToRow(srcY);
-
-            int dstCol = ConvertKiloToCol(dstX);
-            int dstRow = ConvertKiloToRow(dstY);
-
-            int diffCol = dstCol - srcCol;
             int diffRow = dstRow - srcRow;
-            int rowIncrement = (diffRow < 0) ? -1 : 1;
+            int diffCol = dstCol - srcCol;
 
             double maxHeight = 0.0;
 
-            if (diffCol == 0) // Vertical movement
+            if (srcRow == dstRow)
             {
-                for (int i = 0; i <= diffRow; i = i + 100)
+                for (int col = srcCol; col <= dstCol; col++)
                 {
-                    double height = getHeight(srcRow + (i * rowIncrement), srcCol);
+                    double height = getHeight(srcRow, col);
                     if (height > maxHeight)
                     {
                         maxHeight = height;
@@ -89,15 +88,29 @@ namespace DronePlacementSimulator
             }
             else
             {
-                for (int i = 0; i <= diffCol; i = i + 100)
+                int minCol = (srcCol < dstCol) ? srcCol : dstCol;
+                int maxCol = (srcCol > dstCol) ? srcCol : dstCol;
+                for (int row = srcRow; row <= dstRow; row++)
                 {
-                    int midCol = srcCol + i; // The mid index between srcCol and dstCol
-                    int midRow = srcRow + (int)(diffRow * i / diffCol); // The mid index between srcRow and dstRow
-
-                    double height = getHeight(midRow, midCol);
-                    if (height > maxHeight)
+                    int min = (int)Math.Floor(Intersect(srcRow, srcCol, dstRow, dstCol, row));
+                    if (min < minCol)
                     {
-                        maxHeight = height;
+                        min = minCol;
+                    }
+
+                    int max = (int)Math.Ceiling(Intersect(srcRow, srcCol, dstRow, dstCol, row + 1));
+                    if (max > maxCol)
+                    {
+                        max = maxCol;
+                    }
+
+                    for (int col = min; col <= max; col++)
+                    {
+                        double height = getHeight(row, col);
+                        if (height > maxHeight)
+                        {
+                            maxHeight = height;
+                        }
                     }
                 }
             }
@@ -110,21 +123,6 @@ namespace DronePlacementSimulator
             return land_elevation[row, col] + building_height[row, col];
         }
 
-        private int ConvertKiloToCol(double kiloX)
-        {
-            return (int)(Utils.COL_NUM * kiloX / Utils.SEOUL_WIDTH);
-        }
-
-        private int ConvertKiloToRow(double kiloY)
-        {
-            return (int)(Utils.ROW_NUM * (Utils.SEOUL_HEIGHT - kiloY) / Utils.SEOUL_HEIGHT);
-        }
-        
-        private double GetDistance(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-        }
-
         private void ReadHeight()
         {
             StreamReader sr1 = new StreamReader("land_elevation.txt");
@@ -133,14 +131,15 @@ namespace DronePlacementSimulator
             {
                 for (int j = 0; j < Utils.COL_NUM; j++)
                 {
-                    land_elevation[i, j] = Double.Parse(sr1.ReadLine().Split('\t')[2]);
-                    building_height[i, j] = Double.Parse(sr2.ReadLine().Split('\t')[2]);
+                    land_elevation[i, j] = Double.Parse(sr1.ReadLine().Split('\t')[2]) / 1000;
+                    building_height[i, j] = Double.Parse(sr2.ReadLine().Split('\t')[2]) / 1000;
                 }
             }
             sr1.Close();
             sr2.Close();
         }
 
+        //TODO : fix this
         private void WriteHeight()
         {
             double[,] le = new double[20000, 20000];

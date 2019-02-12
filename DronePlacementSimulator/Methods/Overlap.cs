@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
+using System.Device;
+using System.Device.Location;
 
 // Author: Emanuel Jöbstl <emi@eex-dev.net>
 // Date  : 18.06.2011
@@ -28,9 +30,27 @@ namespace DronePlacementSimulator
         /// <param name="circleX">The X coordinate of the circles center</param>
         /// <param name="circleY">The Y coordinate of the circles center</param>
         /// <param name="r">The radius of the circle</param>
-        public double Area(double x, double y, double width, double height, double circleX, double circleY, double r)
+        public double Area(double lat, double lon, double latDiff, double lonDiff, double circleLat, double circleLon, double r)
         {
-            double a = IntersectionArea(x, y, width, height, circleX, circleY, r);
+            GeoCoordinate start = new GeoCoordinate(lat, lon);
+            double height = start.GetDistanceTo(new GeoCoordinate(lat + latDiff, lon));
+            double width = start.GetDistanceTo(new GeoCoordinate(lat, lon + lonDiff));
+
+            GeoCoordinate circle = new GeoCoordinate(circleLat, circleLon);
+
+            double circleHeight = circle.GetDistanceTo(new GeoCoordinate(lat, circleLon));
+            if (circleLat < lat)
+            {
+                circleHeight = -circleHeight;
+            }
+
+            double circleWidth = circle.GetDistanceTo(new GeoCoordinate(circleLat, lon));
+            if (circleLon < lon)
+            {
+                circleWidth = -circleWidth;
+            }
+
+            double a = IntersectionArea(height, width, circleHeight, circleWidth, r);
             return a;
         }
 
@@ -46,17 +66,23 @@ namespace DronePlacementSimulator
         /// <param name="m">The center of the circle</param>
         /// <param name="r">The radius</param>
         /// <returns>The intersection area of the two shapes</returns>
-        double IntersectionArea(double x, double y, double width, double height, double circleX, double circleY, double r)
+        
+        bool inCircle(double x, double y, double r)
+        {
+            return x * x + y * y < r * r;
+        }
+
+        double IntersectionArea(double height, double width, double circleHeight, double circleWidth, double r)
         {
             double a = 0; //Area
 
             //Check whether the rectangle lies completely outside of the circle. 
             //Note: It is easier to check if a rectangle is outside another rectangle or
             //circle than to check whether it is inside.
-            if ((x > circleX && y > circleY) && (Utils.GetDistance(x, y, circleX, circleY) > r) ||
-                (x > circleX && y + height < circleY)  && (Utils.GetDistance(x, y + height, circleX, circleY) > r) ||
-                (x + width < circleX && y > circleY) && (Utils.GetDistance(x + width, y, circleX, circleY) > r) ||
-                (x + width < circleX && y + height < circleY) && (Utils.GetDistance(x + width, y + height, circleX, circleY) > r))
+            if ((circleWidth < 0 && circleHeight < 0) && !inCircle(circleHeight, circleWidth, r) ||
+                (circleWidth < 0 && circleHeight > height) && !inCircle(circleHeight - height, circleWidth, r) ||
+                (circleWidth > width && circleHeight < 0) && !inCircle(circleHeight, circleWidth - width, r) ||
+                (circleWidth > width && circleHeight > height) && !inCircle(circleHeight - height, circleWidth - width, r))
             {
                 return 0; //Terminate fast
             }
@@ -65,30 +91,26 @@ namespace DronePlacementSimulator
             double nearestRectangleEdge = 0;
 
             //Determine what is nearer to the circle center - the rectangle top edge or the rectangle bottom edge
-            if (Math.Abs(circleY - y) > Math.Abs(circleY - y - height))
+            if (Math.Abs(circleHeight) > Math.Abs(circleHeight - height))
             {
-                nearestRectangleEdge = y + height;
-            }
-            else
-            {
-                nearestRectangleEdge = y; 
+                nearestRectangleEdge = height;
             }
 
             //The bounds of our integration
             double leftBound = 0;
             double rightBound = 0;
 
-            if (circleY >= y && circleY <= y + height)
+            if (circleHeight >= 0 && circleHeight <= height)
             {
                 //Take care if the circle's center lies within the rectangle. 
-                leftBound = Math.Max(-r + circleX, x);
-                rightBound = Math.Min(r + circleX, x + width);
+                leftBound = Math.Max(-r + circleWidth, 0);
+                rightBound = Math.Min(r + circleWidth, width);
             }
-            else if (r >= Math.Abs(nearestRectangleEdge - circleY))
+            else if (r >= Math.Abs(nearestRectangleEdge - circleHeight))
             {
                 //If the circle's center lies outside of the rectangle, we can choose optimal bounds.
-                leftBound = Math.Max(-Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleY, 2))) + circleX, x);
-                rightBound = Math.Min(Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleY, 2))) + circleX, x + width);
+                leftBound = Math.Max(-Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleHeight, 2))) + circleWidth, 0);
+                rightBound = Math.Min(Math.Sqrt(r * r - Math.Abs(Math.Pow(nearestRectangleEdge - circleHeight, 2))) + circleWidth, width);
             }
 
             double upperBound;
@@ -97,8 +119,8 @@ namespace DronePlacementSimulator
             //Loop trough the intersection area and sum up the area
             for (double i = leftBound + Resolution; i <= rightBound; i += Resolution)
             {
-                upperBound = Math.Min(y + height, UpperCircleFunction(circleX, circleY, r, i - Resolution / 2));
-                lowerBound = Math.Max(y, LowerCircleFunction(circleX, circleY, r, i - Resolution / 2));
+                upperBound = Math.Min(height, UpperCircleFunction(circleWidth, circleHeight, r, i - Resolution / 2));
+                lowerBound = Math.Max(0, LowerCircleFunction(circleWidth, circleHeight, r, i - Resolution / 2));
 
                 a += (upperBound - lowerBound) * Resolution;
             }

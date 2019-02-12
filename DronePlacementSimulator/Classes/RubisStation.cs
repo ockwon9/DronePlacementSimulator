@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace DronePlacementSimulator
 {
@@ -11,12 +7,12 @@ namespace DronePlacementSimulator
         public List<RubisCell> cellList;
         public double pdfSum;
 
-        public RubisStation(double kiloX, double kiloY, int drones) : base (kiloX, kiloY, drones)
+        public RubisStation(double lat, double lon, int drones) : base (lat, lon, drones)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.lat = lat;
+            this.lon = lon;
+            this.pixelRow = Utils.TransformLatToPixel(lat);
+            this.pixelCol = Utils.TransformLonToPixel(lon);
             this.eventCount = 0;
 
             droneList = new List<Drone>();
@@ -32,10 +28,10 @@ namespace DronePlacementSimulator
         public RubisStation(Station s)
         {
             this.stationID = s.stationID;
-            this.kiloX = s.kiloX;
-            this.kiloY = s.kiloY;
-            this.pixelX = s.pixelX;
-            this.pixelY = s.pixelY;
+            this.lat = s.lat;
+            this.lon = s.lon;
+            this.pixelRow = s.pixelRow;
+            this.pixelCol = s.pixelCol;
             this.eventCount = s.eventCount; ;
 
             droneList = new List<Drone>();
@@ -51,11 +47,11 @@ namespace DronePlacementSimulator
         public RubisStation(RubisStation s)
         {
             this.stationID = s.stationID;
-            this.kiloX = s.kiloX;
-            this.kiloY = s.kiloY;
-            this.pixelX = s.pixelX;
-            this.pixelY = s.pixelY;
-            this.eventCount = s.eventCount; ;
+            this.lat = s.lat;
+            this.lon = s.lon;
+            this.pixelRow = s.pixelRow;
+            this.pixelCol = s.pixelCol;
+            this.eventCount = s.eventCount;
 
             droneList = new List<Drone>();
             for (int i = 0; i < s.droneList.Count; i++)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -74,7 +75,7 @@ namespace DronePlacementSimulator
                 //data.Add(values.ToArray());
 
                 OHCAEvent e = item as OHCAEvent;
-                data.Add(new double[]{e.kiloX, e.kiloY});
+                data.Add(new double[]{e.lat, e.lon});
             }
 
             return data.ToArray();
@@ -270,7 +271,7 @@ namespace DronePlacementSimulator
             // For each attribute calculate the squared difference between the centroid and the point
             double sum = 0;
             for (int i = 0; i < point.Length; i++)
-                sum += Math.Pow(centroid[i] - point[i], 2);
+                sum += new GeoCoordinate(centroid[0], centroid[1]).GetDistanceTo(new GeoCoordinate(point[0], point[1]));
 
             return Math.Sqrt(sum);
             //return Math.Sqrt(point.Select((t, i) => Math.Pow(centroid[i] - t, 2)).Sum()); // LINQ is slower than doing the for-loop!

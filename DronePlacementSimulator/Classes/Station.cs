@@ -7,29 +7,29 @@ namespace DronePlacementSimulator
         private static int ID = 100;
 
         public int stationID;
-        public double kiloX, kiloY;
-        public int pixelX, pixelY;
+        public double lat, lon;
+        public int pixelRow, pixelCol;
         public List<Drone> droneList;
         public int eventCount;
 
         public Station()
         {
-            this.kiloX = 0.0;
-            this.kiloY = 0.0;
-            this.pixelX = 0;
-            this.pixelY = 0;
+            this.lat = 0.0;
+            this.lon = 0.0;
+            this.pixelRow = 0;
+            this.pixelCol = 0;
             this.eventCount = 0;
 
             droneList = new List<Drone>();
         }
 
-        public Station(double kiloX, double kiloY, int drones)
+        public Station(double lat, double lon, int drones)
         {
             this.stationID = ID++;
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.lat = lat;
+            this.lon = lon;
+            this.pixelRow = Utils.TransformLatToPixel(lat);
+            this.pixelCol = Utils.TransformLonToPixel(lon);
             this.eventCount = 0;
 
             droneList = new List<Drone>();
@@ -42,10 +42,10 @@ namespace DronePlacementSimulator
         public Station(Station copy)
         {
             this.stationID = copy.stationID;
-            this.kiloX = copy.kiloX;
-            this.kiloY = copy.kiloY;
-            this.pixelX = copy.pixelX;
-            this.pixelY = copy.pixelY;
+            this.lat = copy.lat;
+            this.lon = copy.lon;
+            this.pixelRow = copy.pixelRow;
+            this.pixelCol = copy.pixelCol;
             this.eventCount = 0;
 
             droneList = new List<Drone>();
@@ -84,15 +84,15 @@ namespace DronePlacementSimulator
             {
                 return false;
             }
-            return (this.kiloX == other.kiloX && this.kiloY == other.kiloY);
+            return (this.lat == other.lat && this.lon == other.lon);
         }
 
-        public void SetLocation(double kiloX, double kiloY)
+        public void SetLocation(double lat, double lon)
         {
-            this.kiloX = kiloX;
-            this.kiloY = kiloY;
-            this.pixelX = Utils.TransformKiloXToPixel(kiloX);
-            this.pixelY = Utils.TransformKiloYToPixel(kiloY);
+            this.lat = lat;
+            this.lon = lon;
+            this.pixelRow = Utils.TransformLatToPixel(lat);
+            this.pixelCol = Utils.TransformLonToPixel(lon);
         }
     }
 }
