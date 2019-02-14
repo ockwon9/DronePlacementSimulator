@@ -5,12 +5,12 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -22,7 +22,7 @@ namespace DronePlacementSimulator
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
-        private List<List<double[]>> polyCoordList;
+        private List<List<GeoCoordinate>> polyCoordList;
 
         private Simulator simulator = null;
         private Grid eventGrid = null;
@@ -39,7 +39,7 @@ namespace DronePlacementSimulator
             stationList = new List<Station>();
             eventList = new List<OHCAEvent>();
             polygonList = new List<Polygon>();
-            polyCoordList = new List<List<double[]>>();
+            polyCoordList = new List<List<GeoCoordinate>>();
 
             // Set the size of simulator's window
             this.Height = Screen.PrimaryScreen.Bounds.Height;
@@ -113,11 +113,10 @@ namespace DronePlacementSimulator
 
         private void PerformPulver()
         {
-            eventGrid.Pool(ref polyCoordList);
             stationList.Clear();
-            for (int i = 0; i < eventGrid.inSeoul.Count; i++)
+            foreach (Pair pair in eventGrid.seoulCells)
             {
-                stationList.Add(new Station(eventGrid.inSeoul[i].kiloX, eventGrid.inSeoul[i].kiloY, 0));
+                stationList.Add(new Station(Utils.ConvertRowToLat(pair.row), Utils.ConvertColToLon(pair.col), 0));
             }
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
             placedStations = true;
@@ -150,7 +149,7 @@ namespace DronePlacementSimulator
                 while ((line = file.ReadLine()) != null)
                 {
                     string[] parts = line.Split(',');
-                    stationList.Add(new Station(Utils.LonToKilos(double.Parse(parts[1])), Utils.LatToKilos(double.Parse(parts[0])), 0));
+                    stationList.Add(new Station(double.Parse(parts[0]), double.Parse(parts[1]), 0));
                 }
                 file.Close();
 
@@ -159,9 +158,9 @@ namespace DronePlacementSimulator
                 StreamWriter file2 = new StreamWriter("Boutilier_stations_" + space + "_" + time + ".csv");
                 for (int i = 0; i < stationList.Count; i++)
                 {
-                    file2.Write(stationList[i].kiloX);
+                    file2.Write(stationList[i].lat);
                     file2.Write(",");
-                    file2.Write(stationList[i].kiloY);
+                    file2.Write(stationList[i].lon);
                     file2.Write(",");
                     file2.Write(stationList[i].droneList.Count);
                     file2.Write("\n");
@@ -286,15 +285,15 @@ namespace DronePlacementSimulator
             {
                 foreach (Station s in stationList)
                 {
-                    g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
-                    g.DrawEllipse(new Pen(Color.Red, 1), s.pixelX - coverRange, s.pixelY - coverRange, coverRange + coverRange, coverRange + coverRange);
-                    g.FillRectangle((Brush)Brushes.Red, s.pixelX, s.pixelY, 3, 3);
+                    g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.DrawEllipse(new Pen(Color.Red, 1), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.FillRectangle((Brush)Brushes.Red, s.pixelCol, s.pixelRow, 3, 3);
                     string stationInfo = stationList.IndexOf(s).ToString();
                     if (s.droneList.Count > 0)
                     {
                         stationInfo += " (" + s.droneList.Count + ")";
                     }
-                    g.DrawString(stationInfo, new Font("Times New Roman", 24, FontStyle.Bold, GraphicsUnit.Pixel), Brushes.Black, new Point(s.pixelX, s.pixelY));
+                    g.DrawString(stationInfo, new Font("Times New Roman", 24, FontStyle.Bold, GraphicsUnit.Pixel), Brushes.Black, new Point(s.pixelCol, s.pixelRow));
                 }
             }
         }
@@ -303,7 +302,7 @@ namespace DronePlacementSimulator
         {
             foreach (OHCAEvent e in eventList)
             {
-                g.FillRectangle((Brush)Brushes.Blue, e.pixelX, e.pixelY, 3, 3);
+                g.FillRectangle((Brush)Brushes.Blue, e.pixelCol, e.pixelRow, 3, 3);
             }
         }
 
@@ -325,11 +324,11 @@ namespace DronePlacementSimulator
                 for (int r = 2; r <= data.GetLength(0); r++)
                 {
                     try
-                    {
-                        double kiloX = Utils.LonToKilos(float.Parse(data[r, 16].ToString()));
-                        double kiloY = Utils.LatToKilos(float.Parse(data[r, 15].ToString()));
+                    { // TODO
+                        double lat = float.Parse(data[r, 15].ToString());
+                        double lon = float.Parse(data[r, 16].ToString());
                         DateTime occurrenceTime = DateTime.Parse(data[r, 19].ToString());
-                        OHCAEvent e = new OHCAEvent(kiloX, kiloY, occurrenceTime);
+                        OHCAEvent e = new OHCAEvent(lat, lon, occurrenceTime);
                         eventList.Add(e);
                     }
                     catch (Exception ex)
@@ -369,7 +368,7 @@ namespace DronePlacementSimulator
                     Polygon p = new Polygon();
                     p.Name = data[r, 2].ToString().Replace("-", "");
                     System.Windows.Media.PointCollection pc = new System.Windows.Media.PointCollection();
-                    List<double[]> pList = new List<double[]>();
+                    List<GeoCoordinate> pList = new List<GeoCoordinate>();
                     r++;
 
                     for (int j = r; j <= data.GetLength(0); j++)
@@ -386,15 +385,12 @@ namespace DronePlacementSimulator
                             }
                             else
                             {
-                                float lon = float.Parse(data[j, 1].ToString());
-                                float lat = float.Parse(data[j, 2].ToString());
-                                double[] coord = new double[2];
-                                coord[0] = Utils.LonToKilos(lon);
-                                coord[1] = Utils.LatToKilos(lat);
-                                int pixelX = Utils.TransformKiloXToPixel(coord[0]);
-                                int pixelY = Utils.TransformKiloYToPixel(coord[1]);
-                                pc.Add(new System.Windows.Point(pixelX, pixelY));
-                                pList.Add(coord);
+                                float lat = float.Parse(data[j, 1].ToString());
+                                float lon = float.Parse(data[j, 2].ToString());
+                                int pixelRow = Utils.TransformLatToPixel(lat);
+                                int pixelCol = Utils.TransformLonToPixel(lon);
+                                pc.Add(new System.Windows.Point(pixelCol, pixelRow));
+                                pList.Add(new GeoCoordinate(lat, lon));
                             }
                         }
                         catch (Exception ex)
@@ -422,10 +418,9 @@ namespace DronePlacementSimulator
             while (line != null)
             {
                 string[] cells = line.Split(',');
-                int n = grid.lambda[0].Length;
                 for (int i = 0; i < cells.Length - 1; i++)
                 {
-                    grid.lambda[i / n][i % n] = (double) Double.Parse(cells[i]);
+                    grid.lambda[i / Utils.COL_NUM, i % Utils.COL_NUM] = (double) Double.Parse(cells[i]);
                 }
                 line = sr.ReadLine();
             }
@@ -435,11 +430,11 @@ namespace DronePlacementSimulator
         private void WritePDF(ref Grid grid)
         {
             StreamWriter file = new StreamWriter("pdf.csv");
-            for (int i = 0; i < grid.lambda.Length; i++)
+            for (int i = 0; i < Utils.ROW_NUM; i++)
             {
-                for (int j = 0; j < grid.lambda[i].Length; j++)
+                for (int j = 0; j < Utils.COL_NUM; j++)
                 {
-                    file.Write(grid.lambda[i][j]);
+                    file.Write(grid.lambda[i, j]);
                     file.Write(",");
                 }
             }
@@ -516,9 +511,9 @@ namespace DronePlacementSimulator
             StreamWriter file = new StreamWriter("Last.csv");
             for (int i = 0; i < stationList.Count; i++)
             {
-                file.Write(stationList[i].kiloX);
+                file.Write(stationList[i].lat);
                 file.Write(',');
-                file.Write(stationList[i].kiloY);
+                file.Write(stationList[i].lon);
                 file.Write(',');
                 file.Write(stationList[i].droneList.Count);
                 file.Write("\n");
@@ -614,10 +609,10 @@ namespace DronePlacementSimulator
                     if (line != null)
                     {
                         string[] data = line.Split('\t');
-                        double kiloX = Double.Parse(data[0]);
-                        double kiloY = Double.Parse(data[1]);
+                        double lat = Double.Parse(data[0]);
+                        double lon = Double.Parse(data[1]);
                         int drones = int.Parse(data[2]);
-                        tempList.Add(new Station(kiloX, kiloY, drones));
+                        tempList.Add(new Station(lat, lon, drones));
                     }
                 }
                 objReader.Close();
@@ -656,12 +651,13 @@ namespace DronePlacementSimulator
                 {
                     foreach (Station s in stationList)
                     {
-                        file.WriteLine(String.Format("{0}\t{1}\t{2}", s.kiloX, s.kiloY, s.droneList.Count));
+                        file.WriteLine(String.Format("{0}\t{1}\t{2}", s.lat, s.lon, s.droneList.Count));
                     }
                 }
             }
         }
 
+        // TODO
         public class WorkObject
         {
             public double[][] lambda;

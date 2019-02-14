@@ -30,13 +30,12 @@ namespace DronePlacementSimulator
 
         public void OptimalPlacement(ref List<Station> stationList, ref List<OHCAEvent> eventList)
         {
-            int[][] a = new int[J][];
+            int[,] a = new int[J, I];
             for (int j = 0; j < J; j++)
             {
-                a[j] = new int[I];
                 for (int i = 0; i < I; i++)
                 {
-                    a[j][i] = (Utils.GetDistance(stationList[i].kiloX, stationList[i].kiloY, eventList[j].kiloX, eventList[j].kiloY) < Utils.GOLDEN_TIME - 1.0 / 6.0) ? 1 : 0;
+                    a[j, i] = (Utils.GetDistance(stationList[i].lat, stationList[i].lon, eventList[j].lat, eventList[j].lon) < Utils.GOLDEN_TIME - 1.0 / 6.0) ? 1 : 0;
                 }
             }
 
@@ -51,13 +50,12 @@ namespace DronePlacementSimulator
                     y[i] = model.AddVar(0.0, 1.0, 0.0, GRB.BINARY, "y_" + i);
                 }
 
-                GRBVar[][] z = new GRBVar[J][];
+                GRBVar[, ] z = new GRBVar[J, I];
                 for (int j = 0; j < J; j++)
                 {
-                    z[j] = new GRBVar[I];
                     for (int i = 0; i < I; i++)
                     {
-                        z[j][i] = model.AddVar(0.0, 1.0, 0.0, GRB.BINARY, "z_" + i + "," + j);
+                        z[j, i] = model.AddVar(0.0, 1.0, 0.0, GRB.BINARY, "z_" + i + "," + j);
                     }
                 }
 
@@ -74,7 +72,7 @@ namespace DronePlacementSimulator
                     GRBLinExpr expr = 0.0;
                     for (int i = 0; i < I; i++)
                     {
-                        expr.AddTerm(1, z[j][i]);
+                        expr.AddTerm(1, z[j, i]);
                     }
                     bigExpr.Add(expr);
                     model.AddConstr(expr, GRB.LESS_EQUAL, 1.0, "c0_" + j);
@@ -85,7 +83,7 @@ namespace DronePlacementSimulator
                 {
                     for (int i = 0; i < I; i++)
                     {
-                        model.AddConstr(z[j][i], GRB.LESS_EQUAL, a[j][i] * y[i], "c2_" + i + "," + j);
+                        model.AddConstr(z[j, i], GRB.LESS_EQUAL, a[j, i] * y[i], "c2_" + i + "," + j);
                     }
                 }
 
@@ -138,7 +136,7 @@ namespace DronePlacementSimulator
                 {
                     for (int i = 0; i < I; i++)
                     {
-                        if (z[j][i].Get(GRB.DoubleAttr.X) > 0)
+                        if (z[j, i].Get(GRB.DoubleAttr.X) > 0)
                         {
                             coverList[i].Add(j);
                         }

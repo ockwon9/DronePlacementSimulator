@@ -86,7 +86,7 @@ namespace DronePlacementSimulator
                 }
                 else
                 {
-                    double flightTime = pathPlanner.CalculateFlightTime(rStationList[dispatchFrom].kiloX, rStationList[dispatchFrom].kiloY, e.kiloX, e.kiloY);
+                    double flightTime = pathPlanner.CalculateFlightTime(rStationList[dispatchFrom].lat, rStationList[dispatchFrom].lon, e.lat, e.lon);
                     sum += CalculateSurvivalRate(flightTime);
                     current.Dispatch(dispatchFrom, e.occurrenceTime);
                 }
@@ -115,7 +115,7 @@ namespace DronePlacementSimulator
             {
                 RubisStation s = rStationList[i];
                 index[i] = i;
-                distance[i] = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+                distance[i] = pathPlanner.CalculateFlightTime(s.lat, s.lon, e.lat, e.lon);
 
                 for (int j = i; j > 0; j--)
                 {
@@ -171,7 +171,7 @@ namespace DronePlacementSimulator
             foreach (RubisStation s in rStationList)
             {
                 int index = rStationList.IndexOf(s);
-                double time = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, e.kiloX, e.kiloY);
+                double time = pathPlanner.CalculateFlightTime(s.lat, s.lon, e.lat, e.lon);
 
                 if (time <= Utils.GOLDEN_TIME)
                 {
@@ -246,7 +246,7 @@ namespace DronePlacementSimulator
             for(int i = 0; i < stationList.Count; i++)
             {
                 Station s = stationList[i];
-                double distance = pathPlanner.CalculateFlightTime(next.kiloX, next.kiloY, s.kiloX, s.kiloY);
+                double distance = pathPlanner.CalculateFlightTime(next.lat, next.lon, s.lat, s.lon);
                 distanceList.Add(new KeyValuePair<int, double>(i, distance));
             }
             distanceList.Sort((a, b) => a.Value >= b.Value ? 1 : -1);
@@ -358,9 +358,9 @@ namespace DronePlacementSimulator
         public void SetRubisMethod(Grid eventGrid, List<Station> stationList)
         {
             rCellList = new List<RubisCell>();
-            foreach (Cell c in eventGrid.cells)
+            foreach (Pair c in eventGrid.seoulCells)
             {
-                rCellList.Add(new RubisCell(c, eventGrid.lambda[c.intX][c.intY]));
+                rCellList.Add(new RubisCell(new Cell(c.row, c.col), eventGrid.lambda[c.row, c.col]));
             }
 
             // Finds reachable stations for each cell
@@ -374,7 +374,7 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in rStationList)
                 {
-                    double time = pathPlanner.CalculateFlightTime(s.kiloX, s.kiloY, cell.kiloX, cell.kiloY);
+                    double time = pathPlanner.CalculateFlightTime(s.lat, s.lon, cell.lat, cell.lon);
                     if (time <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, time));
@@ -446,8 +446,8 @@ namespace DronePlacementSimulator
             while (line != null)
             {
                 string[] values = line.Split(',');
-                double kiloX = double.Parse(values[0]);
-                double kiloY = double.Parse(values[1]);
+                double lat = double.Parse(values[0]);
+                double lon = double.Parse(values[1]);
                 string[] dateComponents = values[2].Split('-', ' ', ':');
                 int year = int.Parse(dateComponents[0]);
                 int month = int.Parse(dateComponents[1]);
@@ -464,7 +464,7 @@ namespace DronePlacementSimulator
                 int minute = int.Parse(dateComponents[5]);
                 int second = int.Parse(dateComponents[6]);
                 DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
-                simulatedEventList.Add(new OHCAEvent(kiloX, kiloY, occurenceTime));
+                simulatedEventList.Add(new OHCAEvent(lat, lon, occurenceTime));
                 line = reader.ReadLine();
             }
             reader.Close();
@@ -474,7 +474,7 @@ namespace DronePlacementSimulator
             for (int i = 0; i < simulatedEventList.Count; i++)
             {
                 OHCAEvent e = simulatedEventList[i];
-                file.Write(e.kiloX + "," + e.kiloY + "," + e.occurrenceTime + "\n");
+                file.Write(e.lat + "," + e.lon + "," + e.occurrenceTime + "\n");
             }
             file.Close();
         }

@@ -24,6 +24,15 @@
             this.eventCount = 0;
         }
 
+        public Cell(int row, int col)
+        {
+            this.lat = Utils.ConvertRowToLat(row);
+            this.lon = Utils.ConvertColToLon(col);
+            this.row = row;
+            this.col = col;
+            this.eventCount = 0;
+        }
+
         public void addEvent()
         {
             this.eventCount++;
