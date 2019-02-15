@@ -16,8 +16,7 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private bool writeSimulation = false;
-        private int coreCount = 12;
+        private bool writeSimulation = true;
         
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
@@ -325,8 +324,8 @@ namespace DronePlacementSimulator
                 {
                     try
                     { // TODO
-                        double lat = float.Parse(data[r, 15].ToString());
-                        double lon = float.Parse(data[r, 16].ToString());
+                        double lat = double.Parse(data[r, 15].ToString());
+                        double lon = double.Parse(data[r, 16].ToString());
                         DateTime occurrenceTime = DateTime.Parse(data[r, 19].ToString());
                         OHCAEvent e = new OHCAEvent(lat, lon, occurrenceTime);
                         eventList.Add(e);
@@ -375,7 +374,7 @@ namespace DronePlacementSimulator
                     {
                         try
                         {
-                            if ((data[j, 1].ToString().Equals("name") && pc.Count != 0) || j == data.GetLength(0))
+                            if ((data[j, 2].ToString().Equals("name") && pc.Count != 0) || j == data.GetLength(0))
                             {
                                 p.Points = pc;
                                 polygonList.Add(p);
@@ -415,13 +414,15 @@ namespace DronePlacementSimulator
         {
             StreamReader sr = new StreamReader("pdf.csv");
             String line = sr.ReadLine();
+            int row = 0;
             while (line != null)
             {
                 string[] cells = line.Split(',');
-                for (int i = 0; i < cells.Length - 1; i++)
+                for (int col = 0; col < Utils.COL_NUM; col++)
                 {
-                    grid.lambda[i / Utils.COL_NUM, i % Utils.COL_NUM] = (double) Double.Parse(cells[i]);
+                    grid.lambda[row, col] = Double.Parse(cells[col]);
                 }
+                row++;
                 line = sr.ReadLine();
             }
             sr.Close();
@@ -437,8 +438,8 @@ namespace DronePlacementSimulator
                     file.Write(grid.lambda[i, j]);
                     file.Write(",");
                 }
+                file.Write("\n");
             }
-            file.Write("\n");
             file.Close();
         }
 
@@ -550,7 +551,7 @@ namespace DronePlacementSimulator
 
             if (writeSimulation)
             {
-                AsyncContext.Run(() => WriteSimulationEventList(eventGrid));
+                WriteSimulationEventList();
             }
             else
             {
@@ -657,85 +658,44 @@ namespace DronePlacementSimulator
             }
         }
 
-        // TODO
-        public class WorkObject
+        // TODO : Threading ?
+        private void WriteSimulationEventList()
         {
-            public double[][] lambda;
-            public bool[][] inSeoulBool;
-            public int index;
-            public DateTime start;
-            public WorkObject(double[][] lambda, bool[][] inSeoulBool, int index, DateTime dateTime)
-            {
-                this.lambda = lambda.Clone() as double[][];
-                this.inSeoulBool = inSeoulBool.Clone() as bool[][];
-                this.index = index;
-                this.start = dateTime;
-            }
-        }
+            DateTime current = new DateTime(2019, 1, 1);
+            Random rand = new Random((int)DateTime.Now.ToBinary());
+            StreamWriter file = new StreamWriter("simulationEvents.csv");
+            int eventCount = 0;
+            bool makeMore = true;
 
-        private void EventListDoWork(WorkObject workObject)
-        {
-            DateTime current = workObject.start;
-            DateTime end = workObject.start.AddYears(80);
-            Random rand = new Random((int)DateTime.Now.ToBinary() + workObject.index);
-            StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
-            int numEvents = 0;
-            int len1 = workObject.lambda.Length;
-            int len2 = workObject.lambda[0].Length;
-
-            while (current < end)
+            while (makeMore)
             {
-                for (int i = 0; i < len1; i++)
+                for (int i = 0; (i < Utils.ROW_NUM) && makeMore; i++)
                 {
-                    for (int j = 0; j < len2; j++)
+                    for (int j = 0; (j < Utils.COL_NUM) && makeMore; j++)
                     {
-                        if (!workObject.inSeoulBool[i][j])
+                        if (!eventGrid.inSeoul[i, j])
                             continue;
-                        double randVal = rand.NextDouble();
-                        if (randVal < workObject.lambda[i][j])
-                        {
-                            numEvents++;
-                            if (numEvents % 10000 == 0)
-                            {
-                                Console.WriteLine(workObject.index + " : " + numEvents);
-                            }
 
-                            file.Write((j + 0.5) * Utils.LAMBDA_PRECISION);
+                        double randVal = rand.NextDouble();
+                        if (randVal < eventGrid.lambda[i, j])
+                        {
+                            file.Write(Utils.MIN_LATITUDE + (i + 0.5) * Utils.LAT_UNIT);
                             file.Write(",");
-                            file.Write((i + 0.5) * Utils.LAMBDA_PRECISION);
+                            file.Write(Utils.MIN_LONGITUDE + (j + 0.5) * Utils.LON_UNIT);
                             file.Write(",");
-                            String s = string.Format("{0 : yyyy MM dd HH mm ss}", current);
-                            file.Write(current);
+                            file.Write(current.ToString());
                             file.Write("\n");
+
+                            eventCount++;
+                            makeMore = eventCount < Utils.SIMULATION_EVENTS;
                         }
                     }
                 }
                 current = current.AddMinutes(1);
             }
-            Console.WriteLine("thread " + workObject.index + " done.");
             file.Close();
-            return;
         }
-
-        private async Task EventListAsync(WorkObject workObject)
-        {
-            await Task.Run(() => EventListDoWork(workObject));
-            return;
-        }
-
-        private async Task WriteSimulationEventList(Grid eventGrid)
-        {
-            List<Task> tasks = new List<Task>();
-
-            for (int i = 0; i < coreCount; i++)
-            {
-                WorkObject work = new WorkObject(eventGrid.lambda, eventGrid.inSeoulBool, i, new DateTime(2018 + i * 30, 1, 1));
-                tasks.Add(EventListAsync(work));
-            }
-
-            await Task.WhenAll(tasks);
-            return;
-        }
+        
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             Random rand = new Random();

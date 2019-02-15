@@ -269,11 +269,9 @@ namespace DronePlacementSimulator
         private static double CalculateDistance(double[] point, double[] centroid)
         {
             // For each attribute calculate the squared difference between the centroid and the point
-            double sum = 0;
-            for (int i = 0; i < point.Length; i++)
-                sum += new GeoCoordinate(centroid[0], centroid[1]).GetDistanceTo(new GeoCoordinate(point[0], point[1]));
+            double sum = new GeoCoordinate(centroid[0], centroid[1]).GetDistanceTo(new GeoCoordinate(point[0], point[1]));
 
-            return Math.Sqrt(sum);
+            return sum;
             //return Math.Sqrt(point.Select((t, i) => Math.Pow(centroid[i] - t, 2)).Sum()); // LINQ is slower than doing the for-loop!
         }
     }

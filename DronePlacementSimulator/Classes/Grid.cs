@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Device.Location;
+using System.IO;
 
 namespace DronePlacementSimulator
 {
@@ -37,6 +38,38 @@ namespace DronePlacementSimulator
                         seoulCells.Add(new Pair(i, j));
                     }
                 }
+            }
+
+            if (File.Exists("inSeoul.csv"))
+            {
+                StreamReader file = new StreamReader("inSeoul.csv");
+                String line = file.ReadLine();
+                int row = 0;
+                while (line != null)
+                {
+                    string[] cells = line.Split(',');
+                    for (int col = 0; col < Utils.COL_NUM; col++)
+                    {
+                        inSeoul[row, col] = Boolean.Parse(cells[col]);
+                    }
+                    row++;
+                    line = file.ReadLine();
+                }
+                file.Close();
+            }
+            else
+            {
+                StreamWriter file = new StreamWriter("inSeoul.csv");
+                for (int i = 0; i < Utils.ROW_NUM; i++)
+                {
+                    for (int j = 0; j < Utils.COL_NUM; j++)
+                    {
+                        file.Write(inSeoul[i, j]);
+                        file.Write(",");
+                    }
+                    file.Write("\n");
+                }
+                file.Close();
             }
         }
 
@@ -104,8 +137,86 @@ namespace DronePlacementSimulator
                 int col = Utils.ConvertLonToCol(e.lon);
                 eventCount[row, col]++;
             }
-            
+
             // TODO : Poisson Kriging
+            double[,] count = new double[Utils.ROW_NUM, Utils.COL_NUM];
+            for (int i = 0; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    lambda[i, j] = eventCount[i, j];
+                    count[i, j] = 1.0;
+                }
+            }
+
+            double side = 0.5;
+            double diag = 0.3;
+
+            for (int i = 1; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    count[i, j] += side;
+                    lambda[i, j] += eventCount[i - 1, j] * side;
+                }
+
+                for (int j = 1; j < Utils.COL_NUM; j++)
+                {
+                    count[i, j] += diag;
+                    lambda[i, j] += eventCount[i - 1, j - 1] * diag;
+                }
+
+                for (int j = 0; j < Utils.COL_NUM - 1; j++)
+                {
+                    count[i, j] += diag;
+                    lambda[i, j] += eventCount[i - 1, j + 1] * diag;
+                }
+            }
+
+            for (int i = 0; i < Utils.ROW_NUM - 1; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    count[i, j] += side;
+                    lambda[i, j] += eventCount[i + 1, j] * side;
+                }
+
+                for (int j = 1; j < Utils.COL_NUM; j++)
+                {
+                    count[i, j] += diag;
+                    lambda[i, j] += eventCount[i + 1, j - 1] * diag;
+                }
+
+                for (int j = 0; j < Utils.COL_NUM - 1; j++)
+                {
+                    count[i, j] += diag;
+                    lambda[i, j] += eventCount[i + 1, j + 1] * diag;
+                }
+            }
+
+            for (int i = 0; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 1; j < Utils.COL_NUM; j++)
+                {
+                    count[i, j] += side;
+                    lambda[i, j] += eventCount[i, j - 1] * side;
+                }
+
+                for (int j = 0; j < Utils.COL_NUM - 1; j++)
+                {
+                    count[i, j] += side;
+                    lambda[i, j] += eventCount[i, j + 1] * side;
+                }
+            }
+
+            for (int i = 0; i < Utils.ROW_NUM; i++)
+            {
+                for (int j = 0; j < Utils.COL_NUM; j++)
+                {
+                    lambda[i, j] /= count[i, j];
+                }
+            }
+            // End of Temporary Solution
         }
 
         public double GetMaxDemand()

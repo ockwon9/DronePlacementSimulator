@@ -63,12 +63,12 @@ namespace DronePlacementSimulator
 
         public static int ConvertLatToRow(double lat)
         {
-            return (int)Math.Ceiling((lat - MIN_LATITUDE) / LAT_UNIT - 0.5);
+            return (int)Math.Round((lat - MIN_LATITUDE) / LAT_UNIT - 0.5);
         }
 
         public static int ConvertLonToCol(double lon)
         {
-            return (int)Math.Ceiling((lon - MIN_LONGITUDE) / LON_UNIT - 0.5);
+            return (int)Math.Round((lon - MIN_LONGITUDE) / LON_UNIT - 0.5);
         }
 
         public static double ConvertRowToLat(int row)

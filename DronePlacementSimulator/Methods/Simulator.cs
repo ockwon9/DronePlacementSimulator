@@ -34,7 +34,7 @@ namespace DronePlacementSimulator
         {
             pathPlanner = new PathPlanner();
             simulatedEventList = new List<OHCAEvent>();
-            if (File.Exists("simulation_events.csv") && simulatedEventList.Count == 0)
+            if (File.Exists("simulationEvents.csv") && simulatedEventList.Count == 0)
             {
                 ReadSimulatedEvents();
             }
@@ -441,34 +441,18 @@ namespace DronePlacementSimulator
 
         private void ReadSimulatedEvents()
         {
-            StreamReader reader = new StreamReader("simulation_events.csv");
+            StreamReader reader = new StreamReader("simulationEvents.csv");
             string line = reader.ReadLine();
             while (line != null)
             {
                 string[] values = line.Split(',');
                 double lat = double.Parse(values[0]);
                 double lon = double.Parse(values[1]);
-                string[] dateComponents = values[2].Split('-', ' ', ':');
-                int year = int.Parse(dateComponents[0]);
-                int month = int.Parse(dateComponents[1]);
-                int day = int.Parse(dateComponents[2]);
-                int hour = int.Parse(dateComponents[4]);
-                if (dateComponents[3].Equals("PM"))
-                {
-                    hour += 12;
-                }
-                if (hour % 12 == 0)
-                {
-                    hour -= 12;
-                }
-                int minute = int.Parse(dateComponents[5]);
-                int second = int.Parse(dateComponents[6]);
-                DateTime occurenceTime = new DateTime(year, month, day, hour, minute, second);
+                DateTime occurenceTime = DateTime.Parse(values[2]);
                 simulatedEventList.Add(new OHCAEvent(lat, lon, occurenceTime));
                 line = reader.ReadLine();
             }
             reader.Close();
-            simulatedEventList.Sort((a, b) => a.occurrenceTime <= b.occurrenceTime ? -1 : 1);
             
             StreamWriter file = new StreamWriter("events.csv");
             for (int i = 0; i < simulatedEventList.Count; i++)

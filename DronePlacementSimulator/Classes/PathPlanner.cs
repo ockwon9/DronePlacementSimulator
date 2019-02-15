@@ -139,11 +139,9 @@ namespace DronePlacementSimulator
             sr2.Close();
         }
 
-        //TODO : fix this
         private void WriteHeight()
         {
-            double[,] le = new double[20000, 20000];
-            double[,] bh = new double[20000, 20000];
+            double le, bh;
 
             StreamReader objReader = new StreamReader("seoul.txt");
             string line = "";
@@ -160,18 +158,18 @@ namespace DronePlacementSimulator
                         if (line != null)
                         {
                             string[] data = line.Split(' ');
-                            bh[i, j] = Double.Parse(data[4]);
-                            le[i, j] = Double.Parse(data[5]);
+                            bh = Double.Parse(data[4]);
+                            le = Double.Parse(data[5]);
 
-                            int m = i / Utils.ROW_NUM;
-                            int n = j / Utils.COL_NUM;
-                            if (le[i, j] > land_elevation[m, n])
+                            int m = (int)Math.Round((19999.5 - i) * Utils.ROW_NUM / 20000 - 0.5);
+                            int n = (int)Math.Round((0.5 + j) * Utils.COL_NUM / 20000 - 0.5);
+                            if (le > land_elevation[m, n])
                             {
-                                land_elevation[m, n] = le[i, j];
+                                land_elevation[m, n] = le;
                             }
-                            if (bh[i, j] > building_height[m, n])
+                            if (bh > building_height[m, n])
                             {
-                                building_height[m, n] = bh[i, j];
+                                building_height[m, n] = bh;
                             }
                         }
                     }

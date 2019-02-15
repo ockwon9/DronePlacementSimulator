@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Device.Location;
 
 // TODO
 namespace DronePlacementSimulator
@@ -30,18 +31,17 @@ namespace DronePlacementSimulator
         private List<RubisStation> stationList;
         private List<RubisCell> cellList;
 
-        public RUBIS(Grid eventGrid, Simulator simulator, ref List<List<double[]>> polyCoordList)
+        public RUBIS(Grid eventGrid, Simulator simulator, ref List<List<GeoCoordinate>> polyCoordList)
         {
             this.eventGrid = eventGrid;
             this.simulator = simulator;            
 
             this.stationList = new List<RubisStation>();
             this.cellList = new List<RubisCell>();
-
-            eventGrid.Pool(ref polyCoordList);
-            foreach (Cell c in eventGrid.cells)
+            
+            foreach (Pair c in eventGrid.seoulCells)
             {
-                cellList.Add(new RubisCell(c, eventGrid.pooledLambda[c.intY][c.intX]));
+                cellList.Add(new RubisCell(new Cell(c.row, c.col), eventGrid.lambda[c.row, c.col]));
             }
         }
 
@@ -222,7 +222,7 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    double time = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double time = simulator.GetPathPlanner().CalculateFlightTime(cell.lat, cell.lon, s.lat, s.lon);
                     if (time <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, time));
@@ -259,13 +259,13 @@ namespace DronePlacementSimulator
             double maxSurvivalRate = currentSurvivalRate;
 
             // Find the best one-step movement for all directions of all stations
-            double kiloX = 0.0;
-            double kiloY = 0.0;
+            double lat = 0.0;
+            double lon = 0.0;
 
             foreach (RubisStation s in tempList)
             {
-                double tempKiloX = s.kiloX;
-                double tempKiloY = s.kiloY;
+                double tempLat = s.lat;
+                double tempLon = s.lon;
                 int step = 5;
 
                 foreach (Direction direction in Enum.GetValues(typeof(Direction)))
@@ -273,42 +273,42 @@ namespace DronePlacementSimulator
                     switch (direction)
                     {
                         case Direction.LeftTop:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat + Utils.LAT_UNIT * step;
+                            lon = s.lon - Utils.LON_UNIT * step;
                             break;
                         case Direction.Top:
-                            kiloX = s.kiloX;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat + Utils.LAT_UNIT * step;
+                            lon = s.lon;
                             break;
                         case Direction.RightTop:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat + Utils.LAT_UNIT * step;
+                            lon = s.lon + Utils.LON_UNIT * step;
                             break;
                         case Direction.Left:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY;
+                            lat = s.lat;
+                            lon = s.lon - Utils.LON_UNIT * step;
                             break;
                         case Direction.Right:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY;
+                            lat = s.lat;
+                            lon = s.lon + Utils.LON_UNIT * step;
                             break;
                         case Direction.LeftBottom:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat - Utils.LAT_UNIT * step;
+                            lon = s.lon - Utils.LON_UNIT * step;
                             break;
                         case Direction.Bottom:
-                            kiloX = s.kiloX;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat - Utils.LAT_UNIT * step;
+                            lon = s.lon;
                             break;
                         case Direction.RightBottom:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * step;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * step;
+                            lat = s.lat - Utils.LAT_UNIT * step;
+                            lon = s.lon + Utils.LON_UNIT * step;
                             break;
                     }
 
-                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
+                    if (lat >= 0.1 && lat <= Utils.SEOUL_WIDTH - 0.1 && lon >= 0.1 && lon <= Utils.SEOUL_HEIGHT - 0.1)
                     {
-                        s.SetLocation(kiloX, kiloY);
+                        s.SetLocation(lat, lon);
                     }
                     else
                     {
@@ -323,7 +323,7 @@ namespace DronePlacementSimulator
                     }
 
                     // Go back to the status of current station list
-                    s.SetLocation(tempKiloX, tempKiloY);
+                    s.SetLocation(tempLat, tempLon);
                 }
             }
 
@@ -340,8 +340,8 @@ namespace DronePlacementSimulator
             while (true)
             {
                 CloneList(currentStationList, tempList);
-                double kiloX = 0.0;
-                double kiloY = 0.0;
+                double lat = 0.0;
+                double lon = 0.0;
 
                 // Move each station a random distance in a random direction
                 foreach (Station s in tempList)
@@ -351,46 +351,42 @@ namespace DronePlacementSimulator
                     switch ((Direction)randomDirection)
                     {
                         case Direction.LeftTop:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat + Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon - Utils.LON_UNIT * randomDistance;
                             break;
                         case Direction.Top:
-                            kiloX = s.kiloX;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat + Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon;
                             break;
                         case Direction.RightTop:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY + Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat + Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon + Utils.LON_UNIT * randomDistance;
                             break;
                         case Direction.Left:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY;
-                            break;
-                        case Direction.Center:
-                            kiloX = s.kiloX;
-                            kiloY = s.kiloY;
+                            lat = s.lat;
+                            lon = s.lon - Utils.LON_UNIT * randomDistance;
                             break;
                         case Direction.Right:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY;
+                            lat = s.lat;
+                            lon = s.lon + Utils.LON_UNIT * randomDistance;
                             break;
                         case Direction.LeftBottom:
-                            kiloX = s.kiloX - Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat - Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon - Utils.LON_UNIT * randomDistance;
                             break;
                         case Direction.Bottom:
-                            kiloX = s.kiloX;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat - Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon;
                             break;
                         case Direction.RightBottom:
-                            kiloX = s.kiloX + Utils.LAMBDA_PRECISION * randomDistance;
-                            kiloY = s.kiloY - Utils.LAMBDA_PRECISION * randomDistance;
+                            lat = s.lat - Utils.LAT_UNIT * randomDistance;
+                            lon = s.lon + Utils.LON_UNIT * randomDistance;
                             break;
                     }
 
-                    if (kiloX >= 0.1 && kiloX <= Utils.SEOUL_WIDTH - 0.1 && kiloY >= 0.1 && kiloY <= Utils.SEOUL_HEIGHT - 0.1)
+                    if (lat >= 0.1 && lat <= Utils.SEOUL_WIDTH - 0.1 && lon >= 0.1 && lon <= Utils.SEOUL_HEIGHT - 0.1)
                     {
-                        s.SetLocation(kiloX, kiloY);
+                        s.SetLocation(lat, lon);
                     }
                 }
 
@@ -409,7 +405,7 @@ namespace DronePlacementSimulator
                 bool isCovered = false;
                 foreach (RubisStation s in stationList)
                 {
-                    double distance = simulator.GetPathPlanner().CalculateFlightTime(cell.kiloX, cell.kiloY, s.kiloX, s.kiloY);
+                    double distance = simulator.GetPathPlanner().CalculateFlightTime(cell.lat, cell.lon, s.lat, s.lon);
                     if (distance <= Utils.GOLDEN_TIME)
                     {
                         isCovered = true;
