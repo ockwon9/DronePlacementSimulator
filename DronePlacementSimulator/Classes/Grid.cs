@@ -214,6 +214,7 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < Utils.COL_NUM; j++)
                 {
                     lambda[i, j] /= count[i, j];
+                    lambda[i, j] /= 100000;
                 }
             }
             // End of Temporary Solution

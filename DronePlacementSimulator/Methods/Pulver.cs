@@ -12,7 +12,7 @@ namespace DronePlacementSimulator
 {
     class Pulver
     {
-        private static bool DEBUG = false;
+        private static bool DEBUG = true;
         private List<Station> stationList;
         private int n;
         private int m;
@@ -49,7 +49,7 @@ namespace DronePlacementSimulator
             {
                 this.N[i] = new List<int>();
             }
-            BoundByT(ref grid, ref stationList);
+            this.BoundByT(ref grid, ref stationList);
             this.optimalCoverage = OptimalCoverage(p, ref stationList);
         }
 
@@ -131,8 +131,8 @@ namespace DronePlacementSimulator
                 GeoCoordinate[] workLoad = new GeoCoordinate[actualLoad];
                 for (int j = 0; j < actualLoad; j++)
                 {
-                    double lat = Utils.ConvertRowToLat(grid.seoulCells[row + j].row);
-                    double lon = Utils.ConvertColToLon(grid.seoulCells[row + j].col);
+                    double lat = Utils.ConvertRowToLatFloor(grid.seoulCells[row + j].row);
+                    double lon = Utils.ConvertColToLonFloor(grid.seoulCells[row + j].col);
                     workLoad[j] = new GeoCoordinate(lat, lon);
                 }
                 WorkObject workObject = new WorkObject(workLoad, i, row);

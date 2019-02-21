@@ -51,13 +51,13 @@ namespace DronePlacementSimulator
 
         public static int TransformLatToPixel(double lat)
         {
-            double ratio = lat / RANGE_LATITUDE;
+            double ratio = (lat - MIN_LATITUDE) / RANGE_LATITUDE;
             return SCREEN_HEIGHT - (int)(SCREEN_HEIGHT * ratio);
         }
 
         public static int TransformLonToPixel(double lon)
         {           
-            double ratio = lon / RANGE_LONGITUDE;
+            double ratio = (lon - MIN_LONGITUDE) / RANGE_LONGITUDE;
             return (int)(SCREEN_WIDTH * ratio);
         }
 
@@ -81,9 +81,19 @@ namespace DronePlacementSimulator
             return MIN_LONGITUDE + (col + 0.5) * LON_UNIT;
         }
 
+        public static double ConvertRowToLatFloor(int row)
+        {
+            return MIN_LATITUDE + row * LAT_UNIT;
+        }
+
+        public static double ConvertColToLonFloor(int col)
+        {
+            return MIN_LONGITUDE + col * LON_UNIT;
+        }
+
         public static double GetDistance(double lat1, double lon1, double lat2, double lon2)
         {
-            return new GeoCoordinate(lat1, lon1).GetDistanceTo(new GeoCoordinate(lat2, lon2));
+            return (new GeoCoordinate(lat1, lon1).GetDistanceTo(new GeoCoordinate(lat2, lon2)) / 1000);
         }
     }
 }

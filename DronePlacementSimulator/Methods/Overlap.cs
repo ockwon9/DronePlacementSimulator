@@ -33,18 +33,18 @@ namespace DronePlacementSimulator
         public double Area(double lat, double lon, double latDiff, double lonDiff, double circleLat, double circleLon, double r)
         {
             GeoCoordinate start = new GeoCoordinate(lat, lon);
-            double height = start.GetDistanceTo(new GeoCoordinate(lat + latDiff, lon));
-            double width = start.GetDistanceTo(new GeoCoordinate(lat, lon + lonDiff));
+            double height = start.GetDistanceTo(new GeoCoordinate(lat + latDiff, lon)) / 1000;
+            double width = start.GetDistanceTo(new GeoCoordinate(lat, lon + lonDiff)) / 1000;
 
             GeoCoordinate circle = new GeoCoordinate(circleLat, circleLon);
 
-            double circleHeight = circle.GetDistanceTo(new GeoCoordinate(lat, circleLon));
+            double circleHeight = circle.GetDistanceTo(new GeoCoordinate(lat, circleLon)) / 1000;
             if (circleLat < lat)
             {
                 circleHeight = -circleHeight;
             }
 
-            double circleWidth = circle.GetDistanceTo(new GeoCoordinate(circleLat, lon));
+            double circleWidth = circle.GetDistanceTo(new GeoCoordinate(circleLat, lon)) / 1000;
             if (circleLon < lon)
             {
                 circleWidth = -circleWidth;

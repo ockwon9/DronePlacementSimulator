@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private bool writeSimulation = true;
+        private bool writeSimulation = false;
         
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
@@ -540,7 +540,7 @@ namespace DronePlacementSimulator
             Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
                 ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
 
-            if (!placedStations)
+            if (!placedStations && File.Exists("Last.csv"))
             {
                 LoadLastStations();
             }
