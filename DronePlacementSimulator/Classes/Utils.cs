@@ -30,7 +30,7 @@ namespace DronePlacementSimulator
 
         public static int KMEANS_ITERATION_COUNT = 100;
 
-        public static int SIMULATION_EVENTS = 1000000;
+        public static int SIMULATION_EVENTS = 10000; //00;
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int MINUTES_IN_4_YEARS = 2103840;
 

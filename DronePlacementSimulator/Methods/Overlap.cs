@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
-using System.Device;
 using System.Device.Location;
 
 // Author: Emanuel Jöbstl <emi@eex-dev.net>

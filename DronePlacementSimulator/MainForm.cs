@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private bool writeSimulation = false;
+        private bool writeSimulation = true;
         
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
@@ -52,7 +52,7 @@ namespace DronePlacementSimulator
             ReadEventData();
             ReadMapData();
 
-            simulator = new Simulator();
+            //simulator = new Simulator();
 
             eventGrid = new Grid(ref polyCoordList);
             if (File.Exists("pdf.csv"))
@@ -659,25 +659,39 @@ namespace DronePlacementSimulator
         }
 
         // TODO : Threading ?
-        private void WriteSimulationEventList()
+        private class WorkObject
         {
-            DateTime current = new DateTime(2019, 1, 1);
-            Random rand = new Random((int)DateTime.Now.ToBinary());
-            StreamWriter file = new StreamWriter("simulationEvents.csv");
-            int eventCount = 0;
-            bool makeMore = true;
+            public int index;
+            public DateTime begin;
+            public Grid grid;
 
-            while (makeMore)
+            public WorkObject(int index, DateTime begin, Grid grid)
             {
-                for (int i = 0; (i < Utils.ROW_NUM) && makeMore; i++)
+                this.index = index;
+                this.begin = begin;
+                this.grid = grid;
+            }
+        }
+
+        private void WriteEventsDoWork(WorkObject workObject)
+        {
+            DateTime end = workObject.begin.AddYears(20);
+            DateTime current = workObject.begin;
+            Random rand = new Random((int)DateTime.Now.ToBinary() + Utils.SIMULATION_EVENTS * workObject.index);
+            StreamWriter file = new StreamWriter("simulationEvents_" + workObject.index + ".csv");
+            int eventCount = 0;
+
+            while (current < end)
+            {
+                for (int i = 0; i < Utils.ROW_NUM; i++)
                 {
-                    for (int j = 0; (j < Utils.COL_NUM) && makeMore; j++)
+                    for (int j = 0; j < Utils.COL_NUM; j++)
                     {
-                        if (!eventGrid.inSeoul[i, j])
+                        if (!workObject.grid.inSeoul[i, j])
                             continue;
 
                         double randVal = rand.NextDouble();
-                        if (randVal < eventGrid.lambda[i, j])
+                        if (randVal < workObject.grid.lambda[i, j])
                         {
                             file.Write(Utils.MIN_LATITUDE + (i + 0.5) * Utils.LAT_UNIT);
                             file.Write(",");
@@ -687,13 +701,33 @@ namespace DronePlacementSimulator
                             file.Write("\n");
 
                             eventCount++;
-                            makeMore = eventCount < Utils.SIMULATION_EVENTS;
                         }
                     }
                 }
                 current = current.AddMinutes(1);
             }
             file.Close();
+        }
+
+        private async Task WriteEvents()
+        {
+            int[] quotientAndRemainder = new int[2];
+            int coreCount = 10;
+            Task[] tasks = new Task[coreCount];
+            DateTime startDate = new DateTime(2019, 1, 1);
+            
+            for (int i = 0; i < coreCount; i++, startDate.AddYears(20))
+            {
+                WorkObject workObject = new WorkObject(i, startDate, eventGrid);
+                tasks[i] = Task.Run(() => WriteEventsDoWork(workObject));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        private void WriteSimulationEventList()
+        {
+            AsyncContext.Run(() => WriteEvents());
         }
         
         private void toolStripButton1_Click(object sender, EventArgs e)

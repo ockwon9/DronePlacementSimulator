@@ -132,7 +132,6 @@ namespace DronePlacementSimulator
             }
 
             int k = 0;
-            //counter.Flush(e.occurrenceTime);
 
             bool isReachable = false;
             
