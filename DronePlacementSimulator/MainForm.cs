@@ -112,11 +112,47 @@ namespace DronePlacementSimulator
 
         private void PerformPulver()
         {
+            int budget = int.Parse(toolStripComboBoxBudget.SelectedItem.ToString());
+
             stationList.Clear();
-            foreach (Pair pair in eventGrid.seoulCells)
+            bool stationsSet = File.Exists("Pulver_stations_" + budget + ".csv");
+
+            if (stationsSet)
             {
-                stationList.Add(new Station(Utils.ConvertRowToLat(pair.row), Utils.ConvertColToLon(pair.col), 0));
+                StreamReader file = new StreamReader("Pulver_stations_" + budget + ".csv");
+                string line;
+                while ((line = file.ReadLine()) != null)
+                {
+                    string[] parts = line.Split(',');
+                    stationList.Add(new Station(double.Parse(parts[0]), double.Parse(parts[1]), int.Parse(parts[2])));
+                }
+                file.Close();
             }
+            else
+            {
+                StreamReader file = new StreamReader("Boutilier.csv");
+                string line;
+                while ((line = file.ReadLine()) != null)
+                {
+                    string[] parts = line.Split(',');
+                    stationList.Add(new Station(double.Parse(parts[0]), double.Parse(parts[1]), 0));
+                }
+                file.Close();
+
+                StreamWriter file2 = new StreamWriter("Pulver_stations_" + budget + ".csv");
+                for (int i = 0; i < stationList.Count; i++)
+                {
+                    file2.Write(stationList[i].lat);
+                    file2.Write(",");
+                    file2.Write(stationList[i].lon);
+                    file2.Write(",");
+                    file2.Write(stationList[i].droneList.Count);
+                    file2.Write("\n");
+                }
+                file2.Close();
+            }
+
+            placedStations = true;
             Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
             placedStations = true;
         }

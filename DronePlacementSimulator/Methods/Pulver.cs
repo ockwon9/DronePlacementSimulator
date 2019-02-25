@@ -105,7 +105,7 @@ namespace DronePlacementSimulator
                     file.Write(",");
                 }
                 file.Write("\n");
-                Console.WriteLine("Thread " + workObject.index + " done with line " + i);
+                //Console.WriteLine("Thread " + workObject.index + " done with line " + i);
             }
             file.Close();
 
