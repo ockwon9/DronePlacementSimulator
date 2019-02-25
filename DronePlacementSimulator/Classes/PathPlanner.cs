@@ -143,7 +143,7 @@ namespace DronePlacementSimulator
         {
             double le, bh;
 
-            StreamReader objReader = new StreamReader("seoul.txt");
+            StreamReader objReader = new StreamReader("D:\\Study\\SNU\\Intern\\Release\\seoul.txt");
             string line = "";
             line = objReader.ReadLine();
             line = objReader.ReadLine();

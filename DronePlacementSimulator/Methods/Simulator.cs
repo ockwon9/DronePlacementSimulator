@@ -27,7 +27,7 @@ namespace DronePlacementSimulator
         {
             pathPlanner = new PathPlanner();
             simulatedEventList = new List<OHCAEvent>();
-            if (File.Exists("simulationEvents.csv") && simulatedEventList.Count == 0)
+            if (File.Exists("simulationEvents.csv"))
             {
                 ReadSimulatedEvents();
             }
@@ -123,7 +123,6 @@ namespace DronePlacementSimulator
             }
 
             int k = 0;
-            //counter.Flush(e.occurrenceTime);
 
             bool isReachable = false;
             

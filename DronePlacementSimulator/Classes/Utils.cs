@@ -30,7 +30,7 @@ namespace DronePlacementSimulator
 
         public static int KMEANS_ITERATION_COUNT = 100;
 
-        public static int SIMULATION_EVENTS = 1000000;
+        public static int SIMULATION_EVENTS = 10000; //00;
         public static double ARRIVAL_RATE = 0.0079858844405054936;
         public static int MINUTES_IN_4_YEARS = 2103840;
 
@@ -81,9 +81,19 @@ namespace DronePlacementSimulator
             return MIN_LONGITUDE + (col + 0.5) * LON_UNIT;
         }
 
+        public static double ConvertRowToLatFloor(int row)
+        {
+            return MIN_LATITUDE + row * LAT_UNIT;
+        }
+
+        public static double ConvertColToLonFloor(int col)
+        {
+            return MIN_LONGITUDE + col * LON_UNIT;
+        }
+
         public static double GetDistance(double lat1, double lon1, double lat2, double lon2)
         {
-            return new GeoCoordinate(lat1, lon1).GetDistanceTo(new GeoCoordinate(lat2, lon2));
+            return (new GeoCoordinate(lat1, lon1).GetDistanceTo(new GeoCoordinate(lat2, lon2)) / 1000);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace DronePlacementSimulator
 {
     class Pulver
     {
-        private static bool DEBUG = false;
+        private static bool DEBUG = true;
         private List<Station> stationList;
         private int n;
         private int m;
@@ -49,7 +49,7 @@ namespace DronePlacementSimulator
             {
                 this.N[i] = new List<int>();
             }
-            BoundByT(ref grid, ref stationList);
+            this.BoundByT(ref grid, ref stationList);
             this.optimalCoverage = OptimalCoverage(p, ref stationList);
         }
 
@@ -101,11 +101,12 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < this.m; j++)
                 {
                     this.b[k, j] = overlap.Area(workObject.load[i].Latitude, workObject.load[i].Longitude, Utils.LAT_UNIT, Utils.LON_UNIT, stationList[j].lat, stationList[j].lon, Utils.GOLDEN_TIME);
+                    this.b[k, j] /= (Utils.UNIT * Utils.UNIT);
                     file.Write(this.b[k, j]);
                     file.Write(",");
                 }
                 file.Write("\n");
-                Console.WriteLine("Thread " + workObject.index + " done with line " + i);
+                //Console.WriteLine("Thread " + workObject.index + " done with line " + i);
             }
             file.Close();
 
@@ -131,8 +132,8 @@ namespace DronePlacementSimulator
                 GeoCoordinate[] workLoad = new GeoCoordinate[actualLoad];
                 for (int j = 0; j < actualLoad; j++)
                 {
-                    double lat = Utils.ConvertRowToLat(grid.seoulCells[row + j].row);
-                    double lon = Utils.ConvertColToLon(grid.seoulCells[row + j].col);
+                    double lat = Utils.ConvertRowToLatFloor(grid.seoulCells[row + j].row);
+                    double lon = Utils.ConvertColToLonFloor(grid.seoulCells[row + j].col);
                     workLoad[j] = new GeoCoordinate(lat, lon);
                 }
                 WorkObject workObject = new WorkObject(workLoad, i, row);
@@ -316,6 +317,7 @@ namespace DronePlacementSimulator
                 env.Dispose();
             }
             catch (GRBException e)
+
             {
                 Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
             }
