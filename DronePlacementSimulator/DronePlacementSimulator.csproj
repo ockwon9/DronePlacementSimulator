@@ -173,6 +173,7 @@
   <ItemGroup>
     <Compile Include="Classes\Cell.cs" />
     <Compile Include="Classes\Counter.cs" />
+    <Compile Include="Classes\DispatchFailure.cs" />
     <Compile Include="Classes\Drone.cs" />
     <Compile Include="Classes\PathPlanner.cs" />
     <Compile Include="Classes\RubisCell.cs" />

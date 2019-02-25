@@ -15,10 +15,6 @@ namespace DronePlacementSimulator
         private int unreachableEvents;
         private int noDrones;
 
-        private int secondChoices;
-        private double survivalRateGain;
-        private double survivalRateLoss;
-
         private List<OHCAEvent> simulatedEventList;
         private List<RubisCell> rCellList;
         private List<RubisStation> rStationList;
@@ -38,15 +34,13 @@ namespace DronePlacementSimulator
             }
         }
 
-        public void Simulate(List<Station> stationList, Grid eventGrid)
+        public List<DispatchFailure> Simulate(List<Station> stationList, Grid eventGrid)
         {
+            List<DispatchFailure> failedEventList = new List<DispatchFailure>();
+
             expectedSurvivalRate = 0;
             unreachableEvents = 0;
             noDrones = 0;
-            secondChoices = 0;
-
-            survivalRateGain = 0.0;
-            survivalRateLoss = 0.0;
 
             int n = stationList.Count;
             int[] initialCount = new int[n];
@@ -70,10 +64,12 @@ namespace DronePlacementSimulator
                 if (dispatchFrom == -1)
                 {
                     noDrones++;
+                    failedEventList.Add(new DispatchFailure(e.lat, e.lon));
                 }
                 else if (dispatchFrom == -2)
                 {
                     unreachableEvents++;
+                    failedEventList.Add(new DispatchFailure(e.lat, e.lon));
                 }
                 else
                 {
@@ -84,11 +80,11 @@ namespace DronePlacementSimulator
 
                 if (iteration++% 10000 == 0)
                 {
-                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime + ", unreachables = " + unreachableEvents + ", noDrones = " + noDrones + ", secondChoices = " + secondChoices);
-                    //Console.WriteLine(", loss = " + survivalRateLoss + ", gain = " + survivalRateGain);
+                    Console.WriteLine("[" + iteration + "] time = " + e.occurrenceTime + ", unreachables = " + unreachableEvents + ", noDrones = " + noDrones);
                 }
             }
             expectedSurvivalRate = sum / simulatedEventList.Count;
+            return failedEventList;
         }
 
         public List<OHCAEvent> GetSimulatedEvents()
@@ -146,113 +142,6 @@ namespace DronePlacementSimulator
             return index[k];
         }
         
-        private int GetHighestSurvivalRateStation(List<RubisStation> rStationList, ref Counter counter, OHCAEvent e)
-        {
-            int resultIndex = -1;
-            int nearestIndex = -1;
-            double maxSurvivalRate = Double.NegativeInfinity;
-            double maxOverallSurvivalRate = Double.NegativeInfinity;
-            
-            double potential = 0.0;
-            double survivalRate = 0.0;
-            double overallSurvivalRate = 0.0;
-
-            bool isReachable = false;
-            foreach (RubisStation s in rStationList)
-            {
-                int index = rStationList.IndexOf(s);
-                double time = pathPlanner.CalculateFlightTime(s.lat, s.lon, e.lat, e.lon);
-
-                if (time <= Utils.GOLDEN_TIME)
-                {
-                    isReachable = true;
-                    if (counter.whenReady[index].Count < rStationList[index].droneList.Count)
-                    {
-                        potential = CalculatePotential(s, counter);
-                        survivalRate = CalculateSurvivalRate(time);
-                        overallSurvivalRate = survivalRate - potential;
-
-                        if (overallSurvivalRate > maxOverallSurvivalRate)
-                        {
-                            maxOverallSurvivalRate = overallSurvivalRate;
-                            resultIndex = index;
-                        }
-
-                        if (survivalRate > maxSurvivalRate)
-                        {
-                            maxSurvivalRate = survivalRate;
-                            nearestIndex = index;
-                        }
-                    }                    
-                }
-            }
-
-            if (resultIndex != nearestIndex)
-            {
-                secondChoices++;
-                /*
-                double nearestDistance = pathPlanner.CalculateFlightTime(e.kiloX, e.kiloY, rStationList[nearestIndex].kiloX, rStationList[nearestIndex].kiloY);
-                double resultDistance = pathPlanner.CalculateFlightTime(e.kiloX, e.kiloY, rStationList[resultIndex].kiloX, rStationList[resultIndex].kiloY);
-                survivalRateLoss = survivalRateLoss + (CalculateSurvivalRate(resultDistance) - CalculateSurvivalRate(nearestDistance));
-
-                // Look-ahead simulation
-                Counter tempCounter = new Counter(counter);
-                int eventIndex = simulatedEventList.IndexOf(e);
-                tempCounter.Dispatch(nearestIndex, e.occurrenceTime);
-
-                while (simulatedEventList[++eventIndex].occurrenceTime < e.occurrenceTime.AddHours(6))
-                {
-                    OHCAEvent next = simulatedEventList[eventIndex];
-                    tempCounter.Flush(next.occurrenceTime);
-
-                    int dispatchFrom = GetNearestStation(stationList, ref tempCounter, next);
-                    if (dispatchFrom != -1 && dispatchFrom != -2)
-                    {
-                        double flightTime = pathPlanner.CalculateFlightTime(next.kiloX, next.kiloY, stationList[dispatchFrom].kiloX, stationList[dispatchFrom].kiloY);
-                        if (dispatchFrom == nearestIndex)
-                        {
-                            KeyValuePair<int, double> secondStation = GetSecondNearestStation(stationList, next);
-                            if (nearestIndex != secondStation.Key)
-                            {
-                                survivalRateGain = survivalRateGain + (CalculateSurvivalRate(flightTime) - CalculateSurvivalRate(secondStation.Value));
-                            }
-                        }
-                        tempCounter.Dispatch(dispatchFrom, next.occurrenceTime);
-                    }
-                }*/
-            }
-
-            if (resultIndex == -1)
-            {
-                return isReachable ? -1 : -2;
-            }
-            
-            return resultIndex;
-        }
-
-        private KeyValuePair<int, double> GetSecondNearestStation(List<Station> stationList, OHCAEvent next)
-        {
-            List<KeyValuePair<int, double>> distanceList = new List<KeyValuePair<int, double>>();
-            for(int i = 0; i < stationList.Count; i++)
-            {
-                Station s = stationList[i];
-                double distance = pathPlanner.CalculateFlightTime(next.lat, next.lon, s.lat, s.lon);
-                distanceList.Add(new KeyValuePair<int, double>(i, distance));
-            }
-            distanceList.Sort((a, b) => a.Value >= b.Value ? 1 : -1);
-            return distanceList[1];
-        }
-
-        private double CalculatePotential(RubisStation s, Counter counter)
-        {
-            double prev = GetOverallSurvivalRate(s, counter, false);
-            double next = GetOverallSurvivalRate(s, counter, true);
-            Console.WriteLine("prev = " + prev + ", next = " + next);
-            Console.WriteLine((1 - ProbabilityMassFunction(0, Utils.DRONE_REST_TIME * 60 * s.pdfSum)) * (prev - next));
-            return (1 - ProbabilityMassFunction(0, Utils.DRONE_REST_TIME * 60 * s.pdfSum)) * (prev - next);
-            //return prev - next;
-        }
-
         private double GetOverallSurvivalRate(RubisStation targetStation, Counter counter, bool dispatch)
         {
             RubisStation tempStation = new RubisStation(targetStation);
@@ -407,16 +296,6 @@ namespace DronePlacementSimulator
         public int GetNoDrones()
         {
             return noDrones;
-        }
-
-        public double GetSurvivalRateLoss()
-        {
-            return survivalRateLoss;
-        }
-        
-        public double GetSurvivalRateGain()
-        {
-            return survivalRateGain;
         }
 
         public ref PathPlanner GetPathPlanner()

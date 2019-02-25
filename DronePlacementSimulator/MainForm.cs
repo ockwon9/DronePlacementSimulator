@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Nito.AsyncEx;
+using System;
 using System.Collections.Generic;
 using System.Device.Location;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
@@ -19,6 +21,7 @@ namespace DronePlacementSimulator
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
         private List<List<GeoCoordinate>> polyCoordList;
+        List<DispatchFailure> failedEventList;
 
         private Simulator simulator = null;
         private Grid eventGrid = null;
@@ -36,6 +39,7 @@ namespace DronePlacementSimulator
             eventList = new List<OHCAEvent>();
             polygonList = new List<Polygon>();
             polyCoordList = new List<List<GeoCoordinate>>();
+            failedEventList = new List<DispatchFailure>();
 
             // Set the size of simulator's window
             this.Height = Screen.PrimaryScreen.Bounds.Height;
@@ -71,7 +75,7 @@ namespace DronePlacementSimulator
             double[][] results = stations.Means.Clone() as double[][];
             for (int j = 0; j < numStations; j++)
             {
-                stationList.Add(new Station(results[j][0], results[j][1], 1));
+                stationList.Add(new Station(results[j][0], results[j][1], 100));
             }
             /*
              * Find the best number of stations for the given budget
@@ -260,6 +264,7 @@ namespace DronePlacementSimulator
                 DrawMap(g);
                 DrawOHCAEvents(g);
                 DrawStations(g);
+                DrawFailedEvents(g);
                 e.Graphics.DrawImage(_canvas, 0, 0);
             }
         }
@@ -342,6 +347,14 @@ namespace DronePlacementSimulator
             foreach (OHCAEvent e in eventList)
             {
                 g.FillRectangle((Brush)Brushes.Blue, e.pixelCol, e.pixelRow, 3, 3);
+            }
+        }
+
+        private void DrawFailedEvents(Graphics g)
+        {
+            foreach (DispatchFailure e in failedEventList)
+            {
+                g.FillRectangle((Brush)Brushes.Red, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
             }
         }
 
@@ -596,7 +609,8 @@ namespace DronePlacementSimulator
                 {
                     simulator = new Simulator();
                 }
-                simulator.Simulate(stationList, eventGrid);
+                failedEventList.Clear();
+                failedEventList = simulator.Simulate(stationList, eventGrid);
 
                 Console.WriteLine(simulator.GetExpectedSurvivalRate());
                 Console.WriteLine("Total Unreachable Events = " + simulator.GetUnreachableEvents());
