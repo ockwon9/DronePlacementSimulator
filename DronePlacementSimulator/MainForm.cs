@@ -16,7 +16,7 @@ namespace DronePlacementSimulator
 {
     public partial class MainForm : Form
     {
-        private bool writeSimulation = true;
+        private bool writeSimulation = false;
         
         private List<Station> stationList;
         private List<OHCAEvent> eventList;
@@ -150,10 +150,11 @@ namespace DronePlacementSimulator
                     file2.Write("\n");
                 }
                 file2.Close();
+
+                Console.WriteLine("targetStationCount = " + targetStationCount);
+                Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
             }
 
-            placedStations = true;
-            Pulver pulver = new Pulver(0.2, targetStationCount, 2, stationList, eventGrid);
             placedStations = true;
         }
 

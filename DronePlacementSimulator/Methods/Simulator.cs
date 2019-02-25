@@ -34,7 +34,7 @@ namespace DronePlacementSimulator
         {
             pathPlanner = new PathPlanner();
             simulatedEventList = new List<OHCAEvent>();
-            if (File.Exists("simulationEvents.csv") && simulatedEventList.Count == 0)
+            if (File.Exists("simulationEvents.csv"))
             {
                 ReadSimulatedEvents();
             }

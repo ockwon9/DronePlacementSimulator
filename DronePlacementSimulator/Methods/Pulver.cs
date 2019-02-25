@@ -101,6 +101,7 @@ namespace DronePlacementSimulator
                 for (int j = 0; j < this.m; j++)
                 {
                     this.b[k, j] = overlap.Area(workObject.load[i].Latitude, workObject.load[i].Longitude, Utils.LAT_UNIT, Utils.LON_UNIT, stationList[j].lat, stationList[j].lon, Utils.GOLDEN_TIME);
+                    this.b[k, j] /= (Utils.UNIT * Utils.UNIT);
                     file.Write(this.b[k, j]);
                     file.Write(",");
                 }
@@ -316,6 +317,7 @@ namespace DronePlacementSimulator
                 env.Dispose();
             }
             catch (GRBException e)
+
             {
                 Console.WriteLine("Error code : " + e.ErrorCode + ", " + e.Message);
             }
