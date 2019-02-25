@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Device.Location;
 
-// TODO
 namespace DronePlacementSimulator
 {
     class RUBIS
@@ -58,7 +57,8 @@ namespace DronePlacementSimulator
 
             int tempBudget;
             int maxStations = (int)(budget / (Utils.STATION_PRICE + Utils.DRONE_PRICE));
-            for (int stations = 1; stations <= maxStations; stations++)
+            //for (int stations = 1; stations <= maxStations; stations++)
+            for (int stations = 18; stations <= 18; stations++)
             {
                 tempBudget = budget;
 
@@ -247,7 +247,6 @@ namespace DronePlacementSimulator
             }
         }
 
-        // Find the best station placement with only one-step movement
         private List<RubisStation> MoveOneStepToBestDirection(List<RubisStation> currentStationList, double currentSurvivalRate)
         {
             List<RubisStation> tempList = new List<RubisStation>();
@@ -396,8 +395,7 @@ namespace DronePlacementSimulator
             
             return feasibleList;
         }
-
-        // Check whether all events is reachable
+       
         public bool IsAllCovered(List<RubisStation> stationList)
         {
             foreach (RubisCell cell in cellList)

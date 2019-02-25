@@ -47,8 +47,6 @@
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBoxStations = new System.Windows.Forms.ToolStripComboBox();
-            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
-            this.toolStripComboBoxPolicy = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBoxBudget = new System.Windows.Forms.ToolStripComboBox();
             this.menuStrip1.SuspendLayout();
@@ -217,8 +215,6 @@
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel1,
             this.toolStripComboBoxStations,
-            this.toolStripLabel2,
-            this.toolStripComboBoxPolicy,
             this.toolStripLabel3,
             this.toolStripComboBoxBudget});
             this.toolStrip1.Location = new System.Drawing.Point(0, 33);
@@ -263,21 +259,6 @@
             this.toolStripComboBoxStations.Name = "toolStripComboBoxStations";
             this.toolStripComboBoxStations.Size = new System.Drawing.Size(60, 33);
             this.toolStripComboBoxStations.SelectedIndexChanged += new System.EventHandler(this.toolStripComboBoxStations_SelectedIndexChanged);
-            // 
-            // toolStripLabel2
-            // 
-            this.toolStripLabel2.Name = "toolStripLabel2";
-            this.toolStripLabel2.Size = new System.Drawing.Size(59, 30);
-            this.toolStripLabel2.Text = "Policy";
-            // 
-            // toolStripComboBoxPolicy
-            // 
-            this.toolStripComboBoxPolicy.DropDownWidth = 200;
-            this.toolStripComboBoxPolicy.Items.AddRange(new object[] {
-            "Nearest Station First",
-            "Highest Survival Rate Station First"});
-            this.toolStripComboBoxPolicy.Name = "toolStripComboBoxPolicy";
-            this.toolStripComboBoxPolicy.Size = new System.Drawing.Size(275, 33);
             // 
             // toolStripLabel3
             // 
@@ -364,8 +345,6 @@
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxStations;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem savePlacementToolStripMenuItem;
-        private System.Windows.Forms.ToolStripLabel toolStripLabel2;
-        private System.Windows.Forms.ToolStripComboBox toolStripComboBoxPolicy;
         private System.Windows.Forms.ToolStripLabel toolStripLabel3;
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxBudget;
     }

@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Device.Location;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Nito.AsyncEx;
 using System.Windows.Forms;
 using System.Windows.Shapes;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.Device.Location;
 
 namespace DronePlacementSimulator
 {
@@ -64,16 +61,22 @@ namespace DronePlacementSimulator
                 eventGrid.Interpolate(ref eventList);
                 WritePDF(ref eventGrid);
             }
-
-            toolStripComboBoxPolicy.SelectedIndex = 0;
         }
 
         private void PerformKMeans()
         {
             stationList.Clear();
+            int numStations = int.Parse(toolStripComboBoxStations.SelectedItem.ToString());
+            KMeansResults<OHCAEvent> stations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), numStations, 100);
+            double[][] results = stations.Means.Clone() as double[][];
+            for (int j = 0; j < numStations; j++)
+            {
+                stationList.Add(new Station(results[j][0], results[j][1], 1));
+            }
+            /*
+             * Find the best number of stations for the given budget
+             * 
             int budget = int.Parse(toolStripComboBoxBudget.SelectedItem.ToString());
-            Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
-                ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
             double maxSurvivalRate = 0.0;
 
             for (int i = 1; i <= budget / (Utils.DRONE_PRICE + Utils.STATION_PRICE); i++)
@@ -91,7 +94,6 @@ namespace DronePlacementSimulator
                 }
 
                 Simulator tempSimulator = new Simulator();
-                tempSimulator.SetPolicy(policy);
                 tempSimulator.Simulate(tempStationList, eventGrid);
                 double survivalRate = tempSimulator.GetExpectedSurvivalRate();
 
@@ -106,6 +108,7 @@ namespace DronePlacementSimulator
                     }
                 }
             }
+            */
 
             placedStations = true;
         }
@@ -537,9 +540,6 @@ namespace DronePlacementSimulator
 
         private void ClickRunSimulation(object sender, EventArgs e)
         {
-            Policy policy = (toolStripComboBoxPolicy.SelectedIndex == 0)
-                ? Policy.NearestStationFirst : Policy.HighestSurvivalRateStationFirst;
-
             if (!placedStations)
             {
                 LoadLastStations();
@@ -559,7 +559,6 @@ namespace DronePlacementSimulator
                 {
                     simulator = new Simulator();
                 }
-                simulator.SetPolicy(policy);
                 simulator.Simulate(stationList, eventGrid);
 
                 Console.WriteLine(simulator.GetExpectedSurvivalRate());

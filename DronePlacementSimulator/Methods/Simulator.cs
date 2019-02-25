@@ -7,15 +7,8 @@ using System.Threading.Tasks;
 
 namespace DronePlacementSimulator
 {
-    enum Policy
-    {
-        NearestStationFirst,
-        HighestSurvivalRateStationFirst
-    }
-
     class Simulator
     {
-        private Policy policy;
         private PathPlanner pathPlanner;
         
         private double expectedSurvivalRate;
@@ -71,9 +64,7 @@ namespace DronePlacementSimulator
             foreach (OHCAEvent e in simulatedEventList)
             {
                 current.Flush(e.occurrenceTime);
-                int dispatchFrom = policy == Policy.NearestStationFirst ? 
-                    GetNearestStation(rStationList, ref current, e) : 
-                    GetHighestSurvivalRateStation(rStationList, ref current, e);
+                int dispatchFrom = GetNearestStation(rStationList, ref current, e);
                 e.assignedStationId = dispatchFrom;
 
                 if (dispatchFrom == -1)
@@ -397,11 +388,6 @@ namespace DronePlacementSimulator
                     s.pdfSum += cell.pdf;
                 }
             }
-        }
-
-        public void SetPolicy(Policy policy)
-        {
-            this.policy = policy;
         }
 
         private double CalculateSurvivalRate(double time)

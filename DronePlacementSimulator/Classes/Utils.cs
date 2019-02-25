@@ -51,13 +51,13 @@ namespace DronePlacementSimulator
 
         public static int TransformLatToPixel(double lat)
         {
-            double ratio = lat / RANGE_LATITUDE;
+            double ratio = (lat - MIN_LATITUDE) / RANGE_LATITUDE;
             return SCREEN_HEIGHT - (int)(SCREEN_HEIGHT * ratio);
         }
 
         public static int TransformLonToPixel(double lon)
         {           
-            double ratio = lon / RANGE_LONGITUDE;
+            double ratio = (lon - MIN_LONGITUDE) / RANGE_LONGITUDE;
             return (int)(SCREEN_WIDTH * ratio);
         }
 

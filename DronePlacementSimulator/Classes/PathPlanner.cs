@@ -34,7 +34,7 @@ namespace DronePlacementSimulator
 
         public double CalculateFlightTime(double srcLat, double srcLon, double dstLat, double dstLon)
         {
-            double distance = Utils.GetDistance(srcLat, srcLon, dstLat, dstLon);
+            double distance = Utils.GetDistance(srcLat, srcLon, dstLat, dstLon) / 1000;
 
             int srcRow = Utils.ConvertLatToRow(srcLat);
             int srcCol = Utils.ConvertLonToCol(srcLon);
