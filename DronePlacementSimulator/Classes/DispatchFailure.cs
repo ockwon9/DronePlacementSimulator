@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DronePlacementSimulator
+﻿namespace DronePlacementSimulator
 {
     class DispatchFailure
     {
         public double lat, lon;
+        public Utils.Failure failure;
 
-        public DispatchFailure(double lat, double lon)
+        public DispatchFailure(double lat, double lon, Utils.Failure failure)
         {
             this.lat = lat;
             this.lon = lon;
+            this.failure = failure;
         }
     }
 }

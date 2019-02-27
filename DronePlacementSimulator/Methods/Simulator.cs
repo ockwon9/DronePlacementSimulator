@@ -64,12 +64,12 @@ namespace DronePlacementSimulator
                 if (dispatchFrom == -1)
                 {
                     noDrones++;
-                    failedEventList.Add(new DispatchFailure(e.lat, e.lon));
+                    failedEventList.Add(new DispatchFailure(e.lat, e.lon, Utils.Failure.NO_DRONES));
                 }
                 else if (dispatchFrom == -2)
                 {
                     unreachableEvents++;
-                    failedEventList.Add(new DispatchFailure(e.lat, e.lon));
+                    failedEventList.Add(new DispatchFailure(e.lat, e.lon, Utils.Failure.UNREACHABLE));
                 }
                 else
                 {
@@ -118,10 +118,8 @@ namespace DronePlacementSimulator
                 }
             }
 
-            int k = 0;
-
             bool isReachable = false;
-            
+            int k = 0;
             for (;k < n; k++)
             {
                 if (distance[k] <= Utils.GOLDEN_TIME)

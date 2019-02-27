@@ -75,7 +75,7 @@ namespace DronePlacementSimulator
             double[][] results = stations.Means.Clone() as double[][];
             for (int j = 0; j < numStations; j++)
             {
-                stationList.Add(new Station(results[j][0], results[j][1], 100));
+                stationList.Add(new Station(results[j][0], results[j][1], 1));
             }
             /*
              * Find the best number of stations for the given budget
@@ -329,7 +329,7 @@ namespace DronePlacementSimulator
             {
                 foreach (Station s in stationList)
                 {
-                    g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.FillEllipse(new SolidBrush(Color.FromArgb(32, 255, 0, 0)), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.DrawEllipse(new Pen(Color.Red, 1), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.FillRectangle((Brush)Brushes.Red, s.pixelCol, s.pixelRow, 3, 3);
                     string stationInfo = stationList.IndexOf(s).ToString();
@@ -354,7 +354,15 @@ namespace DronePlacementSimulator
         {
             foreach (DispatchFailure e in failedEventList)
             {
-                g.FillRectangle((Brush)Brushes.Red, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                if (e.failure == Utils.Failure.NO_DRONES)
+                {
+                    g.FillRectangle((Brush)Brushes.Lime, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                }
+                else if (e.failure == Utils.Failure.UNREACHABLE)
+                {
+                    g.FillRectangle((Brush)Brushes.Cyan, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                }
+                
             }
         }
 
@@ -708,7 +716,6 @@ namespace DronePlacementSimulator
             }
         }
 
-        // TODO : Threading ?
         private class WorkObject
         {
             public int index;

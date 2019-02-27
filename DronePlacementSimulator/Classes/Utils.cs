@@ -43,6 +43,8 @@ namespace DronePlacementSimulator
         public static int STATION_PRICE = 8000;
         public static int DRONE_PRICE = 1000;
 
+        public enum Failure { NO_DRONES, UNREACHABLE };
+
         static Utils()
         {
             SCREEN_HEIGHT = Screen.PrimaryScreen.Bounds.Height;
