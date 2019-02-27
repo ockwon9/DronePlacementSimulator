@@ -47,8 +47,13 @@ namespace DronePlacementSimulator
             double maxHeightOnRoute = getMaxHeight(srcLat, srcLon, dstLat, dstLon);
             double takeOffHeight = maxHeightOnRoute - srcHeight + Utils.BASE_FLIGHT_HEIGHT;
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.BASE_FLIGHT_HEIGHT;
-            
-            return (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY);
+
+            double result = (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY);
+            if (distance <= Utils.GOLDEN_TIME && result > Utils.GOLDEN_TIME && result > 10)
+            {
+                Console.WriteLine("totalTime = " + result.ToString("#.######") + ", flightTime = " + distance.ToString("#.######") + ", takeOffTime = " + (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY).ToString("#.######") + ", landdingTime = " + (landdingHeight / Utils.DRONE_LANDING_VELOCITY).ToString("#.######"));
+            }
+            return result;
         }
 
         private double Intersect(int row1, int col1, int row2, int col2, int row)
