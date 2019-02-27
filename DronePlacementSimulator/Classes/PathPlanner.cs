@@ -34,7 +34,7 @@ namespace DronePlacementSimulator
 
         public double CalculateFlightTime(double srcLat, double srcLon, double dstLat, double dstLon)
         {
-            double distance = Utils.GetDistance(srcLat, srcLon, dstLat, dstLon) / 1000;
+            double distance = Utils.GetDistance(srcLat, srcLon, dstLat, dstLon);
 
             int srcRow = Utils.ConvertLatToRow(srcLat);
             int srcCol = Utils.ConvertLonToCol(srcLon);
@@ -170,6 +170,7 @@ namespace DronePlacementSimulator
                             if (bh > building_height[m, n])
                             {
                                 building_height[m, n] = bh;
+
                             }
                         }
                     }

@@ -5,8 +5,10 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Shapes;
+using Nito.AsyncEx;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace DronePlacementSimulator
@@ -748,11 +750,11 @@ namespace DronePlacementSimulator
         private async Task WriteEvents()
         {
             int[] quotientAndRemainder = new int[2];
-            int coreCount = 10;
+            int coreCount = 12;
             Task[] tasks = new Task[coreCount];
             DateTime startDate = new DateTime(2019, 1, 1);
             
-            for (int i = 0; i < coreCount; i++, startDate.AddYears(20))
+            for (int i = 0; i < coreCount; i++, startDate = startDate.AddYears(20))
             {
                 WorkObject workObject = new WorkObject(i, startDate, eventGrid);
                 tasks[i] = Task.Run(() => WriteEventsDoWork(workObject));
