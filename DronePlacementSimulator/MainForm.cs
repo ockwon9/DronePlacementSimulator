@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nito.AsyncEx;
+using System;
 using System.Collections.Generic;
 using System.Device.Location;
 using System.Drawing;
@@ -21,6 +22,7 @@ namespace DronePlacementSimulator
         private List<OHCAEvent> eventList;
         private List<Polygon> polygonList;
         private List<List<GeoCoordinate>> polyCoordList;
+        List<DispatchFailure> failedEventList;
 
         private Simulator simulator = null;
         private Grid eventGrid = null;
@@ -38,6 +40,7 @@ namespace DronePlacementSimulator
             eventList = new List<OHCAEvent>();
             polygonList = new List<Polygon>();
             polyCoordList = new List<List<GeoCoordinate>>();
+            failedEventList = new List<DispatchFailure>();
 
             // Set the size of simulator's window
             this.Height = Screen.PrimaryScreen.Bounds.Height;
@@ -262,6 +265,7 @@ namespace DronePlacementSimulator
                 DrawMap(g);
                 DrawOHCAEvents(g);
                 DrawStations(g);
+                DrawFailedEvents(g);
                 e.Graphics.DrawImage(_canvas, 0, 0);
             }
         }
@@ -326,7 +330,7 @@ namespace DronePlacementSimulator
             {
                 foreach (Station s in stationList)
                 {
-                    g.FillEllipse(new SolidBrush(Color.FromArgb(64, 255, 0, 0)), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
+                    g.FillEllipse(new SolidBrush(Color.FromArgb(32, 255, 0, 0)), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.DrawEllipse(new Pen(Color.Red, 1), s.pixelCol - coverRange, s.pixelRow - coverRange, coverRange + coverRange, coverRange + coverRange);
                     g.FillRectangle((Brush)Brushes.Red, s.pixelCol, s.pixelRow, 3, 3);
                     string stationInfo = stationList.IndexOf(s).ToString();
@@ -344,6 +348,22 @@ namespace DronePlacementSimulator
             foreach (OHCAEvent e in eventList)
             {
                 g.FillRectangle((Brush)Brushes.Blue, e.pixelCol, e.pixelRow, 3, 3);
+            }
+        }
+
+        private void DrawFailedEvents(Graphics g)
+        {
+            foreach (DispatchFailure e in failedEventList)
+            {
+                if (e.failure == Utils.Failure.NO_DRONES)
+                {
+                    g.FillRectangle((Brush)Brushes.Lime, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                }
+                else if (e.failure == Utils.Failure.UNREACHABLE)
+                {
+                    g.FillRectangle((Brush)Brushes.Cyan, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                }
+                
             }
         }
 
@@ -598,7 +618,8 @@ namespace DronePlacementSimulator
                 {
                     simulator = new Simulator();
                 }
-                simulator.Simulate(stationList, eventGrid);
+                failedEventList.Clear();
+                failedEventList = simulator.Simulate(stationList, eventGrid);
 
                 Console.WriteLine(simulator.GetExpectedSurvivalRate());
                 Console.WriteLine("Total Unreachable Events = " + simulator.GetUnreachableEvents());
@@ -696,7 +717,6 @@ namespace DronePlacementSimulator
             }
         }
 
-        // TODO : Threading ?
         private class WorkObject
         {
             public int index;
