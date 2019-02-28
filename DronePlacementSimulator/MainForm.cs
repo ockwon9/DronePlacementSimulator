@@ -357,11 +357,11 @@ namespace DronePlacementSimulator
             {
                 if (e.failure == Utils.Failure.NO_DRONES)
                 {
-                    //g.FillRectangle((Brush)Brushes.Lime, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                    g.FillRectangle((Brush)Brushes.Lime, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 5, 5);
                 }
                 else if (e.failure == Utils.Failure.UNREACHABLE)
                 {
-                    g.FillRectangle((Brush)Brushes.Cyan, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 3, 3);
+                    g.FillRectangle((Brush)Brushes.Cyan, Utils.TransformLonToPixel(e.lon), Utils.TransformLatToPixel(e.lat), 5, 5);
                 }
             }
         }

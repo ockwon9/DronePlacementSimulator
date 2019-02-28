@@ -49,134 +49,129 @@ namespace DronePlacementSimulator
             List<RubisStation> prevStationList = new List<RubisStation>();
             List<RubisStation> nextStationList;
 
-            
             double epsilonTemp = 0.1;
-            double alpha = 0.995;
-            
+            double alpha = 0.995;            
             double bestSurvivalRate = 0.0;
-
             int tempBudget;
             int maxStations = (int)(budget / (Utils.STATION_PRICE + Utils.DRONE_PRICE));
             //for (int stations = 1; stations <= maxStations; stations++)
-            for (int stations = 18; stations <= 18; stations++)
+            int stations = 16;
+            tempBudget = budget;
+
+            // Step 1. Finds initial stations with a drone using K-Means
+            tempBudget = tempBudget - (stations * (Utils.STATION_PRICE + Utils.DRONE_PRICE));
+            KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+            prevStationList.Clear();
+            foreach (double[] d in kMeansStations.Means)
             {
-                tempBudget = budget;
+                prevStationList.Add(new RubisStation(d[0], d[1], 1));
+            }
 
-                // Step 1. Finds initial stations with a drone using K-Means
-                tempBudget = tempBudget - (stations * (Utils.STATION_PRICE + Utils.DRONE_PRICE));
-                KMeansResults<OHCAEvent> kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
-                prevStationList.Clear();
-                foreach (double[] d in kMeansStations.Means)
+            // Step 2. Assigns remaining drones to busy stations
+            int remainingDrones = (int)(tempBudget / Utils.DRONE_PRICE);
+            while (remainingDrones > 0)
+            {
+                int mostBusyStationIndex = getIndexOfMostBusyStation(prevStationList);
+                prevStationList[mostBusyStationIndex].droneList.Add(new Drone(prevStationList[mostBusyStationIndex].stationID));
+                remainingDrones--;
+            }
+
+            // Step 4. Simulated Annealing
+            double currentTemp = 100.0;
+            int iteration = 0;
+            double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
+            double delta = 0.0;
+            double nextSurvivalRate = 0.0;
+
+            while (currentTemp > epsilonTemp)
+            {
+                iteration++;
+
+                // Near search using local optimization
+                nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate);
+                nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
+                delta = nextSurvivalRate - prevSurvivalRate;
+
+                if (delta > 0)
                 {
-                    prevStationList.Add(new RubisStation(d[0], d[1], 1));
+                    CloneList(nextStationList, prevStationList);
+                    prevSurvivalRate = nextSurvivalRate;
+
+                    // Heat-up
+                    //currentTemp += currentTemp * 0.01;
                 }
-
-                // Step 2. Assigns remaining drones to busy stations
-                int remainingDrones = (int)(tempBudget / Utils.DRONE_PRICE);
-                while (remainingDrones > 0)
+                else
                 {
-                    int mostBusyStationIndex = getIndexOfMostBusyStation(prevStationList);
-                    prevStationList[mostBusyStationIndex].droneList.Add(new Drone(prevStationList[mostBusyStationIndex].stationID));
-                    remainingDrones--;
-                }
-
-                // Step 4. Simulated Annealing
-                double currentTemp = 100.0;
-                int iteration = 0;
-                double prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
-                double delta = 0.0;
-                double nextSurvivalRate = 0.0;
-
-                while (currentTemp > epsilonTemp)
-                {
-                    iteration++;
-
-                    // Near search using local optimization
-                    nextStationList = MoveOneStepToBestDirection(prevStationList, prevSurvivalRate);
-                    nextSurvivalRate = GetOverallSurvivalRate(nextStationList);
-                    delta = nextSurvivalRate - prevSurvivalRate;
-
-                    if (delta > 0)
+                    // Even if worst, choose it randomly according to the current temperature
+                    double probility = new Random().NextDouble();
+                    if (probility < Math.Exp(-delta / currentTemp))
                     {
+                        // Far search using random placement
+                        nextStationList = FindRandomStationPlacement(prevStationList, 0);
                         CloneList(nextStationList, prevStationList);
-                        prevSurvivalRate = nextSurvivalRate;
+                        prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
 
-                        // Heat-up
-                        //currentTemp += currentTemp * 0.01;
-                    }
-                    else
-                    {
-                        // Even if worst, choose it randomly according to the current temperature
-                        double probility = new Random().NextDouble();
-                        if (probility < Math.Exp(-delta / currentTemp))
+                        //if (prevSurvivalRate < bestSurvivalRate * 0.99)
+                        double r = new Random().NextDouble();
+                        if (r < 0.1)
                         {
-                            // Far search using random placement
-                            nextStationList = FindRandomStationPlacement(prevStationList, 0);
-                            CloneList(nextStationList, prevStationList);
-                            prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
-
-                            //if (prevSurvivalRate < bestSurvivalRate * 0.99)
-                            double r = new Random().NextDouble();
-                            if (r < 0.1)
+                            /*
+                            kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
+                            foreach (double[] d in kMeansStations.Means)
                             {
-                                /*
-                                kMeansStations = KMeans.Cluster<OHCAEvent>(eventList.ToArray(), stations, new Random().Next(50, 100));
+                                prevStationList.Add(new RubisStation(d[0], d[1], 2));
+                            }*/
+
+                            Random rand = new Random();
+
+                            bool okay = false;
+                            while (!okay)
+                            {
+                                int pos = rand.Next(0, 990000);
+                                kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 10000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
+
+                                okay = true;
                                 foreach (double[] d in kMeansStations.Means)
                                 {
-                                    prevStationList.Add(new RubisStation(d[0], d[1], 2));
-                                }*/
-
-                                Random rand = new Random();
-
-                                bool okay = false;
-                                while (!okay)
-                                {
-                                    int pos = rand.Next(0, 990000);
-                                    kMeansStations = KMeans.Cluster<OHCAEvent>(simulator.GetSimulatedEvents().GetRange(pos, 10000).ToArray(), stations, Utils.KMEANS_ITERATION_COUNT);
-
-                                    okay = true;
-                                    foreach (double[] d in kMeansStations.Means)
+                                    if (d[0] == 0.0 || d[1] == 0.0)
                                     {
-                                        if (d[0] == 0.0 || d[1] == 0.0)
-                                        {
-                                            okay = false;
-                                            break;
-                                        }
+                                        okay = false;
+                                        break;
                                     }
                                 }
-
-                                prevStationList.Clear();
-                                foreach (double[] d in kMeansStations.Means)
-                                {
-                                    prevStationList.Add(new RubisStation(d[0], d[1], 1));
-                                }
-
-                                remainingDrones = (int)(tempBudget / Utils.DRONE_PRICE);
-                                while (remainingDrones > 0)
-                                {
-                                    int mostBusyStationIndex = getIndexOfMostBusyStation(prevStationList);
-                                    prevStationList[mostBusyStationIndex].droneList.Add(new Drone(prevStationList[mostBusyStationIndex].stationID));
-                                    remainingDrones--;
-                                }
-
-                                prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
                             }
+
+                            prevStationList.Clear();
+                            foreach (double[] d in kMeansStations.Means)
+                            {
+                                prevStationList.Add(new RubisStation(d[0], d[1], 1));
+                            }
+
+                            remainingDrones = (int)(tempBudget / Utils.DRONE_PRICE);
+                            while (remainingDrones > 0)
+                            {
+                                int mostBusyStationIndex = getIndexOfMostBusyStation(prevStationList);
+                                prevStationList[mostBusyStationIndex].droneList.Add(new Drone(prevStationList[mostBusyStationIndex].stationID));
+                                remainingDrones--;
+                            }
+
+                            prevSurvivalRate = GetOverallSurvivalRate(prevStationList);
                         }
                     }
-
-                    // Keep the best solution
-                    if (prevSurvivalRate > bestSurvivalRate)
-                    {
-                        CloneList(prevStationList, stationList);
-                        bestSurvivalRate = prevSurvivalRate;
-                    }
-
-                    // Cool-down
-                    currentTemp *= alpha;
-                    Console.WriteLine("[" + iteration + "] Stations = " + stations +", Temp.: " + String.Format("{0:0.000000000000}", currentTemp) + "℃    " +
-                        "Best = " + String.Format("{0:0.000000}", (bestSurvivalRate * 100)) + "%    " +
-                        "Current = " + String.Format("{0:0.000000}", (prevSurvivalRate * 100)) + "%");
                 }
+
+                // Keep the best solution
+                if (prevSurvivalRate > bestSurvivalRate)
+                {
+                    CloneList(prevStationList, stationList);
+                    bestSurvivalRate = prevSurvivalRate;
+                }
+
+                // Cool-down
+                currentTemp *= alpha;
+                Console.WriteLine("[" + iteration + "] Stations = " + stations +", Temp.: " + String.Format("{0:0.000000000000}", currentTemp) + "℃    " +
+                    "Best = " + String.Format("{0:0.000000}", (bestSurvivalRate * 100)) + "%    " +
+                    "Current = " + String.Format("{0:0.000000}", (prevSurvivalRate * 100)) + "%");
             }
 
             return stationList;
@@ -305,7 +300,7 @@ namespace DronePlacementSimulator
                             break;
                     }
 
-                    if (lat >= 0.1 && lat <= Utils.SEOUL_WIDTH - 0.1 && lon >= 0.1 && lon <= Utils.SEOUL_HEIGHT - 0.1)
+                    if (lat > Utils.MIN_LATITUDE && lat < Utils.MAX_LATITUDE && lon > Utils.MIN_LONGITUDE && lon < Utils.MAX_LONGITUDE)
                     {
                         s.SetLocation(lat, lon);
                     }
@@ -383,7 +378,7 @@ namespace DronePlacementSimulator
                             break;
                     }
 
-                    if (lat >= 0.1 && lat <= Utils.SEOUL_WIDTH - 0.1 && lon >= 0.1 && lon <= Utils.SEOUL_HEIGHT - 0.1)
+                    if (lat > Utils.MIN_LATITUDE && lat < Utils.MAX_LATITUDE && lon > Utils.MIN_LONGITUDE && lon < Utils.MAX_LONGITUDE)
                     {
                         s.SetLocation(lat, lon);
                     }
