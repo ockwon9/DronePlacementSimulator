@@ -96,9 +96,6 @@ namespace DronePlacementSimulator
                 {
                     CloneList(nextStationList, prevStationList);
                     prevSurvivalRate = nextSurvivalRate;
-
-                    // Heat-up
-                    //currentTemp += currentTemp * 0.01;
                 }
                 else
                 {
@@ -217,7 +214,8 @@ namespace DronePlacementSimulator
             {
                 foreach (RubisStation s in stationList)
                 {
-                    double time = simulator.GetPathPlanner().CalculateFlightTime(cell.lat, cell.lon, s.lat, s.lon);
+                    //double time = simulator.GetPathPlanner().CalculateFlightTime(cell.lat, cell.lon, s.lat, s.lon);
+                    double time = new GeoCoordinate(cell.lat, cell.lon).GetDistanceTo(new GeoCoordinate(s.lat, s.lon)) / 1000;
                     if (time <= Utils.GOLDEN_TIME)
                     {
                         cell.stations.Add(new StationDistancePair(s, time));
@@ -239,6 +237,53 @@ namespace DronePlacementSimulator
                 {
                     s.pdfSum += cell.pdf;
                 }
+            }
+        }
+
+        private void InitRubisStation(ref List<RubisStation> stationList, ref List<RubisCell> cellList, ref RubisStation movedStation)
+        {
+            foreach (RubisCell cell in movedStation.cellList)
+            {
+                int index = -1;
+                for (int i = 0; i < cell.stations.Count; i++)
+                {
+                    StationDistancePair pair = cell.stations[i];
+                    if (pair.station.lat == movedStation.lat && pair.station.lon == movedStation.lon)
+                    {
+                        index = i;
+                    }
+                }
+                if (index != -1)
+                {
+                    cell.stations.RemoveAt(index);
+                }
+            }
+
+            movedStation.pdfSum = 0.0;
+            movedStation.cellList.Clear();
+
+            foreach (RubisCell cell in cellList)
+            {
+                cell.survivalRate = 0.0;
+                //double time = simulator.GetPathPlanner().CalculateFlightTime(cell.lat, cell.lon, s.lat, s.lon);
+                double time = new GeoCoordinate(cell.lat, cell.lon).GetDistanceTo(new GeoCoordinate(movedStation.lat, movedStation.lon)) / 1000;
+                if (time <= Utils.GOLDEN_TIME)
+                {
+                    cell.stations.Add(new StationDistancePair(movedStation, time));
+                    movedStation.cellList.Add(cell);
+                }
+            }
+
+            // Sorts stationList ordered by distance
+            foreach (RubisCell cell in movedStation.cellList)
+            {
+                cell.stations.Sort((a, b) => a.distance >= b.distance ? 1 : -1);
+            }
+
+            // Calculates the average probabilty of including cells for each station
+            foreach (RubisCell cell in movedStation.cellList)
+            {
+                movedStation.pdfSum += cell.pdf;
             }
         }
 
@@ -309,7 +354,7 @@ namespace DronePlacementSimulator
                         continue;
                     }
 
-                    double survivalRate = GetOverallSurvivalRate(tempList);
+                    double survivalRate = GetOverallSurvivalRate(tempList, s);
                     if (survivalRate > maxSurvivalRate)
                     {
                         maxSurvivalRate = survivalRate;
@@ -321,7 +366,6 @@ namespace DronePlacementSimulator
                 }
             }
 
-            double sr = GetOverallSurvivalRate(solutionList);
             return solutionList;
         }
 
@@ -418,6 +462,18 @@ namespace DronePlacementSimulator
             List<RubisCell> tempCellList = new List<RubisCell>();
             CloneList(cellList, tempCellList);
             InitRubisStation(ref stationList, ref tempCellList);
+
+            // Calculates the survival rate for each cell
+            double overallSum = AsyncContext.Run(() => ComputeSurvivalRate(tempCellList));
+            double survivalRate = overallSum / tempCellList.Count;
+            return survivalRate;
+        }
+
+        public double GetOverallSurvivalRate(List<RubisStation> stationList, RubisStation movedStation)
+        {
+            List<RubisCell> tempCellList = new List<RubisCell>();
+            CloneList(cellList, tempCellList);
+            InitRubisStation(ref stationList, ref tempCellList, ref movedStation);
 
             // Calculates the survival rate for each cell
             double overallSum = AsyncContext.Run(() => ComputeSurvivalRate(tempCellList));
