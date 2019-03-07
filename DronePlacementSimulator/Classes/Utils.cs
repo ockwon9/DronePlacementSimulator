@@ -13,18 +13,20 @@ namespace DronePlacementSimulator
         public static double MAX_LATITUDE = 37.70130154;
         public static double MIN_LONGITUDE = 126.7645806;
         public static double MAX_LONGITUDE = 127.1831312;
+
         public static double RANGE_LATITUDE = MAX_LATITUDE - MIN_LATITUDE;
         public static double RANGE_LONGITUDE = MAX_LONGITUDE - MIN_LONGITUDE;
         public static double SEOUL_WIDTH = 36.89;
         public static double SEOUL_HEIGHT = 30.35;
 
-        public static double UNIT = 0.1;
+        public static double UNIT = 0.5;
         public static int ROW_NUM = (int)Math.Ceiling(SEOUL_HEIGHT / UNIT);
         public static int COL_NUM = (int)Math.Ceiling(SEOUL_WIDTH / UNIT);
 
         public static double LAT_UNIT = RANGE_LATITUDE / ROW_NUM;
         public static double LON_UNIT = RANGE_LONGITUDE / COL_NUM;
-        
+        public static double MOVE_UNIT = 1;
+
         public static double GOLDEN_TIME = 5;
         public static double SURVIVAL_RATE_SLOPE = 0.2;
 

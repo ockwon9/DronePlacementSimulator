@@ -49,10 +49,10 @@ namespace DronePlacementSimulator
             double landdingHeight = maxHeightOnRoute - dstHeight + Utils.BASE_FLIGHT_HEIGHT;
 
             double result = (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY) + (distance / Utils.DRONE_VELOCITY) + (landdingHeight / Utils.DRONE_LANDING_VELOCITY);
-            if (distance <= Utils.GOLDEN_TIME && result > Utils.GOLDEN_TIME && result > 10)
+            /*if (distance <= Utils.GOLDEN_TIME && result > Utils.GOLDEN_TIME && result > 10)
             {
                 Console.WriteLine("totalTime = " + result.ToString("#.######") + ", flightTime = " + distance.ToString("#.######") + ", takeOffTime = " + (takeOffHeight / Utils.DRONE_TAKE_OFF_VELOCITY).ToString("#.######") + ", landdingTime = " + (landdingHeight / Utils.DRONE_LANDING_VELOCITY).ToString("#.######"));
-            }
+            }*/
             return result;
         }
 
@@ -148,7 +148,7 @@ namespace DronePlacementSimulator
         {
             double le, bh;
 
-            StreamReader objReader = new StreamReader("D:\\Study\\SNU\\Intern\\Release\\seoul.txt");
+            StreamReader objReader = new StreamReader("seoul.txt");
             string line = "";
             line = objReader.ReadLine();
             line = objReader.ReadLine();
